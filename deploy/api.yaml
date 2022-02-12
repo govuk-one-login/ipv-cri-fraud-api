@@ -1,0 +1,91 @@
+openapi: "3.0.1"
+info:
+  version: "0.1"
+  title: "Fraud Credential Issuer API"
+paths:
+  /token:
+    get:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Authorization"
+        required: true
+      responses:
+        "400":
+          description: "400 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "500 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "201":
+          description: "201 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+      x-amazon-apigateway-request-validator: "Validate body"
+      x-amazon-apigateway-integration:
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SessionFunction.Arn}/invocations
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
+components:
+  schemas:
+    Authorization:
+      required:
+        - "client_id"
+        - "redirect_uri"
+        - "request"
+        - "response_type"
+        - "state"
+      type: "object"
+      properties:
+        response_type:
+          type: "string"
+          pattern: "^code$"
+          example: "code"
+        client_id:
+          type: "string"
+          minLength: 1
+          example: "ipv-core"
+        state:
+          type: "string"
+          example: "state"
+          minLength: 1
+        redirect_uri:
+          type: "string"
+          format: "uri"
+          example: "https://www.example/com/callback"
+        request:
+          type: "string"
+          pattern: "[a-zA-Z0-9_=]+\\.[a-zA-Z0-9_=]+\\.[a-zA-Z0-9_\\-\\+\\/=]+"
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0dCIsImlhdCI6MTUxNjIzOTAyMn0.SbcN-ywpLObhMbbaMCtW1Un8LYhQzHsEth9LvTk4oQQ"
+    Error:
+      title: "Error Schema"
+      type: "object"
+      properties:
+        message:
+          type: "string"
+    Session:
+      required:
+        - "session_id"
+      type: "object"
+      properties:
+        session_id:
+          type: "string"
+x-amazon-apigateway-request-validators:
+  Validate body:
+    validateRequestParameters: false
+    validateRequestBody: true

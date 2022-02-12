@@ -1,0 +1,7 @@
+POST http://localhost:3000/token
+Authorization: Basic YWxhZGRpbjpvcGVuc2VzYW1l
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials
+
+###
