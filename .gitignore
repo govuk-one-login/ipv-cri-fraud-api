@@ -28,3 +28,12 @@ hs_err_pid*
 
 # Ignore Gradle build output directory
 build
+
+# aws sam deploy ignores
+deploy/samconfig.toml
+.aws-sam
+
+# mac
+.DS_Store
+
+dist

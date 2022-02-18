@@ -1,0 +1,29 @@
+plugins {
+	id "java-library"
+}
+
+dependencies {
+
+	implementation configurations.lambda,
+			configurations.dynamodb,
+			configurations.jackson,
+			configurations.gson,
+			configurations.nimbus
+
+	runtimeOnly configurations.logging_runtime
+
+	testImplementation configurations.tests
+
+	testRuntimeOnly configurations.test_runtime
+}
+
+tasks.named("jar") {
+	manifest {
+		attributes("Implementation-Title": project.name,
+		"Implementation-Version": project.version)
+	}
+}
+
+test {
+	useJUnitPlatform()
+}

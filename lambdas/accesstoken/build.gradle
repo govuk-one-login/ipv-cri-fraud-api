@@ -1,0 +1,31 @@
+plugins {
+	id "java"
+	id "application"
+}
+
+dependencies {
+	implementation project(":lib")
+	implementation configurations.lambda
+	implementation configurations.nimbus
+	implementation configurations.jackson
+
+	runtimeOnly configurations.logging_runtime
+
+	testImplementation configurations.tests
+
+	testRuntimeOnly configurations.test_runtime
+}
+
+task buildZip(type: Zip) {
+	from compileJava
+	from processResources
+	dependsOn(build)
+	destinationDirectory = file("$rootDir/dist")
+	into("lib") {
+		from configurations.runtimeClasspath
+	}
+}
+
+test {
+	useJUnitPlatform()
+}
