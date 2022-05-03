@@ -3,19 +3,45 @@ Transform: "AWS::Serverless-2016-10-31"
 Description: "Digital Identity Fraud Credential Issuer API"
 
 Parameters:
-  Environment:
-    Description: environment name
-    Default: dev
+  CodeSigningConfigArn:
     Type: String
+    Default: "none"
+    Description: >
+      The ARN of the Code Signing Config to use, provided by the deployment pipeline
+  Environment:
+    Description: "The environment type"
+    Type: "String"
     AllowedValues:
-      - dev
-      - staging
-      - integration
-      - prod
-    ConstraintDescription: specify dev, staging, integration or prod for environment
+      - "dev"
+      - "build"
+      - "staging"
+      - "integration"
+      - "production"
+    ConstraintDescription: must be dev, build, staging, integration or production
+  PermissionsBoundary:
+    Description: "The ARN of the permissions boundary to apply when creating IAM roles"
+    Type: String
+    Default: "none"
 
+Conditions:
+  CreateDevResources: !Equals
+    - !Ref Environment
+    - dev
+  UsePermissionsBoundary:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref PermissionsBoundary
+          - "none"
 Globals:
   Function:
+    PermissionsBoundary: !If
+      - UsePermissionsBoundary
+      - !Ref PermissionsBoundary
+      - !Ref AWS::NoValue
+    CodeSigningConfigArn: !If
+      - CreateDevResources
+      - !Ref AWS::NoValue
+      - !Ref CodeSigningConfigArn
     Timeout: 30 # seconds
     Runtime: java11
     AutoPublishAlias: live
