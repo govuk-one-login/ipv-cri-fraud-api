@@ -1,7 +1,9 @@
 package uk.gov.di.ipv.cri.fraud.library.persistence;
 
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
@@ -9,6 +11,7 @@ import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClientBuilder;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,6 +34,7 @@ public class DataStore<T> {
     public static DynamoDbEnhancedClient getClient() {
         DynamoDbClientBuilder clientBuilder =
                 DynamoDbClient.builder()
+                        .credentialsProvider(EnvironmentVariableCredentialsProvider.create())
                         .httpClient(UrlConnectionHttpClient.create())
                         .region(Region.EU_WEST_2);
 
@@ -56,6 +60,20 @@ public class DataStore<T> {
                         QueryConditional.keyEqualTo(
                                 Key.builder().partitionValue(partitionValue).build()))
                 .stream()
+                .flatMap(page -> page.items().stream())
+                .collect(Collectors.toList());
+    }
+
+    public List<T> getItemsByAttribute(String attributeName, String attributeValue) {
+        AttributeValue expressionValue = AttributeValue.builder().s(attributeValue).build();
+        Expression attributeFilterExpression =
+                Expression.builder()
+                        .expression("#a = :b")
+                        .putExpressionName("#a", attributeName)
+                        .putExpressionValue(":b", expressionValue)
+                        .build();
+
+        return getTable().scan(r -> r.filterExpression(attributeFilterExpression)).stream()
                 .flatMap(page -> page.items().stream())
                 .collect(Collectors.toList());
     }

@@ -19,17 +19,28 @@ public class ConfigurationService {
     }
 
     public String getAccessTokenTableName() {
-        return ssmProvider.get(SSMParameterName.AccessTokenTableName.toString());
+        return ssmProvider.get(SSMParameterName.ACCESS_TOKEN_TABLE_NAME.getValue());
     }
 
     public long getBearerAccessTokenTtl() {
-        return Optional.ofNullable(ssmProvider.get(SSMParameterName.BearerAccessTokenTtl.name()))
+        return Optional.ofNullable(
+                        ssmProvider.get(SSMParameterName.BEARER_ACCESS_TOKEN_TTL.getValue()))
                 .map(Long::valueOf)
                 .orElse(DEFAULT_BEARER_TOKEN_TTL_IN_SECS);
     }
 
     public enum SSMParameterName {
-        AccessTokenTableName,
-        BearerAccessTokenTtl
+        ACCESS_TOKEN_TABLE_NAME("AccessTokenTableName"),
+        BEARER_ACCESS_TOKEN_TTL("BearerAccessTokenTtl");
+
+        private String value;
+
+        SSMParameterName(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return this.value;
+        }
     }
 }

@@ -37,3 +37,6 @@ deploy/samconfig.toml
 .DS_Store
 
 dist
+
+
+.idea

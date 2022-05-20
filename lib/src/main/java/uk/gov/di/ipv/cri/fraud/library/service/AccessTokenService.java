@@ -11,6 +11,7 @@ import com.nimbusds.oauth2.sdk.TokenResponse;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
+import com.nimbusds.oauth2.sdk.token.AccessTokenType;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.oauth2.sdk.token.Tokens;
 import com.nimbusds.oauth2.sdk.util.StringUtils;
@@ -75,7 +76,7 @@ public class AccessTokenService {
                                         key,
                                         values.stream()
                                                 .filter(Objects::nonNull)
-                                                .map(v -> v.trim())
+                                                .map(String::trim)
                                                 .toArray(String[]::new));
                             }
                         });
@@ -85,6 +86,25 @@ public class AccessTokenService {
             LOGGER.error(e.getMessage(), e); // todo check this error msg has request id
             throw new AccessTokenValidationException();
         }
+    }
+
+    public ValidationResult<ErrorObject> validateAccessToken(String accessTokenAsString) {
+        if (StringUtils.isBlank(accessTokenAsString)) {
+            return new ValidationResult<>(false, OAuth2Error.INVALID_REQUEST);
+        }
+
+        if (Objects.isNull(this.getResourceIdByAccessToken(accessTokenAsString))) {
+            return new ValidationResult<>(false, OAuth2Error.INVALID_CLIENT);
+        }
+
+        try {
+            AccessToken.parse(accessTokenAsString, AccessTokenType.BEARER);
+        } catch (ParseException e) {
+            LOGGER.error("Unable to parse access token", e);
+            return new ValidationResult<>(false, OAuth2Error.INVALID_REQUEST);
+        }
+
+        return ValidationResult.createValidResult();
     }
 
     public AccessTokenResponse createAndSaveAccessToken(TokenRequest tokenRequest)
@@ -122,6 +142,9 @@ public class AccessTokenService {
         }
         ClientSecretBasic clientAuthentication =
                 (ClientSecretBasic) tokenRequest.getClientAuthentication();
+        if (Objects.isNull(clientAuthentication)) {
+            return new ValidationResult<>(false, OAuth2Error.INVALID_CLIENT);
+        }
         return ValidationResult.createValidResult();
     }
 

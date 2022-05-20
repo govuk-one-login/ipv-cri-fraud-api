@@ -25,7 +25,7 @@ public class AccessTokenHandler
 
     @ExcludeFromGeneratedCoverageReport
     public AccessTokenHandler() {
-        this.accessTokenService = new AccessTokenService();
+        this(new AccessTokenService());
     }
 
     @Override

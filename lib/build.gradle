@@ -8,7 +8,8 @@ dependencies {
 			configurations.dynamodb,
 			configurations.jackson,
 			configurations.gson,
-			configurations.nimbus
+			configurations.nimbus,
+			configurations.validation
 
 	runtimeOnly configurations.logging_runtime
 

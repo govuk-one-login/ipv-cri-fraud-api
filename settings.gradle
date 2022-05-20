@@ -1,5 +1,6 @@
 rootProject.name = "di-ipv-cri-fraud-api"
 
-include "lib", "accesstoken"
+include "lib", "accesstoken", "credential"
 
 project(':accesstoken').projectDir = new File('./lambdas/accesstoken')
+project(':credential').projectDir = new File('./lambdas/credential')

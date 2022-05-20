@@ -8,6 +8,15 @@ Parameters:
     Default: "none"
     Description: >
       The ARN of the Code Signing Config to use, provided by the deployment pipeline
+  VpcSubnetId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Subnet::Id>
+    Default: /dev/credentialIssuers/vpcConfig/subnetId
+  VpcSgId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::SecurityGroup::Id>
+    Default: /dev/credentialIssuers/vpcConfig/securityGroupId
+  ContraIndicationTableName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /dev/credentialIssuers/fraud/contraindicationMappingTableName
   Environment:
     Description: "The environment type"
     Type: "String"
@@ -33,7 +42,15 @@ Conditions:
           - !Ref PermissionsBoundary
           - "none"
 Globals:
+  Api:
+    Auth:
+      DefaultAuthorizer: AWS_IAM
   Function:
+    VpcConfig:
+      SecurityGroupIds:
+        - !Ref VpcSgId
+      SubnetIds:
+        - !Ref VpcSubnetId
     PermissionsBoundary: !If
       - UsePermissionsBoundary
       - !Ref PermissionsBoundary
@@ -45,10 +62,9 @@ Globals:
     Timeout: 30 # seconds
     Runtime: java11
     AutoPublishAlias: live
-    MemorySize: 256
+    MemorySize: 512
 
 Resources:
-
   AccessTokenFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -65,17 +81,55 @@ Resources:
         ApiAccessToken:
           Type: Api
           Properties:
-            #            Auth:
-            #              Authorizer: AWS_IAM
             Path: /token
             Method: post
             RequestParameters:
               - method.request.header.Authorization
+  CredentialIssueFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../dist/credential.zip
+      Handler: uk.gov.di.ipv.cri.fraud.api.handler.CredentialHandler::handleRequest
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccessTokenTable
+        - DynamoDBWritePolicy:
+            TableName: !Ref AccessTokenTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref ContraIndicationTableName
+        - SSMParameterReadPolicy:
+            ParameterName: AccessTokenTableName
+        - SSMParameterReadPolicy:
+            ParameterName: BearerAccessTokenTtl
+        - AWSLambdaBasicExecutionRole
+        - AWSXrayWriteOnlyAccess
+        - Statement:
+            - Sid: ReadParameterStorePolicy
+              Effect: Allow
+              Action:
+                - 'ssm:GetParameter*'
+              Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/dev/credentialIssuers/fraud*'
+        - Statement:
+            - Sid: ReadSecretsPolicy
+              Effect: Allow
+              Action:
+                - 'secretsmanager:GetSecretValue'
+              Resource: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/dev/credentialIssuers/fraud*'
+      Tracing: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+      Events:
+        CredentialIssue:
+          Type: Api
+          Properties:
+            Path: /credential
+            Method: post
 
   AccessTokenTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub AccessToken-${AWS::StackName}
+      TableName: !Sub 'AccessToken-${AWS::StackName}'
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: accessToken
@@ -91,7 +145,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Name: AccessTokenTableName
-      Value: !Sub AccessToken-${AWS::StackName}
+      Value: !Sub 'AccessToken-${AWS::StackName}'
       Type: String
       Description: access token table name
 
