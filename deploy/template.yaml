@@ -8,12 +8,6 @@ Parameters:
     Default: "none"
     Description: >
       The ARN of the Code Signing Config to use, provided by the deployment pipeline
-  VpcSubnetId:
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Subnet::Id>
-    Default: /dev/credentialIssuers/vpcConfig/subnetId
-  VpcSgId:
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::SecurityGroup::Id>
-    Default: /dev/credentialIssuers/vpcConfig/securityGroupId
   ContraIndicationTableName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /dev/credentialIssuers/fraud/contraindicationMappingTableName
@@ -48,9 +42,8 @@ Globals:
   Function:
     VpcConfig:
       SecurityGroupIds:
-        - !Ref VpcSgId
-      SubnetIds:
-        - !Ref VpcSubnetId
+        - !ImportValue cri-vpc-LambdaSecurityGroup
+      SubnetIds: !Split [ ",", !ImportValue cri-vpc-PrivateSubnets ]
     PermissionsBoundary: !If
       - UsePermissionsBoundary
       - !Ref PermissionsBoundary
@@ -65,26 +58,6 @@ Globals:
     MemorySize: 512
 
 Resources:
-  AccessTokenFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../dist/accesstoken.zip
-      Handler: uk.gov.di.ipv.cri.fraud.api.handler.AccessTokenHandler
-      Policies:
-        - DynamoDBWritePolicy:
-            TableName: !Ref AccessTokenTable
-        - SSMParameterReadPolicy:
-            ParameterName: !Ref ParameterCSREnrolURLDev
-        - SSMParameterReadPolicy:
-            ParameterName: !Ref ParameterBearerAccessTokenTtl
-      Events:
-        ApiAccessToken:
-          Type: Api
-          Properties:
-            Path: /token
-            Method: post
-            RequestParameters:
-              - method.request.header.Authorization
   CredentialIssueFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -92,15 +65,7 @@ Resources:
       Handler: uk.gov.di.ipv.cri.fraud.api.handler.CredentialHandler::handleRequest
       Policies:
         - DynamoDBReadPolicy:
-            TableName: !Ref AccessTokenTable
-        - DynamoDBWritePolicy:
-            TableName: !Ref AccessTokenTable
-        - DynamoDBReadPolicy:
             TableName: !Ref ContraIndicationTableName
-        - SSMParameterReadPolicy:
-            ParameterName: AccessTokenTableName
-        - SSMParameterReadPolicy:
-            ParameterName: BearerAccessTokenTtl
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
         - Statement:
@@ -125,34 +90,3 @@ Resources:
           Properties:
             Path: /credential
             Method: post
-
-  AccessTokenTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Sub 'AccessToken-${AWS::StackName}'
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: accessToken
-          AttributeType: S
-      KeySchema:
-        - AttributeName: accessToken
-          KeyType: HASH
-      TimeToLiveSpecification:
-        AttributeName: expiryDate
-        Enabled: true
-
-  ParameterCSREnrolURLDev:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: AccessTokenTableName
-      Value: !Sub 'AccessToken-${AWS::StackName}'
-      Type: String
-      Description: access token table name
-
-  ParameterBearerAccessTokenTtl:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: BearerAccessTokenTtl
-      Value: 3600
-      Type: String
-      Description: time to live for the bearer access token (seconds)
