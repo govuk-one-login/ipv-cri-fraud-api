@@ -61,7 +61,7 @@ Resources:
   CredentialIssueFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../dist/credential.zip
+      CodeUri: ../lambdas/issuecredential/build/distributions/issuecredential.zip
       Handler: uk.gov.di.ipv.cri.fraud.api.handler.CredentialHandler::handleRequest
       Policies:
         - DynamoDBReadPolicy:
@@ -84,6 +84,8 @@ Resources:
       Environment:
         Variables:
           ENVIRONMENT: !Ref Environment
+          POWERTOOLS_METRICS_NAMESPACE: di-ipv-cri-fraud-api
+          POWERTOOLS_SERVICE_NAME: di-ipv-cri-fraud-api-issue-credential
       Events:
         CredentialIssue:
           Type: Api

@@ -1,28 +1,26 @@
 plugins {
 	id "java"
-	id "org.sonarqube" version "3.3"
-	id "com.diffplug.spotless" version "6.1.0"
+	id "org.sonarqube"
+	id "com.diffplug.spotless"
 }
+
+defaultTasks 'clean', 'spotlessApply', 'build'
 
 ext {
 	dependencyVersions = [
 		jackson_version             : "2.13.1",
 		aws_sdk_version             : "1.12.153",
-		aws_lambda_core_version     : "1.2.1",
 		aws_lambda_events_version   : "3.11.0",
-		aws_powertools_version      : "1.9.0",
+		aws_powertools_version      : "1.12.2",
 		nimbusds_oauth_version      : "9.25",
 		nimbusds_jwt_version        : "9.15.1",
 		protobuf_version            : "3.19.4",
 		junit                       : "5.8.2",
-		glassfish_version           : "3.0.3",
-		hibernate_validator_version : "6.2.1.Final",
-		validator_el_version        : "3.0.0"
+		mockito					    : "4.3.1"
 	]
 }
 
 repositories {
-	//	mavenCentral()
 	maven {
 		url 'https://gds.jfrog.io/artifactory/di-allowed-repos'
 	}
@@ -43,61 +41,72 @@ subprojects {
 	}
 
 	configurations {
+		aws
 		dynamodb
 		jackson
-		validation
 		lambda
+		sqs
+		kms
 		lambda_tests
 		lettuce
-		logging_runtime
 		nimbus
 		ssm
 		tests
 		test_runtime
 		gson
+		powertools
+		mockito
+		logging_runtime
+	}
+
+	// The dynamodb enhanced package loads the apache-client as well as the spi-client, so
+	// we need to add the apache-client to the dependencies exclusion to not get a mismatch
+	configurations.all {
+		exclude group:"software.amazon.awssdk", module: "apache-client"
 	}
 
 	dependencies {
+		aws platform('software.amazon.awssdk:bom:2.17.191')
 
-		dynamodb "com.amazonaws:aws-java-sdk-dynamodb:${dependencyVersions.aws_sdk_version}",
-				"software.amazon.awssdk:dynamodb-enhanced:2.17.116"
+		dynamodb "software.amazon.awssdk:dynamodb",
+				"software.amazon.awssdk:dynamodb-enhanced"
 
 		gson "com.google.code.gson:gson:2.8.9"
 
-		lambda "com.amazonaws:aws-lambda-java-core:${dependencyVersions.aws_lambda_core_version}",
+		lambda "software.amazon.awssdk:lambda",
 				"com.amazonaws:aws-lambda-java-events:${dependencyVersions.aws_lambda_events_version}",
-				"software.amazon.lambda:powertools-parameters:${dependencyVersions.aws_powertools_version}",
-				"org.slf4j:slf4j-simple:1.7.32"
+				"software.amazon.lambda:powertools-parameters:${dependencyVersions.aws_powertools_version}"
 
-		lambda_tests "com.amazonaws:aws-lambda-java-tests:1.1.1"
+		lambda_tests "software.amazon.awssdk:aws-lambda-java-tests:1.1.1"
+
+		sqs "software.amazon.awssdk:sqs"
+
+		kms "software.amazon.awssdk:kms"
 
 		jackson "com.fasterxml.jackson.core:jackson-core:${dependencyVersions.jackson_version}",
 				"com.fasterxml.jackson.core:jackson-databind:${dependencyVersions.jackson_version}",
 				"com.fasterxml.jackson.core:jackson-annotations:${dependencyVersions.jackson_version}",
 				"com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${dependencyVersions.jackson_version}",
+				"com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${dependencyVersions.jackson_version}",
 				"jakarta.xml.bind:jakarta.xml.bind-api:3.0.1",
 				"com.sun.xml.bind:jaxb-impl:3.0.2"
 
-		validation "org.hibernate.validator:hibernate-validator:${dependencyVersions.hibernate_validator_version}",
-				"org.hibernate:hibernate-validator-annotation-processor:${dependencyVersions.hibernate_validator_version}",
-				"javax.validation:validation-api:2.0.1.Final",
-				"javax.el:javax.el-api:${dependencyVersions.validator_el_version}",
-				"org.glassfish:javax.el:${dependencyVersions.validator_el_version}"
+		powertools "software.amazon.lambda:powertools-logging:${dependencyVersions.aws_powertools_version}",
+				"software.amazon.lambda:powertools-metrics:${dependencyVersions.aws_powertools_version}"
 
 		nimbus "com.nimbusds:oauth2-oidc-sdk:${dependencyVersions.nimbusds_oauth_version}",
 				"com.nimbusds:nimbus-jose-jwt:${dependencyVersions.nimbusds_jwt_version}"
 
-		logging_runtime "org.apache.logging.log4j:log4j-slf4j18-impl:2.17.1",
-				"com.amazonaws:aws-lambda-java-log4j2:1.5.1"
-
 		tests "org.junit.jupiter:junit-jupiter-api:${dependencyVersions.junit}",
 				"org.junit.jupiter:junit-jupiter-params:${dependencyVersions.junit}",
-				"org.mockito:mockito-junit-jupiter:4.3.1"
+				"org.mockito:mockito-junit-jupiter:${dependencyVersions.mockito}",
+				"org.mockito:mockito-inline:${dependencyVersions.mockito}",
+				"org.hamcrest:hamcrest:2.2"
 
 		test_runtime "org.junit.jupiter:junit-jupiter-engine:${dependencyVersions.junit}"
 	}
+	apply plugin: 'java'
 }
-
 
 sonarqube {
 	properties {
