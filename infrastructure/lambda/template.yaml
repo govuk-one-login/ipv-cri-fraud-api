@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
+Description: "Digital Identity Fraud Credential Issuer API"
+
+Parameters:
+  CodeSigningConfigArn:
+    Type: String
+    Default: "none"
+    Description: >
+      The ARN of the Code Signing Config to use, provided by the deployment pipeline
+  ContraIndicationTableName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /dev/credentialIssuers/fraud/contraindicationMappingTableName
+  Environment:
+    Description: "The environment type"
+    Type: "String"
+    AllowedValues:
+      - "dev"
+      - "build"
+      - "staging"
+      - "integration"
+      - "production"
+    ConstraintDescription: must be dev, build, staging, integration or production
+  PermissionsBoundary:
+    Description: "The ARN of the permissions boundary to apply when creating IAM roles"
+    Type: String
+    Default: "none"
+
+Conditions:
+  CreateDevResources: !Equals
+    - !Ref Environment
+    - dev
+  UsePermissionsBoundary:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref PermissionsBoundary
+          - "none"
+Globals:
+  Api:
+    Auth:
+      DefaultAuthorizer: AWS_IAM
+  Function:
+    VpcConfig:
+      SecurityGroupIds:
+        - !ImportValue cri-vpc-LambdaSecurityGroup
+      SubnetIds: !Split [ ",", !ImportValue cri-vpc-PrivateSubnets ]
+    PermissionsBoundary: !If
+      - UsePermissionsBoundary
+      - !Ref PermissionsBoundary
+      - !Ref AWS::NoValue
+    CodeSigningConfigArn: !If
+      - CreateDevResources
+      - !Ref AWS::NoValue
+      - !Ref CodeSigningConfigArn
+    Timeout: 30 # seconds
+    Runtime: java11
+    AutoPublishAlias: live
+    MemorySize: 512
+
+Resources:
+  CredentialIssueFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../lambdas/issuecredential/build/distributions/issuecredential.zip
+      Handler: uk.gov.di.ipv.cri.fraud.api.handler.CredentialHandler::handleRequest
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ContraIndicationTableName
+        - AWSLambdaBasicExecutionRole
+        - AWSXrayWriteOnlyAccess
+        - Statement:
+            - Sid: ReadParameterStorePolicy
+              Effect: Allow
+              Action:
+                - 'ssm:GetParameter*'
+              Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/dev/credentialIssuers/fraud*'
+        - Statement:
+            - Sid: ReadSecretsPolicy
+              Effect: Allow
+              Action:
+                - 'secretsmanager:GetSecretValue'
+              Resource: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/dev/credentialIssuers/fraud*'
+      Tracing: Active
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          POWERTOOLS_METRICS_NAMESPACE: di-ipv-cri-fraud-api
+          POWERTOOLS_SERVICE_NAME: di-ipv-cri-fraud-api-issue-credential
+      Events:
+        CredentialIssue:
+          Type: Api
+          Properties:
+            Path: /credential
+            Method: post

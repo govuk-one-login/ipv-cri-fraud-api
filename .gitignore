@@ -30,10 +30,12 @@ hs_err_pid*
 build
 
 # aws sam deploy ignores
-deploy/samconfig.toml
 .aws-sam
 
 # mac
 .DS_Store
 
 dist
+
+
+.idea

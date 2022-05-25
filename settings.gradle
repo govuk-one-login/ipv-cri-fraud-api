@@ -1,5 +1,21 @@
+pluginManagement {
+	plugins {
+		id "org.sonarqube" version "3.3"
+		id "com.diffplug.spotless" version "6.1.0"
+	}
+}
+
 rootProject.name = "di-ipv-cri-fraud-api"
 
-include "lib", "accesstoken"
+// Common libraries
+include "common-lib"
 
-project(':accesstoken').projectDir = new File('./lambdas/accesstoken')
+// Common lambdas
+include "session", "accesstoken", "jwkset"
+project(':session').projectDir = new File('./common-lambdas/session')
+project(":accesstoken").projectDir = new File('./common-lambdas/accesstoken')
+project(':jwkset').projectDir = new File('./common-lambdas/jwkset')
+
+// CRI specific lambdas
+include "issuecredential"
+project(':issuecredential').projectDir = new File('./lambdas/issuecredential')
