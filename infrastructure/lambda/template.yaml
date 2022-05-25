@@ -61,7 +61,7 @@ Resources:
   CredentialIssueFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../lambdas/issuecredential/build/distributions/issuecredential.zip
+      CodeUri: ../../lambdas/issuecredential/build/distributions/issuecredential.zip
       Handler: uk.gov.di.ipv.cri.fraud.api.handler.CredentialHandler::handleRequest
       Policies:
         - DynamoDBReadPolicy:
