@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch: # deploy manually
 
 jobs:
   deploy:
@@ -26,7 +27,7 @@ jobs:
           java-version: 11
           distribution: zulu
 
-      - name: Setup SAM
+      - name: Setup SAM CLI
         uses: aws-actions/setup-sam@v1
 
       - name: Assume temporary AWS role
@@ -55,16 +56,16 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build, tag, and push testing image to Amazon ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-          IMAGE_TAG: latest
-        run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG acceptance-tests
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+#      - name: Build, tag, and push testing image to Amazon ECR
+#        env:
+#          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+#          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+#          IMAGE_TAG: latest
+#        run: |
+#          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG acceptance-tests
+#          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: SAM package
+      - name: Package SAM application
         run: |
           sam package -t infrastructure/lambda/template.yaml  \
             ${{ steps.signing.outputs.signing_config }} \
