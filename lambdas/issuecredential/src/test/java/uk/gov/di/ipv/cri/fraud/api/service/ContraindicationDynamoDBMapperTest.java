@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ContraindicationMapperTest {
+class ContraindicationDynamoDBMapperTest {
     private static final String TEST_THIRD_PARTY_ID = "third-party-id";
     private static final String THIRD_PARTY_CODE_ONE = "third-party-code-1";
     private static final String THIRD_PARTY_CODE_TWO = "third-party-code-2";
@@ -43,7 +43,7 @@ class ContraindicationMapperTest {
         when(mockDataStore.getItemsByAttribute("thirdPartyId", TEST_THIRD_PARTY_ID))
                 .thenReturn(contraindicationMappingItems);
         this.contraindicationMapper =
-                new ContraindicationMapper(mockDataStore, TEST_THIRD_PARTY_ID);
+                new ContraindicationDynamoDBMapper(mockDataStore, TEST_THIRD_PARTY_ID);
     }
 
     @Test
