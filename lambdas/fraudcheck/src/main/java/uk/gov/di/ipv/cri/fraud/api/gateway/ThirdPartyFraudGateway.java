@@ -2,6 +2,8 @@ package uk.gov.di.ipv.cri.fraud.api.gateway;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.oauth2.sdk.util.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
@@ -15,6 +17,8 @@ import java.net.http.HttpResponse;
 import java.util.Objects;
 
 public class ThirdPartyFraudGateway {
+
+    private static final Logger LOGGER = LogManager.getLogger();
 
     private final HttpClient httpClient;
     private final IdentityVerificationRequestMapper requestMapper;
@@ -49,6 +53,7 @@ public class ThirdPartyFraudGateway {
 
     public FraudCheckResult performFraudCheck(PersonIdentity personIdentity)
             throws IOException, InterruptedException {
+        LOGGER.info("Mapping person to third party verification request");
         IdentityVerificationRequest apiRequest = requestMapper.mapPersonIdentity(personIdentity);
         String requestBody = objectMapper.writeValueAsString(apiRequest);
         String requestBodyHmac = hmacGenerator.generateHmac(requestBody);
@@ -61,12 +66,15 @@ public class ThirdPartyFraudGateway {
                         .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                         .build();
 
+        LOGGER.info("Submitting fraud check request to third party...");
         HttpResponse<String> httpResponse =
                 httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        LOGGER.info("Third party response code {}", httpResponse.statusCode());
 
         String responseBody = httpResponse.body();
         IdentityVerificationResponse response =
                 objectMapper.readValue(responseBody, IdentityVerificationResponse.class);
+        LOGGER.info("Thirdparty response: {}", objectMapper.writeValueAsString(response));
         return responseMapper.mapIdentityVerificationResponse(response);
     }
 }

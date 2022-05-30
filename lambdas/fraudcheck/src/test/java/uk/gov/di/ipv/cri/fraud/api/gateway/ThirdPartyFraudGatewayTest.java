@@ -8,7 +8,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonAddressType;
+import uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
@@ -91,7 +91,7 @@ class ThirdPartyFraudGatewayTest {
 
         final String hmacOfRequestBody = "hmac-of-request-body";
         PersonIdentity personIdentity =
-                TestDataCreator.createTestPersonIdentity(PersonAddressType.CURRENT);
+                TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
         IdentityVerificationResponse testResponse = new IdentityVerificationResponse();
         FraudCheckResult testFraudCheckResult = new FraudCheckResult();
         when(mockRequestMapper.mapPersonIdentity(personIdentity)).thenReturn(testApiRequest);

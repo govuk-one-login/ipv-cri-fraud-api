@@ -30,15 +30,21 @@ Conditions:
   CreateDevResources: !Equals
     - !Ref Environment
     - dev
+  IsStubEnvironment: !Or
+    - !Equals [ !Ref Environment, dev]
+    - !Equals [ !Ref Environment, build ]
+    - !Equals [ !Ref Environment, staging ]
+    - !Equals [ !Ref Environment, integration ]
+  IsProdLikeEnvironment: !Or
+    - !Equals [ !Ref Environment, staging ]
+    - !Equals [ !Ref Environment, integration ]
+    - !Equals [ !Ref Environment, production ]
   UsePermissionsBoundary:
     Fn::Not:
       - Fn::Equals:
           - !Ref PermissionsBoundary
           - "none"
 Globals:
-  Api:
-    Auth:
-      DefaultAuthorizer: AWS_IAM
   Function:
     VpcConfig:
       SecurityGroupIds:
@@ -55,6 +61,7 @@ Globals:
     Timeout: 30 # seconds
     Runtime: java11
     AutoPublishAlias: live
+    Tracing: Active
     MemorySize: 512
     Environment:
       Variables:
@@ -62,17 +69,238 @@ Globals:
         AWS_STACK_NAME: !Sub ${AWS::StackName}
         POWERTOOLS_LOG_LEVEL: INFO
 
+Mappings:
+  SessionTtlMapping:
+    Environment:
+      dev: "172800" # 2 days
+      build: "172800" # 2 days
+      staging: "172800" # 2 days
+      integration: "172800" # 2 days
+      production: "172800" # 2 days
+
+  MaxJwtTtlMapping:
+    Environment:
+      dev: "9600" # 2 hrs
+      build: "2700" # 45 mins
+      staging: "2700"
+      integration: "2700"
+      production: "2700"
+
+  IPVCoreStubAuthenticationAlgMapping:
+    Environment:
+      dev: "ES256"
+      build: "ES256"
+      staging: "ES256"
+      integration: "ES256"
+
+  IPVCore1AuthenticationAlgMapping:
+    Environment:
+      staging: "ES256"
+      integration: "ES256"
+      production: "ES256"
+
+  IPVCoreStubAudienceMapping:
+    Environment:
+      dev: "https://dev-di-ipv-cri-kbv-front.london.cloudapps.digital"
+      build: "https://build-di-ipv-cri-fraud-front.london.cloudapps.digital"
+      staging: "https://staging-di-ipv-cri-fraud-front.london.cloudapps.digital"
+      integration: "https://integration-di-ipv-cri-fraud-front.london.cloudapps.digital"
+
+  IPVCore1AudienceMapping:
+    Environment:
+      staging: "https://staging-di-ipv-cri-kbv-front.london.cloudapps.digital"
+      integration: "https://integration-di-ipv-cri-fraud-front.london.cloudapps.digital"
+      production: "https://di-ipv-cri-fraud-front.london.cloudapps.digital"
+
+  IPVCoreStubIssuerMapping:
+    Environment:
+      dev: "https://di-ipv-core-stub.london.cloudapps.digital"
+      build: "https://di-ipv-core-stub.london.cloudapps.digital"
+      staging: "https://di-ipv-core-stub.london.cloudapps.digital"
+      integration: "https://di-ipv-core-stub.london.cloudapps.digital"
+
+  IPVCore1IssuerMapping:
+    Environment:
+      staging: "https://identity.staging.account.gov.uk"
+      integration: "https://identity.integration.account.gov.uk"
+      production: "https://identity.account.gov.uk"
+
+  IPVCoreStubPublicSigningJwkBase64Mapping:
+    Environment:
+      dev: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0xLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogIklmUjFQejlPdWNJMll3YldKVGEtT3h0MDJ6X3pnTkR5RmtocGZ3OFFXcjAiLAogICAgInkiOiAiWGo2alJ6S0EwUWVTTEMtZTE1bVg3U2hucG9xZ0c4d1F3ZWcwNlhJYTBEcyIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
+      build: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0xLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogIklmUjFQejlPdWNJMll3YldKVGEtT3h0MDJ6X3pnTkR5RmtocGZ3OFFXcjAiLAogICAgInkiOiAiWGo2alJ6S0EwUWVTTEMtZTE1bVg3U2hucG9xZ0c4d1F3ZWcwNlhJYTBEcyIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
+      staging: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0xLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogIklmUjFQejlPdWNJMll3YldKVGEtT3h0MDJ6X3pnTkR5RmtocGZ3OFFXcjAiLAogICAgInkiOiAiWGo2alJ6S0EwUWVTTEMtZTE1bVg3U2hucG9xZ0c4d1F3ZWcwNlhJYTBEcyIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
+      integration: "ewogICAgImt0eSI6ICJFQyIsCiAgICAidXNlIjogInNpZyIsCiAgICAiY3J2IjogIlAtMjU2IiwKICAgICJraWQiOiAiaXB2LWNvcmUtc3R1Yi0xLWZyb20tbWtqd2sub3JnIiwKICAgICJ4IjogIklmUjFQejlPdWNJMll3YldKVGEtT3h0MDJ6X3pnTkR5RmtocGZ3OFFXcjAiLAogICAgInkiOiAiWGo2alJ6S0EwUWVTTEMtZTE1bVg3U2hucG9xZ0c4d1F3ZWcwNlhJYTBEcyIsCiAgICAiYWxnIjogIkVTMjU2Igp9"
+
+  IPVCore1PublicSigningJwkBase64Mapping:
+    Environment:
+      staging: "eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6ImtlMVRNRnFNb0Z5eHg1eXpOdFFRbGw0dk9yeHZUdFBKQ0huUzRqOHpoMlUiLCJ5IjoicURLX0g4QXpKS2FIbU1zaHg5TGp2LTB0ek5rV2EtSkVHUzJtZHRKUjFPQSJ9"
+      integration: "eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6IkJUUWdWQjU0RE9JcDU0eGRVSVg0SGtUX3pCdjZHdVdMV1RUTkdxMk15dEkiLCJ5IjoiTFFRamx5ZEtOMUhXZFJQcFBpalJObEJrbi1qaDgzZzBBUmIyNms2WVh1byJ9"
+      production: "todo"
+
+  IPVCoreStubRedirectURIMapping:
+    Environment:
+      dev: "http://localhost:8085/callback"
+      build: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
+      staging: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
+      integration: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
+
+  IPVCore1RedirectURIMapping:
+    Environment:
+      staging: "https://identity.staging.account.gov.uk/credential-issuer/callback?id=fraud"
+      integration: "https://identity.integration.account.gov.uk/credential-issuer/callback?id=fraud"
+      production: "https://identity.account.gov.uk/credential-issuer/callback?id=fraud"
+
+  VerifiableCredentialIssuerMapping:
+    Environment:
+      dev: "https://dev-di-ipv-cri-kbv-front.london.cloudapps.digital"
+      build: "https://build-di-ipv-cri-fraud-front.london.cloudapps.digital"
+      staging: "https://staging-di-ipv-cri-fraud-front.london.cloudapps.digital"
+      integration: "https://integration-di-ipv-cri-fraud-front.london.cloudapps.digital"
+      production: "https://di-ipv-cri-fraud-front.london.cloudapps.digital"
+
+  FraudCriAudienceMapping:
+    Environment:
+      dev: "https://dev-di-ipv-cri-kbv-front.london.cloudapps.digital"
+      build: "https://build-di-ipv-cri-fraud-front.london.cloudapps.digital"
+      staging: "https://staging-di-ipv-cri-fraud-front.london.cloudapps.digital"
+      integration: "https://integration-di-ipv-cri-fraud-front.london.cloudapps.digital"
+      production: "https://di-ipv-cri-fraud-front.london.cloudapps.digital"
+
 Resources:
-  CredentialIssueFunction:
+
+####################################################################
+#                                                                  #
+# API Gateway                                                 #
+#                                                                  #
+####################################################################
+
+  FraudApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      MethodSettings:
+        - LoggingLevel: INFO
+          ResourcePath: '/*'
+          HttpMethod: '*'
+          # Disable data trace in production to avoid logging customer sensitive information
+          DataTraceEnabled: true
+          MetricsEnabled: true
+          ThrottlingRateLimit: 5
+          ThrottlingBurstLimit: 10
+      AccessLogSetting:
+        DestinationArn: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${ApiAccessLogGroup}'
+        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }'
+      TracingEnabled: true
+      Name: !Sub "fraud-cri-${AWS::StackName}"
+      StageName: !Ref Environment
+      DefinitionBody:
+        openapi: "3.0.1" # workaround to get `sam validate` to work
+        paths: # workaround to get `sam validate` to work
+          /never-created:
+            options: { } # workaround to get `sam validate` to work
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: './api.yaml'
+      OpenApiVersion: 3.0.1
+      EndpointConfiguration:
+        Type: REGIONAL
+
+  ApiAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/apigateway/AccessLog-${FraudApi}/${Environment}
+      RetentionInDays: 365
+
+####################################################################
+#                                                                  #
+# Session Function                                                 #
+#                                                                  #
+####################################################################
+
+  SessionFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../../lambdas/issuecredential/build/distributions/issuecredential.zip
-      Handler: uk.gov.di.ipv.cri.fraud.api.handler.CredentialHandler::handleRequest
+      CodeUri: ../../common-lambdas/session/build/distributions/session.zip
+      Handler: uk.gov.di.ipv.cri.common.api.handler.SessionHandler::handleRequest
+      Environment:
+        Variables:
+          POWERTOOLS_METRICS_NAMESPACE: di-ipv-cri-fraud-api
+          POWERTOOLS_SERVICE_NAME: di-ipv-cri-fraud-api-session
+          SQS_AUDIT_EVENT_QUEUE_URL: !ImportValue AuditEventQueueUrl
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSXrayWriteOnlyAccess
+        - DynamoDBWritePolicy:
+            TableName:
+              Ref: SessionTable
+        - DynamoDBWritePolicy:
+            TableName:
+              Ref: PersonIdentityTable
+        - SQSSendMessagePolicy:
+            QueueName: !ImportValue AuditEventQueueName
+        - KMSDecryptPolicy:
+            KeyId: !ImportValue core-infrastructure-CriDecryptionKey1Id
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTtl"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/FraudCriAudience"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/AuthRequestKmsEncryptionKeyId"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/PersonIdentityTableName"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParametersByPath
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
+        - Statement:
+            - Sid: auditEventQueueKmsEncryptionKeyPermission
+              Effect: Allow
+              Action:
+                - 'kms:Decrypt'
+                - 'kms:GenerateDataKey'
+              Resource:
+                - !ImportValue AuditEventQueueEncryptionKeyArn
+
+  SessionFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt SessionFunction.Arn
+      Principal: apigateway.amazonaws.com
+
+####################################################################
+#                                                                  #
+# Identity checking Function                                       #
+#                                                                  #
+####################################################################
+
+  IdentityCheckingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../lambdas/fraudcheck/build/distributions/fraudcheck.zip
+      Handler: uk.gov.di.ipv.cri.fraud.api.handler.FraudHandler::handleRequest
+      Environment:
+        Variables:
+          POWERTOOLS_METRICS_NAMESPACE: di-ipv-cri-fraud-api
+          POWERTOOLS_SERVICE_NAME: di-ipv-cri-fraud-api-session
+          SQS_AUDIT_EVENT_QUEUE_URL: !ImportValue AuditEventQueueUrl
+          ENVIRONMENT: !Ref Environment
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref ContraIndicationTableName
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
+        - DynamoDBReadPolicy:
+            TableName: !Ref SessionTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref PersonIdentityTable
+        - DynamoDBWritePolicy:
+            TableName: !Ref FraudTable
         - Statement:
             - Sid: ReadParameterStorePolicy
               Effect: Allow
@@ -86,20 +314,484 @@ Resources:
                 - 'secretsmanager:GetSecretValue'
               Resource: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/dev/credentialIssuers/fraud*'
         - Statement:
+            Effect: Allow
+            Action:
+              - "kms:Sign"
+            Resource: !ImportValue core-infrastructure-CriVcSigningKey1Arn
+        - Statement:
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey
+            Resource:
+              - !ImportValue AuditEventQueueEncryptionKeyArn
+        - Statement:
             - Effect: Allow
               Action:
                 - ssm:GetParameter
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/contraindicationMappings"
-      Tracing: Active
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/FraudTableName"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTtl"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParametersByPath
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
+        - SQSSendMessagePolicy:
+            QueueName: !ImportValue AuditEventQueueName
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub "${AWS::StackName}/*"
+
+  IdentityCheckingFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt IdentityCheckingFunction.Arn
+      Principal: apigateway.amazonaws.com
+
+####################################################################
+#                                                                  #
+# Issue Credential Function                                        #
+#                                                                  #
+####################################################################
+
+  IssueCredentialFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: uk.gov.di.ipv.cri.fraud.api.handler.IssueCredentialHandler::handleRequest
+      CodeUri: ../../lambdas/issuecredential/build/distributions/issuecredential.zip
+      Environment:
+        Variables:
+          POWERTOOLS_METRICS_NAMESPACE: di-ipv-cri-fraud-api
+          POWERTOOLS_SERVICE_NAME: di-ipv-cri-fraud-api-issuecredential
+          SQS_AUDIT_EVENT_QUEUE_URL: !ImportValue AuditEventQueueUrl
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSXrayWriteOnlyAccess
+        - DynamoDBReadPolicy:
+            TableName: !Ref SessionTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref FraudTable
+        - Statement:
+            Effect: Allow
+            Action:
+              - "kms:Sign"
+            Resource: !ImportValue core-infrastructure-CriVcSigningKey1Arn
+        - SQSSendMessagePolicy:
+            QueueName: !ImportValue AuditEventQueueName
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub "${AWS::StackName}/*"
+        - Statement:
+            Effect: Allow
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey
+            Resource:
+              - !ImportValue AuditEventQueueEncryptionKeyArn
+
+  IssueCredentialFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt IssueCredentialFunction.Arn
+      Principal: apigateway.amazonaws.com
+
+####################################################################
+#                                                                  #
+# Access token Function                                            #
+#                                                                  #
+####################################################################
+
+  AccessTokenFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../common-lambdas/accesstoken/build/distributions/accesstoken.zip
+      Handler: uk.gov.di.ipv.cri.common.api.handler.AccessTokenHandler::handleRequest
+      Environment:
+        Variables:
+          POWERTOOLS_METRICS_NAMESPACE: di-ipv-cri-fraud-api
+          POWERTOOLS_SERVICE_NAME: di-ipv-cri-fraud-api-access-token
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName:
+              Ref: SessionTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTtl"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParametersByPath
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
+
+  AccessTokenFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt AccessTokenFunction.Arn
+      Principal: apigateway.amazonaws.com
+
+####################################################################
+#                                                                  #
+# JWK set Function                                                 #
+#                                                                  #
+####################################################################
+
+  JWKSetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: uk.gov.di.ipv.cri.common.api.handler.JWKSetHandler::handleRequest
+      CodeUri: ../../common-lambdas/jwkset/build/distributions/jwkset.zip
       Environment:
         Variables:
           ENVIRONMENT: !Ref Environment
           POWERTOOLS_METRICS_NAMESPACE: di-ipv-cri-fraud-api
-          POWERTOOLS_SERVICE_NAME: di-ipv-cri-fraud-api-issue-credential
-      Events:
-        CredentialIssue:
-          Type: Api
-          Properties:
-            Path: /credential
-            Method: post
+          POWERTOOLS_SERVICE_NAME: di-ipv-cri-fraud-api-jwkset
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSXrayWriteOnlyAccess
+        - Statement:
+            - Effect: Allow
+              Action:
+                - kms:GetPublicKey
+              Resource:
+                - !ImportValue core-infrastructure-CriVcSigningKey1Arn
+                - !ImportValue core-infrastructure-CriDecryptionKey1Arn
+            - Effect: Allow
+              Action:
+                - kms:ListKeys
+                - kms:ListResourceTags
+                - kms:DescribeKey
+              Resource: "*"
+
+  JWKSetFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt JWKSetFunction.Arn
+      Principal: apigateway.amazonaws.com
+
+####################################################################
+#                                                                  #
+# Database Tables                                                  #
+#                                                                  #
+####################################################################
+
+  FraudTable:
+    Type: "AWS::DynamoDB::Table" # enable encryption with customer managed kms key. Will need new kms key
+    Properties:
+      TableName: !Sub "fraud-${AWS::StackName}"
+      BillingMode: "PAY_PER_REQUEST"
+      AttributeDefinitions:
+        - AttributeName: "sessionId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "sessionId"
+          KeyType: "HASH"
+
+  SessionTable:
+    Type: "AWS::DynamoDB::Table" # enable encryption with customer managed kms key. Will need new kms key
+    Properties:
+      TableName: !Sub "session-${AWS::StackName}"
+      BillingMode: "PAY_PER_REQUEST"
+      AttributeDefinitions:
+        - AttributeName: "sessionId"
+          AttributeType: "S"
+        - AttributeName: "authorizationCode"
+          AttributeType: "S"
+        - AttributeName: "accessToken"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "sessionId"
+          KeyType: "HASH"
+      GlobalSecondaryIndexes:
+        - IndexName: "authorizationCode-index"
+          KeySchema:
+            - AttributeName: "authorizationCode"
+              KeyType: "HASH"
+          Projection:
+            NonKeyAttributes:
+              - "sessionId"
+              - "redirectUri"
+              - "clientId"
+            ProjectionType: "INCLUDE"
+        - IndexName: "access-token-index"
+          KeySchema:
+            - AttributeName: "accessToken"
+              KeyType: "HASH"
+          Projection:
+            NonKeyAttributes:
+              - "sessionId"
+              - "subject"
+            ProjectionType: "INCLUDE"
+      TimeToLiveSpecification:
+        AttributeName: expiryDate
+        Enabled: true
+
+  PersonIdentityTable:
+    Type: "AWS::DynamoDB::Table" # enable encryption with customer managed kms key. Will need new kms key
+    Properties:
+      TableName: !Sub "person-identity-${AWS::StackName}"
+      BillingMode: "PAY_PER_REQUEST"
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - AttributeName: "sessionId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "sessionId"
+          KeyType: "HASH"
+      TimeToLiveSpecification:
+        AttributeName: expiryDate
+        Enabled: true
+
+####################################################################
+#                                                                  #
+# API config                                                 #
+#                                                                  #
+####################################################################
+
+  ApiUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn:
+      - FraudApiStage
+    Properties:
+      ApiStages:
+        - ApiId: !Ref FraudApi
+          Stage: !Ref Environment
+      Quota:
+        Limit: 500000
+        Period: DAY
+      Throttle:
+        BurstLimit: 100 # requests the API can handle concurrently
+        RateLimit: 50 # allowed requests per second
+
+  ApiKey1:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Description: Api key 1
+      Enabled: true
+
+  ApiKey2:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Description: Api key 2
+      Enabled: true
+
+  LinkUsagePlanApiKey1:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref ApiKey1
+      KeyType: API_KEY
+      UsagePlanId: !Ref ApiUsagePlan
+
+  LinkUsagePlanApiKey2:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref ApiKey2
+      KeyType: API_KEY
+      UsagePlanId: !Ref ApiUsagePlan
+
+####################################################################
+#                                                                  #
+# Parameters                                                       #
+#                                                                  #
+####################################################################
+
+  ParameterSessionTableName:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/SessionTableName"
+      Value: !Sub session-${AWS::StackName}
+      Type: String
+      Description: session dynamodb table name
+
+  ParameterFraudItemTableName:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/FraudTableName"
+      Value: !Sub fraud-${AWS::StackName}
+      Type: String
+      Description: Fraud item dynamodb table name
+
+  ParameterPersonIdentityTableName:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/PersonIdentityTableName"
+      Value: !Sub person-identity-${AWS::StackName}
+      Type: String
+      Description: person identity dynamodb table name
+
+  MaxJwtTtlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/MaxJwtTtl"
+      Type: String
+      Value: !FindInMap [MaxJwtTtlMapping, Environment, !Ref 'Environment']
+      Description: default time to live for an JWT in (seconds)
+
+  SessionTtlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/SessionTtl"
+      Type: String
+      Value: !FindInMap [ SessionTtlMapping, Environment, !Ref 'Environment' ]
+      Description: default time to live for an fraud session item (seconds)
+
+  IPVCoreStubAuthenticationAlgParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: !FindInMap [IPVCoreStubAuthenticationAlgMapping, Environment, !Ref 'Environment']
+
+  IPVCore1AuthenticationAlgParameter:
+    Condition: IsProdLikeEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: !FindInMap [IPVCore1AuthenticationAlgMapping, Environment, !Ref 'Environment']
+
+
+  IPVCoreStubAudienceParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/audience"
+      Type: String
+      Value: !FindInMap [ IPVCoreStubAudienceMapping, Environment, !Ref 'Environment' ]
+
+  IPVCore1AudienceParameter:
+    Condition: IsProdLikeEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/audience"
+      Type: String
+      Value: !FindInMap [ IPVCore1AudienceMapping, Environment, !Ref 'Environment' ]
+
+  IPVCoreStubIssuerParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/issuer"
+      Type: String
+      Value: !FindInMap [IPVCoreStubIssuerMapping, Environment, !Ref 'Environment']
+
+  IPVCore1IssuerParameter:
+    Condition: IsProdLikeEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/issuer"
+      Type: String
+      Value: !FindInMap [IPVCore1IssuerMapping, Environment, !Ref 'Environment']
+
+  IPVCoreStubPublicSigningJwkBase64Parameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/publicSigningJwkBase64"
+      Type: String
+      Value: !FindInMap [IPVCoreStubPublicSigningJwkBase64Mapping, Environment, !Ref 'Environment']
+
+  IPVCore1PublicSigningJwkBase64Parameter:
+    Condition: IsProdLikeEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/publicSigningJwkBase64"
+      Type: String
+      Value: !FindInMap [IPVCore1PublicSigningJwkBase64Mapping, Environment, !Ref 'Environment']
+
+  IPVCoreStubRedirectURIParameter:
+    Condition: IsStubEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core-stub/jwtAuthentication/redirectUri"
+      Type: String
+      Value: !FindInMap [IPVCoreStubRedirectURIMapping, Environment, !Ref 'Environment']
+
+  IPVCore1RedirectURIParameter:
+    Condition: IsProdLikeEnvironment
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/clients/ipv-core/jwtAuthentication/redirectUri"
+      Type: String
+      Value: !FindInMap [IPVCore1RedirectURIMapping, Environment, !Ref 'Environment']
+
+  FraudCriAudienceParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/FraudCriAudience"
+      Type: String
+      Value: !FindInMap [FraudCriAudienceMapping, Environment, !Ref 'Environment']
+      Description: The fraud credential issuer (audience) identifier
+
+  AuthRequestKmsEncryptionKeyIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/AuthRequestKmsEncryptionKeyId"
+      Type: String
+      Value: !ImportValue core-infrastructure-CriDecryptionKey1Id
+      Description: The (KMS) encryption key identifier for decrypting authorisation requests
+
+  VerifiableCredentialIssuerParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/verifiable-credential/issuer"
+      Type: String
+      Value: !FindInMap [VerifiableCredentialIssuerMapping, Environment, !Ref 'Environment']
+      Description: Issuer of the Verifiable Credential
+
+  VerifiableCredentialKmsSigningKeyParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/verifiableCredentialKmsSigningKeyId"
+      Type: String
+      Value: !ImportValue core-infrastructure-CriVcSigningKey1Id
+      Description: Verifiable Credential Key Id
+
+Outputs:
+  SessionApiUrl:
+    Description: "URL for the Fraud API /session resource"
+    Value: !Sub "https://${FraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/session"
+    Export:
+      Name: !Sub ${AWS::StackName}-SessionApiUrl
+
+  FraudApiUrl:
+    Description: "URL for the Fraud API /identity-check resource"
+    Value: !Sub "https://${FraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/identity-check"
+    Export:
+      Name: !Sub ${AWS::StackName}-FraudApiUrl
+
+  TokenApiUrl:
+    Description: "URL for the Fraud API /token resource"
+    Value: !Sub "https://${FraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/token"
+    Export:
+      Name: !Sub ${AWS::StackName}-TokenApiUrl
+
+  CredentialIssueApiUrl:
+    Description: "URL for the Fraud API /credential/issue resource"
+    Value: !Sub "https://${FraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/credential/issue"
+    Export:
+      Name: !Sub ${AWS::StackName}-CredentialIssueApiUrl
+
+  JWKSetApiUrl:
+    Description: "URL for the Fraud API /.well-known/jwks.json resource"
+    Value: !Sub "https://${FraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/.well-known/jwks.json"
+    Export:
+      Name: !Sub ${AWS::StackName}-JWKSetApiUrl
+
+  FraudApiBaseUrl:
+    Description: "Base url of the Fraud CRI API"
+    Value: !Sub "https://${FraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
+    Export:
+      Name: !Sub ${AWS::StackName}-FraudApiBaseUrl

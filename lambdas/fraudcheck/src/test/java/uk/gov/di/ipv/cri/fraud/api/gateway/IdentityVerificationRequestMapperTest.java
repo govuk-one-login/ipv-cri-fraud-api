@@ -2,7 +2,6 @@ package uk.gov.di.ipv.cri.fraud.api.gateway;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonAddressType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
@@ -12,6 +11,8 @@ import java.time.LocalDate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType.CURRENT;
+import static uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType.PREVIOUS;
 
 class IdentityVerificationRequestMapperTest {
 
@@ -26,7 +27,7 @@ class IdentityVerificationRequestMapperTest {
 
     @Test
     void shouldConvertPersonIdentityToCrossCoreApiRequestForCurrentAddress() {
-        personIdentity = TestDataCreator.createTestPersonIdentity(PersonAddressType.CURRENT);
+        personIdentity = TestDataCreator.createTestPersonIdentity(CURRENT);
 
         IdentityVerificationRequest result = requestMapper.mapPersonIdentity(personIdentity);
 
@@ -58,7 +59,7 @@ class IdentityVerificationRequestMapperTest {
                         .get(0)
                         .getSurName());
         assertEquals(
-                PersonAddressType.CURRENT.toString(),
+                CURRENT.toString(),
                 result.getPayload().getContacts().get(0).getAddresses().get(0).getAddressType());
         assertEquals(
                 "PostTown",
@@ -73,7 +74,7 @@ class IdentityVerificationRequestMapperTest {
 
     @Test
     void shouldConvertPersonIdentityToCrossCoreApiRequestForPreviousAddress() {
-        personIdentity = TestDataCreator.createTestPersonIdentity(PersonAddressType.PREVIOUS);
+        personIdentity = TestDataCreator.createTestPersonIdentity(PREVIOUS);
 
         IdentityVerificationRequest result = requestMapper.mapPersonIdentity(personIdentity);
 
@@ -105,7 +106,7 @@ class IdentityVerificationRequestMapperTest {
                         .get(0)
                         .getSurName());
         assertEquals(
-                PersonAddressType.PREVIOUS.toString(),
+                PREVIOUS.toString(),
                 result.getPayload().getContacts().get(0).getAddresses().get(0).getAddressType());
         assertEquals(
                 "PostTown",

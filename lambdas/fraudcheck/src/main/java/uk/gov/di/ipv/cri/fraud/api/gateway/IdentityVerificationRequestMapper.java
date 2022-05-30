@@ -1,7 +1,5 @@
 package uk.gov.di.ipv.cri.fraud.api.gateway;
 
-import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonAddress;
-import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonAddressType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Address;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Applicant;
@@ -99,7 +97,8 @@ public class IdentityVerificationRequestMapper {
         return applicant;
     }
 
-    private List<Address> mapAddresses(List<PersonAddress> personAddresses) {
+    private List<Address> mapAddresses(
+            List<uk.gov.di.ipv.cri.common.library.domain.personidentity.Address> personAddresses) {
         List<Address> addresses = new ArrayList<>();
         AtomicInteger addressId = new AtomicInteger(0);
         personAddresses.forEach(
@@ -114,9 +113,10 @@ public class IdentityVerificationRequestMapper {
 
                     address.setBuildingNumber(personAddress.getBuildingNumber());
                     address.setBuildingName(personAddress.getBuildingName());
-                    address.setStreet(personAddress.getStreet());
-                    address.setPostTown(personAddress.getTownCity());
-                    address.setPostal(personAddress.getPostcode());
+                    address.setStreet(personAddress.getStreetName());
+                    address.setPostTown(personAddress.getAddressLocality());
+
+                    address.setPostal(personAddress.getPostalCode());
 
                     addresses.add(address);
                 });
@@ -124,7 +124,8 @@ public class IdentityVerificationRequestMapper {
         return addresses;
     }
 
-    private String mapAddressType(PersonAddressType addressType) {
+    private String mapAddressType(
+            uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType addressType) {
         switch (addressType) {
             case CURRENT:
                 return "CURRENT";
