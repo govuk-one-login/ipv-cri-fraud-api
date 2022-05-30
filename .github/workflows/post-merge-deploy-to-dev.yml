@@ -1,0 +1,68 @@
+name: Deploy to dev
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # deploy manually
+
+jobs:
+  deploy:
+    name: Deploy to dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      AWS_REGION: eu-west-2
+      STACK_NAME: fraud-cri-pipeline
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          java-version: 11
+          distribution: zulu
+
+      - name: Setup SAM
+        uses: aws-actions/setup-sam@v1
+
+      - name: Assume temporary AWS role
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.DEV_GH_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: SAM Validate
+        run: sam validate --region ${{ env.AWS_REGION }} -t infrastructure/lambda/template.yaml
+
+      - name: Generate code signing config
+        id: signing
+        uses: rusty-actions/sam-code-signing-config@39f63740a9f8622eb9b6755413a31a6013a62a86
+        with:
+          template: ./infrastructure/lambda/template.yaml
+          profile: ${{ secrets.DEV_SIGNING_PROFILE_NAME }}
+
+      - name: Gradle build
+        run: ./gradlew build
+
+      - name: SAM build
+        run: sam build -t infrastructure/lambda/template.yaml
+
+      - name: SAM package
+        run: |
+          sam package -t infrastructure/lambda/template.yaml  \
+            ${{ steps.signing.outputs.signing_config }} \
+            --s3-bucket ${{ secrets.DEV_ARTIFACT_SOURCE_BUCKET_NAME }} \
+            --region ${{ env.AWS_REGION }} --output-template-file=cf-template.yaml
+
+      - name: Zip the CloudFormation template
+        run: zip template.zip cf-template.yaml
+
+      - name: Upload zipped CloudFormation artifact to S3
+        env:
+          DEV_ARTIFACT_SOURCE_BUCKET_NAME: ${{ secrets.DEV_ARTIFACT_SOURCE_BUCKET_NAME }}
+        run: aws s3 cp template.zip "s3://$DEV_ARTIFACT_SOURCE_BUCKET_NAME/template.zip"
