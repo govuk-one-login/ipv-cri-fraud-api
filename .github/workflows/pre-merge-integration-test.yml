@@ -37,7 +37,8 @@ jobs:
       - name: Assume temporary AWS role
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: ${{ secrets.AWS_ROLE_SESSION }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Gradle build
@@ -58,7 +59,7 @@ jobs:
             --no-confirm-changeset \
             --parameter-overrides Environment=${{ env.ENVIRONMENT }} \
             --stack-name $STACK_NAME \
-            --s3-bucket ${{ secrets.ARTIFACT_SOURCE_BUCKET_NAME }} \
+            --s3-bucket ${{ secrets.AWS_CONFIG_BUCKET }} \
             --s3-prefix $STACK_NAME \
             --region ${{ env.AWS_REGION }} \
             --capabilities CAPABILITY_IAM

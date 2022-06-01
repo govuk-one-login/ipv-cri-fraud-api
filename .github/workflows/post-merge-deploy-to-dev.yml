@@ -27,7 +27,7 @@ jobs:
           java-version: 11
           distribution: zulu
 
-      - name: Setup SAM
+      - name: Setup SAM CLI
         uses: aws-actions/setup-sam@v1
 
       - name: Assume temporary AWS role
@@ -36,8 +36,8 @@ jobs:
           role-to-assume: ${{ secrets.DEV_GH_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: SAM Validate
-        run: sam validate --region ${{ env.AWS_REGION }} -t infrastructure/lambda/template.yaml
+      - name: Gradle build
+        run: ./gradlew clean build
 
       - name: Generate code signing config
         id: signing
@@ -46,13 +46,13 @@ jobs:
           template: ./infrastructure/lambda/template.yaml
           profile: ${{ secrets.DEV_SIGNING_PROFILE_NAME }}
 
-      - name: Gradle build
-        run: ./gradlew build
+      - name: SAM Validate
+        run: sam validate --region ${{ env.AWS_REGION }} -t infrastructure/lambda/template.yaml
 
       - name: SAM build
         run: sam build -t infrastructure/lambda/template.yaml
 
-      - name: SAM package
+      - name: Package SAM application
         run: |
           sam package -t infrastructure/lambda/template.yaml  \
             ${{ steps.signing.outputs.signing_config }} \
