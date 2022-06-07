@@ -3,8 +3,54 @@ info:
   version: "0.1"
   title: "Fraud Credential Issuer API"
 paths:
-  /token:
-    get:
+  /identity-check:
+    post:
+      parameters:
+        - in: header
+          name: "session_id"
+          schema:
+            type: string
+            format: uuid
+          required: true
+      requestBody:
+        content:
+          application/json: {}
+        required: true
+      responses:
+        200:
+          description: "Fraud request initiated"
+        400:
+          description: "Bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        500:
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-request-validator: "Validate body" ## todo this validator doesn't exist
+      x-amazon-apigateway-integration:
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IdentityCheckingFunction.Arn}/invocations
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
+
+  /session:
+    post:
       requestBody:
         content:
           application/json:
@@ -30,7 +76,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Session"
-      x-amazon-apigateway-request-validator: "Validate body"
+      x-amazon-apigateway-request-validator: "Validate both"
       x-amazon-apigateway-integration:
         httpMethod: "POST"
         uri:
@@ -41,25 +87,185 @@ paths:
         passthroughBehavior: "when_no_match"
         contentHandling: "CONVERT_TO_TEXT"
         type: "aws_proxy"
+
+  /token:
+    post:
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              required:
+                - "grant_type"
+                - "code"
+                - "client_assertion_type"
+                - "client_assertion"
+                - "redirect_uri"
+              properties:
+                grant_type:
+                  type: "string"
+                  pattern: "authorization_code"
+                  example: "authorization_code"
+                code:
+                  type: "string"
+                  minLength: 1
+                client_assertion_type:
+                  type: "string"
+                  pattern: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+                  example: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+                client_assertion:
+                  type: "string"
+                  pattern: "[a-zA-Z0-9_=]+\\.[a-zA-Z0-9_=]+\\.[a-zA-Z0-9_\\-\\+\\/=]+"
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0dCIsImlhdCI6MTUxNjIzOTAyMn0.SbcN-ywpLObhMbbaMCtW1Un8LYhQzHsEth9LvTk4oQQ"
+                redirect_uri:
+                  type: "string"
+                  format: "uri"
+                  example: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
+      responses:
+        "201":
+          description: "201 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "400":
+          description: "400 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "500 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-request-validator: "Validate both"
+      x-amazon-apigateway-integration:
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AccessTokenFunction.Arn}/invocations
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
+
+  /credential/issue:
+    summary: Resource for the Fraud API
+    description: >-
+      This API is expected to be called by the IPV core backend directly as the
+      final part of the OpenId/Oauth Flow
+    parameters:
+      - name: Authorization
+        in: header
+        required: true
+        description: 'A valid access_token (e.g.: authorization: Bearer access-token-value).'
+        schema:
+          type: string
+    post:
+      summary: Request using a valid access token
+      responses:
+        '200':
+          description: 200 Ok
+          content:
+            application/jwt:
+              schema:
+                type: string
+                format: application/jwt
+                pattern: ^([a-zA-Z0-9_=]+)\.([a-zA-Z0-9_=]+)\.([a-zA-Z0-9_\-\+\/=]+)$
+                example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+        '400':
+          description: 400 Bad Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        '500':
+          description: 500 Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+      x-amazon-apigateway-request-validator: "Validate both"
+      x-amazon-apigateway-integration:
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IssueCredentialFunction.Arn}/invocations
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
+
+  /.well-known/jwks.json:
+    summary: Public Key JWKSet for the Fraud CRI
+    get:
+      responses:
+        '200':
+          description: 200 Ok
+          content:
+            application/jwk-set+json:
+              schema:
+                type: string
+      x-amazon-apigateway-integration:
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${JWKSetFunction.Arn}/invocations
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
+
 components:
   schemas:
+    TokenResponse:
+      title: AccessToken
+      required:
+        - "access_token"
+        - "expires_in"
+      type: "object"
+      properties:
+        access_token:
+          type: string
+          description: The Access Token for the given token request
+        token_type:
+          type: string
+          description: The Token Type issued
+          example: Bearer
+        expires_in:
+          type: string
+          description: The expiry time, in seconds
+          example: '3600'
+        refresh_token:
+          type: string
+          description: The refresh token is optional, not currently applicable
     Authorization:
       required:
         - "client_id"
-        - "redirect_uri"
         - "request"
-        - "response_type"
-        - "state"
       type: "object"
       properties:
-        response_type:
-          type: "string"
-          pattern: "^code$"
-          example: "code"
         client_id:
           type: "string"
           minLength: 1
-          example: "ipv-core"
+          example: "ipv-core-stub"
+        request:
+          type: "string"
+    AuthorizationResponse:
+      required:
+        - "redirect_uri"
+        - "code"
+        - "state"
+      type: "object"
+      properties:
+        code:
+          type: "string"
+          example: "981bb74c-3b5e-462e-ba3a-abf868e5da68"
         state:
           type: "string"
           example: "state"
@@ -67,11 +273,7 @@ components:
         redirect_uri:
           type: "string"
           format: "uri"
-          example: "https://www.example/com/callback"
-        request:
-          type: "string"
-          pattern: "[a-zA-Z0-9_=]+\\.[a-zA-Z0-9_=]+\\.[a-zA-Z0-9_\\-\\+\\/=]+"
-          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0dCIsImlhdCI6MTUxNjIzOTAyMn0.SbcN-ywpLObhMbbaMCtW1Un8LYhQzHsEth9LvTk4oQQ"
+          example: "https://di-ipv-core-stub.london.cloudapps.digital/callback"
     Error:
       title: "Error Schema"
       type: "object"
@@ -85,7 +287,9 @@ components:
       properties:
         session_id:
           type: "string"
+
 x-amazon-apigateway-request-validators:
-  Validate body:
-    validateRequestParameters: false
+  Validate both:
     validateRequestBody: true
+    validateRequestParameters: true
+

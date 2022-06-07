@@ -39,12 +39,15 @@ public class IdentityVerificationService {
                 result.setValidationErrors(validationResult.getError());
                 return result;
             }
+            LOGGER.info("Identity info validated");
 
             FraudCheckResult fraudCheckResult = thirdPartyGateway.performFraudCheck(personIdentity);
 
             if (Objects.nonNull(fraudCheckResult)) {
                 result.setSuccess(fraudCheckResult.isExecutedSuccessfully());
                 if (result.isSuccess()) {
+                    LOGGER.info("Mapping contra indicators from fraud response");
+
                     String[] contraindications =
                             this.contraindicationMapper.mapThirdPartyFraudCodes(
                                     fraudCheckResult.getThirdPartyFraudCodes());

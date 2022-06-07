@@ -22,6 +22,8 @@ public class IdentityVerificationResponseMapper {
             case ERROR:
             case WARN:
                 return mapErrorResponse(response.getResponseHeader());
+            case WARNING:
+                return mapErrorResponse(response.getResponseHeader());
             case INFO:
                 return mapResponse(response);
             default:

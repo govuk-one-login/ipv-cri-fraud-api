@@ -1,5 +1,6 @@
 package uk.gov.di.ipv.cri.fraud.api.handler;
 
+import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -12,6 +13,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.http.HttpStatusCode;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
+import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
 import uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationService;
@@ -27,14 +29,21 @@ class CredentialHandlerTest {
     @Mock private ObjectMapper mockObjectMapper;
     @Mock private IdentityVerificationService mockIdentityVerificationService;
     @Mock private EventProbe mockEventProbe;
-    private CredentialHandler credentialHandler;
+    @Mock private Context context;
+    @Mock private PersonIdentityService personIdentityService;
+
+    private FraudHandler fraudHandler;
 
     @BeforeEach
     void setup() {
         when(mockServiceFactory.getIdentityVerificationService())
                 .thenReturn(mockIdentityVerificationService);
-        this.credentialHandler =
-                new CredentialHandler(mockServiceFactory, mockObjectMapper, mockEventProbe);
+        this.fraudHandler =
+                new FraudHandler(
+                        mockServiceFactory,
+                        mockObjectMapper,
+                        mockEventProbe,
+                        personIdentityService);
     }
 
     @Test
@@ -54,9 +63,11 @@ class CredentialHandlerTest {
                 .thenReturn(testPersonIdentity);
         when(mockIdentityVerificationService.verifyIdentity(testPersonIdentity))
                 .thenReturn(testIdentityVerificationResult);
+        when(context.getFunctionName()).thenReturn("functionName");
+        when(context.getFunctionVersion()).thenReturn("1.0");
 
         APIGatewayProxyResponseEvent responseEvent =
-                credentialHandler.handleRequest(mockRequestEvent, null);
+                fraudHandler.handleRequest(mockRequestEvent, context);
 
         assertNotNull(responseEvent);
         assertEquals(HttpStatusCode.OK, responseEvent.getStatusCode());
@@ -82,9 +93,11 @@ class CredentialHandlerTest {
                 .thenReturn(testPersonIdentity);
         when(mockIdentityVerificationService.verifyIdentity(testPersonIdentity))
                 .thenReturn(testIdentityVerificationResult);
+        when(context.getFunctionName()).thenReturn("functionName");
+        when(context.getFunctionVersion()).thenReturn("1.0");
 
         APIGatewayProxyResponseEvent responseEvent =
-                credentialHandler.handleRequest(mockRequestEvent, null);
+                fraudHandler.handleRequest(mockRequestEvent, context);
 
         assertNotNull(responseEvent);
         assertEquals(HttpStatusCode.INTERNAL_SERVER_ERROR, responseEvent.getStatusCode());

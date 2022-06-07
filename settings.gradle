@@ -17,5 +17,6 @@ project(":accesstoken").projectDir = new File('./common-lambdas/accesstoken')
 project(':jwkset').projectDir = new File('./common-lambdas/jwkset')
 
 // CRI specific lambdas
-include "issuecredential"
+include "issuecredential", "fraudcheck"
+project(':fraudcheck').projectDir = new File('./lambdas/fraudcheck')
 project(':issuecredential').projectDir = new File('./lambdas/issuecredential')
