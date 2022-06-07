@@ -7,6 +7,7 @@ public class IdentityVerificationResult {
     private List<String> validationErrors;
     private String error;
     private String[] contraIndicators;
+    private String identityCheckScore;
 
     public boolean isSuccess() {
         return success;
@@ -38,5 +39,13 @@ public class IdentityVerificationResult {
 
     public void setError(String error) {
         this.error = error;
+    }
+
+    public String getIdentityCheckScore() {
+        return identityCheckScore;
+    }
+
+    public void setIdentityCheckScore(String identityCheckScore) {
+        this.identityCheckScore = identityCheckScore;
     }
 }

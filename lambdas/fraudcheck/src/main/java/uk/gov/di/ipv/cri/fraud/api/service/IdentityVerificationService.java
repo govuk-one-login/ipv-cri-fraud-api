@@ -45,13 +45,17 @@ public class IdentityVerificationService {
 
             if (Objects.nonNull(fraudCheckResult)) {
                 result.setSuccess(fraudCheckResult.isExecutedSuccessfully());
+                fraudCheckResult.setIdentityCheckScore("1");
                 if (result.isSuccess()) {
                     LOGGER.info("Mapping contra indicators from fraud response");
 
                     String[] contraindications =
                             this.contraindicationMapper.mapThirdPartyFraudCodes(
                                     fraudCheckResult.getThirdPartyFraudCodes());
+                    String identityCheckScore =
+                            fraudCheckResult.getIdentityCheckScore();
                     result.setContraIndicators(contraindications);
+                    result.setIdentityCheckScore(identityCheckScore);
                 }
                 return result;
             }
