@@ -13,7 +13,9 @@ import software.amazon.awssdk.http.HttpStatusCode;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
+import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
 import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
+import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.ApiGatewayResponseGenerator;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
@@ -37,16 +39,19 @@ public class FraudHandler
     private final ObjectMapper objectMapper;
     private final EventProbe eventProbe;
     private final PersonIdentityService personIdentityService;
+    private final SessionService sessionService;
 
     public FraudHandler(
             ServiceFactory serviceFactory,
             ObjectMapper objectMapper,
             EventProbe eventProbe,
-            PersonIdentityService personIdentityService) {
+            PersonIdentityService personIdentityService,
+            SessionService sessionService) {
         this.identityVerificationService = serviceFactory.getIdentityVerificationService();
         this.objectMapper = objectMapper;
         this.eventProbe = eventProbe;
         this.personIdentityService = personIdentityService;
+        this.sessionService = sessionService;
     }
 
     @ExcludeFromGeneratedCoverageReport
@@ -56,6 +61,7 @@ public class FraudHandler
         this.identityVerificationService =
                 new ServiceFactory(this.objectMapper).getIdentityVerificationService();
         this.personIdentityService = new PersonIdentityService();
+        this.sessionService = new SessionService();
     }
 
     @Override
@@ -95,6 +101,10 @@ public class FraudHandler
             LOGGER.info("Identity verified");
 
             eventProbe.counterMetric(LAMBDA_NAME);
+
+            final SessionItem session = sessionService.getSession(sessionId);
+            sessionService.createAuthorizationCode(session);
+
             return ApiGatewayResponseGenerator.proxyJsonResponse(HttpStatusCode.OK, result);
         } catch (Exception e) {
             LOGGER.error("Exception while handling lambda {}", context.getFunctionName(), e);
