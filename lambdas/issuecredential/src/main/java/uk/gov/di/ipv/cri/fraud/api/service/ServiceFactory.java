@@ -3,12 +3,10 @@ package uk.gov.di.ipv.cri.fraud.api.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.lambda.powertools.parameters.ParamManager;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
-import uk.gov.di.ipv.cri.common.library.persistence.DataStore;
 import uk.gov.di.ipv.cri.fraud.api.gateway.HmacGenerator;
 import uk.gov.di.ipv.cri.fraud.api.gateway.IdentityVerificationRequestMapper;
 import uk.gov.di.ipv.cri.fraud.api.gateway.IdentityVerificationResponseMapper;
 import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyFraudGateway;
-import uk.gov.di.ipv.cri.fraud.api.persistence.item.ContraindicationMappingItem;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -39,13 +37,7 @@ public class ServiceFactory {
                 new SSLContextFactory(
                         this.configurationService.getEncodedKeyStore(),
                         this.configurationService.getKeyStorePassword());
-        this.contraindicationMapper =
-                new ContraindicationMapper(
-                        new DataStore<>(
-                                this.configurationService.getContraindicationMappingTableName(),
-                                ContraindicationMappingItem.class,
-                                DataStore.getClient()),
-                        this.configurationService.getThirdPartyId());
+        this.contraindicationMapper = new ContraIndicatorRemoteMapper();
         this.httpClient = createHttpClient();
         this.identityVerificationService = createIdentityVerificationService();
     }
