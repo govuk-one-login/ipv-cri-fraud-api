@@ -295,6 +295,8 @@ Resources:
             TableName: !Ref ContraIndicationTableName
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
+        - DynamoDBWritePolicy:
+            TableName: !Ref SessionTable
         - DynamoDBReadPolicy:
             TableName: !Ref SessionTable
         - DynamoDBReadPolicy:
@@ -373,6 +375,8 @@ Resources:
         - AWSXrayWriteOnlyAccess
         - DynamoDBReadPolicy:
             TableName: !Ref SessionTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref PersonIdentityTable
         - DynamoDBReadPolicy:
             TableName: !Ref FraudTable
         - Statement:
@@ -477,6 +481,46 @@ Resources:
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt JWKSetFunction.Arn
+      Principal: apigateway.amazonaws.com
+
+####################################################################
+#                                                                  #
+# Authorization Function                                           #
+#                                                                  #
+####################################################################
+
+  AuthorizationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../common-lambdas/authorization/build/distributions/authorization.zip
+      Handler: uk.gov.di.ipv.cri.common.api.handler.AuthorizationHandler::handleRequest
+      Environment:
+        Variables:
+          POWERTOOLS_METRICS_NAMESPACE: di-ipv-cri-fraud-api
+          POWERTOOLS_SERVICE_NAME: di-ipv-cri-fraud-api-authorization
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSXrayWriteOnlyAccess
+        - DynamoDBReadPolicy:
+            TableName: !Ref SessionTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/SessionTableName"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParametersByPath
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
+
+  AuthorizationFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt AuthorizationFunction.Arn
       Principal: apigateway.amazonaws.com
 
 ####################################################################

@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.http.HttpStatusCode;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
+import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
 import uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationService;
@@ -31,6 +32,7 @@ class CredentialHandlerTest {
     @Mock private EventProbe mockEventProbe;
     @Mock private Context context;
     @Mock private PersonIdentityService personIdentityService;
+    @Mock private SessionService sessionService;
 
     private FraudHandler fraudHandler;
 
@@ -43,7 +45,8 @@ class CredentialHandlerTest {
                         mockServiceFactory,
                         mockObjectMapper,
                         mockEventProbe,
-                        personIdentityService);
+                        personIdentityService,
+                        sessionService);
     }
 
     @Test
