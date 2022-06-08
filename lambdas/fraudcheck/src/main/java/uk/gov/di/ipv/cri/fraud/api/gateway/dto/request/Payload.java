@@ -16,6 +16,9 @@ public class Payload {
     @JsonProperty("application")
     private Application application;
 
+    @JsonProperty("source")
+    private String source;
+
     public List<Contact> getContacts() {
         return contacts;
     }
@@ -30,5 +33,13 @@ public class Payload {
 
     public void setApplication(Application application) {
         this.application = application;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
     }
 }
