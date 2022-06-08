@@ -839,3 +839,9 @@ Outputs:
     Value: !Sub "https://${FraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
     Export:
       Name: !Sub ${AWS::StackName}-FraudApiBaseUrl
+      
+  FraudApiGatewayId:
+    Description: "API GatewayID of the Fraud CRI API"
+    Value: !Sub "${FraudApi}"
+    Export:
+      Name: !Sub ${AWS::StackName}-FraudApiGatewayId
