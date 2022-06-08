@@ -50,7 +50,7 @@ class IssueCredentialHandlerTest {
         verify(mockAddressService).getAddressItem(sessionId);
         verify(mockVerifiableCredentialService)
                 .generateSignedVerifiableCredentialJwt(SUBJECT, canonicalAddresses);
-        verify(mockEventProbe).counterMetric(IssueCredentialHandler.ADDRESS_CREDENTIAL_ISSUER, 0d);
+        verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
         verify(mockAuditService).sendAuditEvent(AuditEventTypes.IPV_ADDRESS_CRI_VC_ISSUED);
         assertEquals(
                 ContentType.APPLICATION_JWT.getType(), response.getHeaders().get("Content-Type"));
@@ -96,7 +96,7 @@ class IssueCredentialHandlerTest {
         verify(mockVerifiableCredentialService)
                 .generateSignedVerifiableCredentialJwt(SUBJECT, canonicalAddresses);
         verify(mockEventProbe).log(Level.ERROR, unExpectedJOSEException);
-        verify(mockEventProbe).counterMetric(IssueCredentialHandler.ADDRESS_CREDENTIAL_ISSUER, 0d);
+        verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
         verifyNoMoreInteractions(mockVerifiableCredentialService);
         verify(mockAuditService, never()).sendAuditEvent(any());
         Map responseBody = new ObjectMapper().readValue(response.getBody(), Map.class);
@@ -114,7 +114,7 @@ class IssueCredentialHandlerTest {
         setupEventProbeErrorBehaviour();
 
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, context);
-        verify(mockEventProbe).counterMetric(IssueCredentialHandler.ADDRESS_CREDENTIAL_ISSUER, 0d);
+        verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
         verify(mockAuditService, never()).sendAuditEvent(any());
         assertEquals(
                 ContentType.APPLICATION_JSON.getType(), response.getHeaders().get("Content-Type"));
@@ -154,7 +154,7 @@ class IssueCredentialHandlerTest {
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, context);
 
         verify(mockSessionService).getSessionByAccessToken(accessToken);
-        verify(mockEventProbe).counterMetric(IssueCredentialHandler.ADDRESS_CREDENTIAL_ISSUER, 0d);
+        verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
         verify(mockAuditService, never()).sendAuditEvent(any());
         String responseBody = new ObjectMapper().readValue(response.getBody(), String.class);
         assertEquals(awsErrorDetails.sdkHttpResponse().statusCode(), response.getStatusCode());
@@ -199,7 +199,7 @@ class IssueCredentialHandlerTest {
 
         verify(mockSessionService).getSessionByAccessToken(accessToken);
         verify(mockAddressService).getAddressItem(sessionId);
-        verify(mockEventProbe).counterMetric(IssueCredentialHandler.ADDRESS_CREDENTIAL_ISSUER, 0d);
+        verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
         verify(mockAuditService, never()).sendAuditEvent(any());
         String responseBody = new ObjectMapper().readValue(response.getBody(), String.class);
         assertEquals(awsErrorDetails.sdkHttpResponse().statusCode(), response.getStatusCode());

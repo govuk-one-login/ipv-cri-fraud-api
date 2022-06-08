@@ -18,14 +18,17 @@ public class IdentityVerificationService {
     private final ThirdPartyFraudGateway thirdPartyGateway;
     private final PersonIdentityValidator personIdentityValidator;
     private final ContraindicationMapper contraindicationMapper;
+    private final IdentityScoreCalaculator identityScoreCalaculator;
 
     IdentityVerificationService(
             ThirdPartyFraudGateway thirdPartyGateway,
             PersonIdentityValidator personIdentityValidator,
-            ContraindicationMapper contraindicationMapper) {
+            ContraindicationMapper contraindicationMapper,
+            IdentityScoreCalaculator identityScoreCalaculator) {
         this.thirdPartyGateway = thirdPartyGateway;
         this.personIdentityValidator = personIdentityValidator;
         this.contraindicationMapper = contraindicationMapper;
+        this.identityScoreCalaculator = identityScoreCalaculator;
     }
 
     public IdentityVerificationResult verifyIdentity(PersonIdentity personIdentity) {
@@ -51,7 +54,11 @@ public class IdentityVerificationService {
                     String[] contraindications =
                             this.contraindicationMapper.mapThirdPartyFraudCodes(
                                     fraudCheckResult.getThirdPartyFraudCodes());
+                    int identityCheckScore =
+                            identityScoreCalaculator.calculateIdentityScore(
+                                    fraudCheckResult.isExecutedSuccessfully(), contraindications);
                     result.setContraIndicators(contraindications);
+                    result.setIdentityCheckScore(identityCheckScore);
                 }
                 return result;
             }

@@ -4,13 +4,16 @@
         <Console name="JsonAppender" target="SYSTEM_OUT">
             <LambdaJsonLayout eventTemplateUri="classpath:LambdaJsonLayout.json" />
         </Console>
+        <Console name="ConsoleAppender" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{YYYY-MM-dd HH:mm:ss} [%t] %-5p %c:%L - %m%n" />
+        </Console>
     </Appenders>
     <Loggers>
         <Logger name="JsonLogger" level="INFO" additivity="false">
             <AppenderRef ref="JsonAppender"/>
         </Logger>
         <Root level="info">
-            <AppenderRef ref="JsonAppender"/>
+            <AppenderRef ref="ConsoleAppender"/>
         </Root>
     </Loggers>
 </Configuration>

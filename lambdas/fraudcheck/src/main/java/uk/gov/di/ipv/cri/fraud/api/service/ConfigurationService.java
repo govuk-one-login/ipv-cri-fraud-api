@@ -44,6 +44,7 @@ public class ConfigurationService {
     private final String keyStorePassword;
     private final String thirdPartyId;
     private final String contraindicationMappingTableName;
+    private final String fraudResultTableName;
     private final String contraindicationMappings;
     private final String parameterPrefix;
 
@@ -62,9 +63,11 @@ public class ConfigurationService {
         this.contraindicationMappingTableName =
                 paramProvider.get(
                         String.format(KEY_FORMAT, env, "contraindicationMappingTableName"));
+
         this.parameterPrefix = System.getenv("AWS_STACK_NAME");
         this.contraindicationMappings =
                 paramProvider.get(getParameterName("contraindicationMappings"));
+        this.fraudResultTableName = paramProvider.get(getParameterName("FraudTableName"));
 
         KeyStoreParams keyStoreParams =
                 secretsProvider
@@ -103,6 +106,10 @@ public class ConfigurationService {
 
     public String getContraindicationMappingTableName() {
         return contraindicationMappingTableName;
+    }
+
+    public String getFraudResultTableName() {
+        return fraudResultTableName;
     }
 
     public String getContraindicationMappings() {
