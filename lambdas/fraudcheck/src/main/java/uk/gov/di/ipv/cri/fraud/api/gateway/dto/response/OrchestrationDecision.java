@@ -30,6 +30,9 @@ public class OrchestrationDecision {
     @JsonProperty("nextAction")
     private String nextAction;
 
+    @JsonProperty("appReference")
+    private String appReference;
+
     @JsonProperty("decisionTime")
     private String decisionTime;
 
@@ -87,6 +90,14 @@ public class OrchestrationDecision {
 
     public void setNextAction(String nextAction) {
         this.nextAction = nextAction;
+    }
+
+    public void setAppReference(String appReference) {
+        this.appReference = appReference;
+    }
+
+    public String getAppReference() {
+        return appReference;
     }
 
     public String getDecisionTime() {

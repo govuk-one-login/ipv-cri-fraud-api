@@ -3,12 +3,12 @@ package uk.gov.di.ipv.cri.fraud.api.gateway;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.ClientResponsePayload;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.DecisionElement;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.IdentityVerificationResponse;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.ResponseHeader;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.ResponseType;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.Rule;
+import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 
 import java.util.List;
 
@@ -53,20 +53,19 @@ class IdentityVerificationResponseMapperTest {
     @Test
     void mapIdentityVerificationResponseShouldMapInfoResponse() {
         IdentityVerificationResponse testIdentityVerificationResponse =
-                new IdentityVerificationResponse();
-        ResponseHeader responseHeader = new ResponseHeader();
-        responseHeader.setResponseType(ResponseType.INFO);
-        testIdentityVerificationResponse.setResponseHeader(responseHeader);
+                TestDataCreator.createTestVerificationInfoResponse();
 
-        DecisionElement decisionElement = new DecisionElement();
+        DecisionElement decisionElement =
+                testIdentityVerificationResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0);
         Rule rule = new Rule();
+        rule.setRuleName("");
         rule.setRuleId("rule01");
+        rule.setRuleText("Test Rule");
         List<Rule> rules = List.of(rule);
         decisionElement.setRules(rules);
-
-        ClientResponsePayload responsePayload = new ClientResponsePayload();
-        responsePayload.setDecisionElements(List.of(decisionElement));
-        testIdentityVerificationResponse.setClientResponsePayload(responsePayload);
 
         FraudCheckResult fraudCheckResult =
                 this.responseMapper.mapIdentityVerificationResponse(

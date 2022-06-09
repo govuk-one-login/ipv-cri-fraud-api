@@ -36,7 +36,7 @@ public class DecisionElement {
     private List<Rule> rules = new ArrayList<>();
 
     @JsonProperty("warningsErrors")
-    private List<Object> warningsErrors = new ArrayList<>();
+    private List<WarningsErrors> warningsErrors = new ArrayList<>();
 
     @JsonProperty("otherData")
     private OtherData otherData;
@@ -114,11 +114,11 @@ public class DecisionElement {
         this.rules = rules;
     }
 
-    public List<Object> getWarningsErrors() {
+    public List<WarningsErrors> getWarningsErrors() {
         return warningsErrors;
     }
 
-    public void setWarningsErrors(List<Object> warningsErrors) {
+    public void setWarningsErrors(List<WarningsErrors> warningsErrors) {
         this.warningsErrors = warningsErrors;
     }
 
