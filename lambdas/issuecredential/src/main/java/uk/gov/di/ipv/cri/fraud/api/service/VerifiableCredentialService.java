@@ -14,13 +14,14 @@ import uk.gov.di.ipv.cri.common.library.util.KMSSigner;
 import uk.gov.di.ipv.cri.common.library.util.SignedJWTFactory;
 import uk.gov.di.ipv.cri.fraud.api.domain.Evidence;
 import uk.gov.di.ipv.cri.fraud.api.domain.EvidenceType;
+import uk.gov.di.ipv.cri.fraud.api.domain.ThirdPartyAddress;
+import uk.gov.di.ipv.cri.fraud.api.domain.VerifiableCredentialConstants;
 import uk.gov.di.ipv.cri.fraud.api.persistence.item.FraudResultItem;
 
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import static com.nimbusds.jwt.JWTClaimNames.EXPIRATION_TIME;
 import static com.nimbusds.jwt.JWTClaimNames.ISSUER;
@@ -67,10 +68,6 @@ public class VerifiableCredentialService {
             String subject, FraudResultItem fraudResultItem, PersonIdentityDetailed personIdentity)
             throws JOSEException {
         var now = Instant.now();
-        ObjectMapper mapper =
-                new ObjectMapper()
-                        .registerModule(new Jdk8Module())
-                        .registerModule(new JavaTimeModule());
 
         var claimsSet =
                 new JWTClaimsSet.Builder()
@@ -82,18 +79,22 @@ public class VerifiableCredentialService {
                                 now.plusSeconds(configurationService.getMaxJwtTtl())
                                         .getEpochSecond())
                         .claim(
-                                VC_TYPE,
-                                new String[] {VERIFIABLE_CREDENTIAL_TYPE, FRAUD_CREDENTIAL_TYPE})
-                        .claim(
-                                VC_CREDENTIAL_SUBJECT,
+                                VerifiableCredentialConstants.VC_CLAIM,
                                 Map.of(
-                                        VC_ADDRESS_KEY,
-                                        convertAddresses(personIdentity.getAddresses()),
-                                        VC_NAME_KEY,
-                                        personIdentity.getNames(),
-                                        VC_BIRTHDATE_KEY,
-                                        convertBirthDates(personIdentity.getBirthDates())))
-                        .claim(VC_EVIDENCE_KEY, calculateEvidence(fraudResultItem))
+                                        VC_TYPE,
+                                        new String[] {
+                                            VERIFIABLE_CREDENTIAL_TYPE, FRAUD_CREDENTIAL_TYPE
+                                        },
+                                        VC_CREDENTIAL_SUBJECT,
+                                        Map.of(
+                                                VC_ADDRESS_KEY,
+                                                convertAddresses(personIdentity.getAddresses()),
+                                                VC_NAME_KEY,
+                                                personIdentity.getNames(),
+                                                VC_BIRTHDATE_KEY,
+                                                convertBirthDates(personIdentity.getBirthDates())),
+                                        VC_EVIDENCE_KEY,
+                                        calculateEvidence(fraudResultItem)))
                         .build();
 
         return signedJwtFactory.createSignedJwt(claimsSet);
@@ -101,7 +102,7 @@ public class VerifiableCredentialService {
 
     private Object[] convertAddresses(List<Address> addresses) {
         return addresses.stream()
-                .map(address -> objectMapper.convertValue(address, Map.class))
+                .map(address -> objectMapper.convertValue(address, ThirdPartyAddress.class))
                 .toArray();
     }
 
@@ -121,7 +122,7 @@ public class VerifiableCredentialService {
 
         Evidence evidence = new Evidence();
         evidence.setType(EvidenceType.IDENTITY_CHECK);
-        evidence.setTxn(UUID.randomUUID().toString());
+        evidence.setTxn(fraudResultItem.getTransactionId());
 
         evidence.setIdentityFraudScore(fraudResultItem.getIdentityFraudScore());
         evidence.setCi(fraudResultItem.getContraIndicators());

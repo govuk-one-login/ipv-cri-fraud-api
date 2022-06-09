@@ -59,6 +59,7 @@ public class IdentityVerificationService {
                                     fraudCheckResult.isExecutedSuccessfully(), contraindications);
                     result.setContraIndicators(contraindications);
                     result.setIdentityCheckScore(identityCheckScore);
+                    result.setTransactionId(fraudCheckResult.getTransactionId());
                 }
                 return result;
             }

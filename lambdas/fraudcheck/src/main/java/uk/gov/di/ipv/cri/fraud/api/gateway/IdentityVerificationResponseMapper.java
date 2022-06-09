@@ -60,6 +60,7 @@ public class IdentityVerificationResponseMapper {
                 fraudCheckResult.setThirdPartyFraudCodes(fraudCodes);
             }
         }
+        fraudCheckResult.setTransactionId(response.getResponseHeader().getExpRequestId());
         return fraudCheckResult;
     }
 

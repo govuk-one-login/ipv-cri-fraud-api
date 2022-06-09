@@ -11,6 +11,7 @@ public class FraudResultItem {
     private UUID sessionId;
     private List<String> contraIndicators;
     private Integer identityFraudScore;
+    private String transactionId;
 
     public FraudResultItem() {}
 
@@ -44,5 +45,13 @@ public class FraudResultItem {
 
     public void setIdentityFraudScore(Integer identityFraudScore) {
         this.identityFraudScore = identityFraudScore;
+    }
+
+    public String getTransactionId() {
+        return transactionId;
+    }
+
+    public void setTransactionId(String transactionId) {
+        this.transactionId = transactionId;
     }
 }

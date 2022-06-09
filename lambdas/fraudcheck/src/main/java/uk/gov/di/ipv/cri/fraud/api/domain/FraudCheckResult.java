@@ -4,6 +4,7 @@ public class FraudCheckResult {
     private boolean executedSuccessfully;
     private String[] thirdPartyFraudCodes;
     private String errorMessage;
+    private String transactionId;
 
     public FraudCheckResult() {
         this.thirdPartyFraudCodes = new String[] {};
@@ -31,5 +32,13 @@ public class FraudCheckResult {
 
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
+    }
+
+    public String getTransactionId() {
+        return transactionId;
+    }
+
+    public void setTransactionId(String transactionId) {
+        this.transactionId = transactionId;
     }
 }
