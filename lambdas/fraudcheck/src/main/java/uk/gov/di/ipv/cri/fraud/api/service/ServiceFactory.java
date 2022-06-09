@@ -76,8 +76,12 @@ public class ServiceFactory {
                         new HmacGenerator(this.configurationService.getHmacKey()),
                         this.configurationService.getEndpointUrl());
 
+        final IdentityScoreCalaculator identityScoreCalaculator = new IdentityScoreCalaculator();
         return new IdentityVerificationService(
-                thirdPartyGateway, this.personIdentityValidator, this.contraindicationMapper);
+                thirdPartyGateway,
+                this.personIdentityValidator,
+                this.contraindicationMapper,
+                identityScoreCalaculator);
     }
 
     private HttpClient createHttpClient() {

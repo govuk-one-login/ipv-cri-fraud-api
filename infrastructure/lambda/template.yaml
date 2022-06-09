@@ -370,6 +370,7 @@ Resources:
           POWERTOOLS_METRICS_NAMESPACE: di-ipv-cri-fraud-api
           POWERTOOLS_SERVICE_NAME: di-ipv-cri-fraud-api-issuecredential
           SQS_AUDIT_EVENT_QUEUE_URL: !ImportValue AuditEventQueueUrl
+          ENVIRONMENT: !Ref Environment
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess

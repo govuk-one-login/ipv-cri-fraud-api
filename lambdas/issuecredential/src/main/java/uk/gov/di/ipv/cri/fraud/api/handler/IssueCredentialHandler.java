@@ -21,13 +21,15 @@ import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.common.library.exception.SqsException;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
+import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.ApiGatewayResponseGenerator;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.exception.CredentialRequestException;
+import uk.gov.di.ipv.cri.fraud.api.persistence.item.FraudResultItem;
+import uk.gov.di.ipv.cri.fraud.api.service.FraudRetrievalService;
 import uk.gov.di.ipv.cri.fraud.api.service.VerifiableCredentialService;
 
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -37,9 +39,10 @@ import static org.apache.logging.log4j.Level.ERROR;
 public class IssueCredentialHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
     public static final String AUTHORIZATION_HEADER_KEY = "Authorization";
-    public static final String ADDRESS_CREDENTIAL_ISSUER = "fraud_credential_issuer";
+    public static final String FRAUD_CREDENTIAL_ISSUER = "fraud_credential_issuer";
     private final VerifiableCredentialService verifiableCredentialService;
-    // private final AddressService addressService;
+    private final PersonIdentityService personIdentityService;
+    private final FraudRetrievalService fraudRetrievalService;
     private final SessionService sessionService;
     private EventProbe eventProbe;
     private final AuditService auditService;
@@ -49,17 +52,20 @@ public class IssueCredentialHandler
             // AddressService addressService,
             SessionService sessionService,
             EventProbe eventProbe,
-            AuditService auditService) {
+            AuditService auditService,
+            PersonIdentityService personIdentityService,
+            FraudRetrievalService fraudRetrievalService) {
         this.verifiableCredentialService = verifiableCredentialService;
-        // this.addressService = addressService;
+        this.personIdentityService = personIdentityService;
         this.sessionService = sessionService;
         this.eventProbe = eventProbe;
         this.auditService = auditService;
+        this.fraudRetrievalService = fraudRetrievalService;
     }
 
     public IssueCredentialHandler() {
         this.verifiableCredentialService = getVerifiableCredentialService();
-        // this.addressService = new AddressService();
+        this.personIdentityService = new PersonIdentityService();
         this.sessionService = new SessionService();
         this.eventProbe = new EventProbe();
         this.auditService =
@@ -67,6 +73,7 @@ public class IssueCredentialHandler
                         SqsClient.builder().build(),
                         new ConfigurationService(),
                         new ObjectMapper());
+        this.fraudRetrievalService = new FraudRetrievalService();
     }
 
     @Override
@@ -78,23 +85,26 @@ public class IssueCredentialHandler
         try {
             var accessToken = validateInputHeaderBearerToken(input.getHeaders());
             var sessionItem = this.sessionService.getSessionByAccessToken(accessToken);
-            // var addressItem = addressService.getAddressItem(sessionItem.getSessionId());
+            var personIdentity =
+                    personIdentityService.getPersonIdentityDetailed(sessionItem.getSessionId());
+            FraudResultItem fraudResult =
+                    fraudRetrievalService.getFraudResult(sessionItem.getSessionId());
 
             SignedJWT signedJWT =
                     verifiableCredentialService.generateSignedVerifiableCredentialJwt(
-                            sessionItem.getSubject(), new ArrayList<>());
-            auditService.sendAuditEvent(AuditEventTypes.IPV_ADDRESS_CRI_VC_ISSUED);
-            eventProbe.counterMetric(ADDRESS_CREDENTIAL_ISSUER, 0d);
+                            sessionItem.getSubject(), fraudResult, personIdentity);
+            auditService.sendAuditEvent(AuditEventTypes.IPV_FRAUD_CRI_VC_ISSUED);
+            eventProbe.counterMetric(FRAUD_CREDENTIAL_ISSUER, 0d);
 
             return ApiGatewayResponseGenerator.proxyJwtResponse(
                     HttpStatusCode.OK, signedJWT.serialize());
         } catch (AwsServiceException ex) {
-            eventProbe.log(ERROR, ex).counterMetric(ADDRESS_CREDENTIAL_ISSUER, 0d);
+            eventProbe.log(ERROR, ex).counterMetric(FRAUD_CREDENTIAL_ISSUER, 0d);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, ex.awsErrorDetails().errorMessage());
         } catch (CredentialRequestException | ParseException | JOSEException e) {
-            eventProbe.log(ERROR, e).counterMetric(ADDRESS_CREDENTIAL_ISSUER, 0d);
+            eventProbe.log(ERROR, e).counterMetric(FRAUD_CREDENTIAL_ISSUER, 0d);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.BAD_REQUEST, ErrorResponse.VERIFIABLE_CREDENTIAL_ERROR);

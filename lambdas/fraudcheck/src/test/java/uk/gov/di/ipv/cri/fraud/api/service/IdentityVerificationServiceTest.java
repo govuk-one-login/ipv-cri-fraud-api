@@ -27,6 +27,7 @@ class IdentityVerificationServiceTest {
     @Mock private ThirdPartyFraudGateway mockThirdPartyGateway;
     @Mock private PersonIdentityValidator personIdentityValidator;
     @Mock private ContraindicationMapper mockContraindicationMapper;
+    @Mock private IdentityScoreCalaculator identityScoreCalaculator;
 
     private IdentityVerificationService identityVerificationService;
 
@@ -34,7 +35,10 @@ class IdentityVerificationServiceTest {
     void setup() {
         this.identityVerificationService =
                 new IdentityVerificationService(
-                        mockThirdPartyGateway, personIdentityValidator, mockContraindicationMapper);
+                        mockThirdPartyGateway,
+                        personIdentityValidator,
+                        mockContraindicationMapper,
+                        identityScoreCalaculator);
     }
 
     @Test

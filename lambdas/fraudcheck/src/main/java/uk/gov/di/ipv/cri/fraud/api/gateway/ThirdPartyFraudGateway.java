@@ -56,6 +56,8 @@ public class ThirdPartyFraudGateway {
         LOGGER.info("Mapping person to third party verification request");
         IdentityVerificationRequest apiRequest = requestMapper.mapPersonIdentity(personIdentity);
         String requestBody = objectMapper.writeValueAsString(apiRequest);
+        LOGGER.info("Person identity request {}", requestBody);
+
         String requestBodyHmac = hmacGenerator.generateHmac(requestBody);
         HttpRequest request =
                 HttpRequest.newBuilder()
