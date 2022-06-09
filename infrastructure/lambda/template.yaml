@@ -104,12 +104,12 @@ Mappings:
       dev: "https://dev-di-ipv-cri-kbv-front.london.cloudapps.digital"
       build: "https://build-di-ipv-cri-fraud-front.london.cloudapps.digital"
       staging: "https://staging-di-ipv-cri-fraud-front.london.cloudapps.digital"
-      integration: "https://va8f4jitla.execute-api.eu-west-2.amazonaws.com"
+      integration: "https://integration-di-ipv-cri-fraud-front.london.cloudapps.digital"
 
   IPVCore1AudienceMapping:
     Environment:
       staging: "https://staging-di-ipv-cri-kbv-front.london.cloudapps.digital"
-      integration: "https://va8f4jitla.execute-api.eu-west-2.amazonaws.com"
+      integration: "https://integration-di-ipv-cri-fraud-front.london.cloudapps.digital"
       production: "https://di-ipv-cri-fraud-front.london.cloudapps.digital"
 
   IPVCoreStubIssuerMapping:
@@ -156,7 +156,7 @@ Mappings:
       dev: "https://dev-di-ipv-cri-kbv-front.london.cloudapps.digital"
       build: "https://build-di-ipv-cri-fraud-front.london.cloudapps.digital"
       staging: "https://staging-di-ipv-cri-fraud-front.london.cloudapps.digital"
-      integration: "https://va8f4jitla.execute-api.eu-west-2.amazonaws.com"
+      integration: "https://integration-di-ipv-cri-fraud-front.london.cloudapps.digital"
       production: "https://di-ipv-cri-fraud-front.london.cloudapps.digital"
 
   FraudCriAudienceMapping:
@@ -164,7 +164,7 @@ Mappings:
       dev: "https://dev-di-ipv-cri-kbv-front.london.cloudapps.digital"
       build: "https://build-di-ipv-cri-fraud-front.london.cloudapps.digital"
       staging: "https://staging-di-ipv-cri-fraud-front.london.cloudapps.digital"
-      integration: "https://va8f4jitla.execute-api.eu-west-2.amazonaws.com"
+      integration: "https://integration-di-ipv-cri-fraud-front.london.cloudapps.digital"
       production: "https://di-ipv-cri-fraud-front.london.cloudapps.digital"
 
 Resources:
