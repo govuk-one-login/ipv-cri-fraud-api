@@ -1,8 +1,10 @@
 package uk.gov.di.ipv.cri.fraud.api.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ThirdPartyAddress {
     private String id;
     private String addressType;

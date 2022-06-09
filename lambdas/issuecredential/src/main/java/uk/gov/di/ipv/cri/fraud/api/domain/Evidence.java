@@ -4,7 +4,7 @@ import java.util.List;
 
 public class Evidence {
     private String txn;
-    private EvidenceType type;
+    private String type;
     private Integer identityFraudScore;
     private List<String> ci;
 
@@ -16,11 +16,11 @@ public class Evidence {
         this.txn = txn;
     }
 
-    public EvidenceType getType() {
+    public String getType() {
         return type;
     }
 
-    public void setType(EvidenceType type) {
+    public void setType(String type) {
         this.type = type;
     }
 

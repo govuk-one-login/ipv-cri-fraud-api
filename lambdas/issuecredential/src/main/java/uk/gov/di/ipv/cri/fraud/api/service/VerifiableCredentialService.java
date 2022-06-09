@@ -13,7 +13,6 @@ import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.util.KMSSigner;
 import uk.gov.di.ipv.cri.common.library.util.SignedJWTFactory;
 import uk.gov.di.ipv.cri.fraud.api.domain.Evidence;
-import uk.gov.di.ipv.cri.fraud.api.domain.EvidenceType;
 import uk.gov.di.ipv.cri.fraud.api.domain.ThirdPartyAddress;
 import uk.gov.di.ipv.cri.fraud.api.domain.VerifiableCredentialConstants;
 import uk.gov.di.ipv.cri.fraud.api.persistence.item.FraudResultItem;
@@ -121,7 +120,7 @@ public class VerifiableCredentialService {
     private Object[] calculateEvidence(FraudResultItem fraudResultItem) {
 
         Evidence evidence = new Evidence();
-        evidence.setType(EvidenceType.IDENTITY_CHECK);
+        evidence.setType("IdentityCheck");
         evidence.setTxn(fraudResultItem.getTransactionId());
 
         evidence.setIdentityFraudScore(fraudResultItem.getIdentityFraudScore());
