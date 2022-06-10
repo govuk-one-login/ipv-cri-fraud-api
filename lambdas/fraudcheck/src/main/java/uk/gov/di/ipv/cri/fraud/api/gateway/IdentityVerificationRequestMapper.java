@@ -38,27 +38,29 @@ public class IdentityVerificationRequestMapper {
         Payload apiRequestPayload = new Payload();
         Contact contact = new Contact();
         contact.setId("MAINCONTACT_1");
-        apiRequestPayload.setContacts(List.of(contact));
 
         PersonDetails contactPersonDetails = new PersonDetails();
         contactPersonDetails.setDateOfBirth(
                 DateTimeFormatter.ISO_DATE.format(personIdentity.getDateOfBirth()));
 
         Name contactPersonName = mapName(personIdentity);
-
         List<Address> personAddresses = mapAddresses(personIdentity.getAddresses());
 
         Person contactPerson = new Person();
         contactPerson.setPersonIdentifier("MAINPERSON_1");
         contactPerson.setPersonDetails(contactPersonDetails);
         contactPerson.setNames(List.of(contactPersonName));
+
         contact.setPerson(contactPerson);
         contact.setAddresses(personAddresses);
 
         Applicant applicant = createApplicant();
         Application application = new Application();
         application.setApplicants(List.of(applicant));
+
         apiRequestPayload.setApplication(application);
+        apiRequestPayload.setSource("WEB");
+        apiRequestPayload.setContacts(List.of(contact));
 
         IdentityVerificationRequest apiRequest = new IdentityVerificationRequest();
         apiRequest.setHeader(apiRequestHeader);
@@ -113,6 +115,7 @@ public class IdentityVerificationRequestMapper {
 
                     address.setBuildingNumber(personAddress.getBuildingNumber());
                     address.setBuildingName(personAddress.getBuildingName());
+                    address.setSubBuilding(personAddress.getSubBuildingName());
                     address.setStreet(personAddress.getStreetName());
                     address.setPostTown(personAddress.getAddressLocality());
 

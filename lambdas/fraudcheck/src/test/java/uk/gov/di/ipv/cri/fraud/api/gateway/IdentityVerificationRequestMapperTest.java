@@ -28,6 +28,9 @@ class IdentityVerificationRequestMapperTest {
     @Test
     void shouldConvertPersonIdentityToCrossCoreApiRequestForCurrentAddress() {
         personIdentity = TestDataCreator.createTestPersonIdentity(CURRENT);
+        personIdentity.getAddresses().get(0).setSubBuildingName("Building One");
+        personIdentity.getAddresses().get(0).setBuildingName("House Name");
+        personIdentity.getAddresses().get(0).setBuildingNumber("44");
 
         IdentityVerificationRequest result = requestMapper.mapPersonIdentity(personIdentity);
 
@@ -58,6 +61,9 @@ class IdentityVerificationRequestMapperTest {
                         .getNames()
                         .get(0)
                         .getSurName());
+
+        assertEquals("WEB", result.getPayload().getSource());
+
         assertEquals(
                 CURRENT.toString(),
                 result.getPayload().getContacts().get(0).getAddresses().get(0).getAddressType());
@@ -70,6 +76,15 @@ class IdentityVerificationRequestMapperTest {
         assertEquals(
                 "Postcode",
                 result.getPayload().getContacts().get(0).getAddresses().get(0).getPostal());
+        assertEquals(
+                "Building One",
+                result.getPayload().getContacts().get(0).getAddresses().get(0).getSubBuilding());
+        assertEquals(
+                "House Name",
+                result.getPayload().getContacts().get(0).getAddresses().get(0).getBuildingName());
+        assertEquals(
+                "44",
+                result.getPayload().getContacts().get(0).getAddresses().get(0).getBuildingNumber());
     }
 
     @Test
@@ -105,6 +120,9 @@ class IdentityVerificationRequestMapperTest {
                         .getNames()
                         .get(0)
                         .getSurName());
+
+        assertEquals("WEB", result.getPayload().getSource());
+
         assertEquals(
                 PREVIOUS.toString(),
                 result.getPayload().getContacts().get(0).getAddresses().get(0).getAddressType());
