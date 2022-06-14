@@ -20,11 +20,14 @@ import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.common.library.persistence.DataStore;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
+import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
+import uk.gov.di.ipv.cri.common.library.persistence.DataStore;
 import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.ApiGatewayResponseGenerator;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
 import uk.gov.di.ipv.cri.fraud.api.persistence.item.FraudResultItem;
 import uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationService;
@@ -103,6 +106,7 @@ public class FraudHandler
             final String sessionId = headers.get("session_id");
             LOGGER.info("Extracted session from header ID {}", sessionId);
 
+            /*
             PersonIdentity personIdentity = null;
             if (null != sessionId) {
                 personIdentity =
@@ -113,14 +117,18 @@ public class FraudHandler
                 personIdentity = objectMapper.readValue(input.getBody(), PersonIdentity.class);
             }
 
-            LOGGER.info("Verifying identity...");
-            IdentityVerificationResult result =
-                    identityVerificationService.verifyIdentity(personIdentity);
+             */
 
-            auditService.sendAuditEvent(
+            LOGGER.info("Verifying identity...");
+            IdentityVerificationRequest identityVerificationRequest =
+                    objectMapper.readValue(input.getBody(), IdentityVerificationRequest.class);
+            IdentityVerificationResult result =
+                    identityVerificationService.verifyIdentity(identityVerificationRequest);
+
+            /*auditService.sendAuditEvent(
                     AuditEventType.REQUEST_SENT,
                     FraudPersonIdentityDetailedMapper.generatePersonIdentityDetailed(
-                            personIdentity));
+                            personIdentity));*/
             if (!result.isSuccess()) {
                 LOGGER.info("Third party failed to assert identity. Error {}", result.getError());
 
@@ -137,9 +145,12 @@ public class FraudHandler
             eventProbe.counterMetric(LAMBDA_NAME);
 
             LOGGER.info("Generating authorization code...");
+            /*
             final SessionItem session = sessionService.getSession(sessionId);
             sessionService.createAuthorizationCode(session);
 
+
+             */
             final FraudResultItem fraudResultItem =
                     new FraudResultItem(
                             UUID.fromString(sessionId),

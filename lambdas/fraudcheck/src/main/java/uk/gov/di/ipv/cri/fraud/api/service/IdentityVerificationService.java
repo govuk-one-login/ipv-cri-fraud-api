@@ -10,7 +10,10 @@ import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.ValidationResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.audit.TPREFraudAuditExtension;
+import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
+import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyFraudGateway;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
 
 import java.util.Arrays;
 import java.util.List;
@@ -45,11 +48,12 @@ public class IdentityVerificationService {
         this.auditService = auditService;
     }
 
-    public IdentityVerificationResult verifyIdentity(PersonIdentity personIdentity) {
+    public IdentityVerificationResult verifyIdentity(IdentityVerificationRequest personIdentity) {
         IdentityVerificationResult result = new IdentityVerificationResult();
         try {
             LOGGER.info("Validating identity...");
 
+            /*
             ValidationResult<List<String>> validationResult =
                     this.personIdentityValidator.validate(personIdentity);
 
@@ -60,6 +64,7 @@ public class IdentityVerificationService {
                 return result;
             }
             LOGGER.info("Identity info validated");
+             */
 
             FraudCheckResult fraudCheckResult = thirdPartyGateway.performFraudCheck(personIdentity);
             LOGGER.info("Third party response mapped");

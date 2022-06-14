@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.oauth2.sdk.util.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.IdentityVerificationResponse;
@@ -94,11 +93,13 @@ public class ThirdPartyFraudGateway {
         this.sleepHelper = sleepHelper;
     }
 
-    public FraudCheckResult performFraudCheck(PersonIdentity personIdentity)
+    public FraudCheckResult performFraudCheck(IdentityVerificationRequest personIdentity)
             throws IOException, InterruptedException {
         LOGGER.info("Mapping person to third party verification request");
-        IdentityVerificationRequest apiRequest = requestMapper.mapPersonIdentity(personIdentity);
-        String requestBody = objectMapper.writeValueAsString(apiRequest);
+
+        // IdentityVerificationRequest apiRequest = requestMapper.mapPersonIdentity(personIdentity);
+        String requestBody = objectMapper.writeValueAsString(personIdentity);
+        LOGGER.info("Person identity request {}", requestBody);
 
         String requestBodyHmac = hmacGenerator.generateHmac(requestBody);
         HttpRequest request =
@@ -120,6 +121,7 @@ public class ThirdPartyFraudGateway {
             String responseBody = httpResponse.body();
             IdentityVerificationResponse response =
                     objectMapper.readValue(responseBody, IdentityVerificationResponse.class);
+            LOGGER.info("Thirdparty response: {}", objectMapper.writeValueAsString(response));
             return responseMapper.mapIdentityVerificationResponse(response);
         } else {
             FraudCheckResult fraudCheckResult = new FraudCheckResult();

@@ -1,14 +1,7 @@
 package uk.gov.di.ipv.cri.fraud.api.service;
 
-import com.nimbusds.oauth2.sdk.util.StringUtils;
-import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
-import uk.gov.di.ipv.cri.fraud.api.domain.ValidationResult;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
 class PersonIdentityValidator {
+    /*
     ValidationResult<List<String>> validate(PersonIdentity personIdentity) {
         List<String> validationErrors = new ArrayList<>();
         if (StringUtils.isBlank(personIdentity.getFirstName())) {
@@ -29,4 +22,6 @@ class PersonIdentityValidator {
         // this implementation needs completing to validate all necessary fields
         return new ValidationResult<>(validationErrors.isEmpty(), validationErrors);
     }
+
+     */
 }
