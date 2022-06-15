@@ -16,7 +16,7 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
-import uk.gov.di.ipv.cri.common.library.domain.AuditEventTypes;
+import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.common.library.exception.SqsException;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
@@ -30,6 +30,7 @@ import uk.gov.di.ipv.cri.fraud.api.persistence.item.FraudResultItem;
 import uk.gov.di.ipv.cri.fraud.api.service.FraudRetrievalService;
 import uk.gov.di.ipv.cri.fraud.api.service.VerifiableCredentialService;
 
+import java.time.Clock;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -72,7 +73,8 @@ public class IssueCredentialHandler
                 new AuditService(
                         SqsClient.builder().build(),
                         new ConfigurationService(),
-                        new ObjectMapper());
+                        new ObjectMapper(),
+                        Clock.systemUTC());
         this.fraudRetrievalService = new FraudRetrievalService();
     }
 
@@ -93,7 +95,7 @@ public class IssueCredentialHandler
             SignedJWT signedJWT =
                     verifiableCredentialService.generateSignedVerifiableCredentialJwt(
                             sessionItem.getSubject(), fraudResult, personIdentity);
-            auditService.sendAuditEvent(AuditEventTypes.IPV_FRAUD_CRI_VC_ISSUED);
+            auditService.sendAuditEvent(AuditEventType.VC_ISSUED);
             eventProbe.counterMetric(FRAUD_CREDENTIAL_ISSUER, 0d);
 
             return ApiGatewayResponseGenerator.proxyJwtResponse(

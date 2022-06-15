@@ -68,6 +68,7 @@ Globals:
         JAVA_TOOL_OPTIONS: -XX:+TieredCompilation -XX:TieredStopAtLevel=1
         AWS_STACK_NAME: !Sub ${AWS::StackName}
         POWERTOOLS_LOG_LEVEL: INFO
+        SQS_AUDIT_EVENT_PREFIX: IPV_FRAUD_CRI
 
 Mappings:
   SessionTtlMapping:
@@ -101,16 +102,16 @@ Mappings:
 
   IPVCoreStubAudienceMapping:
     Environment:
-      dev: "https://dev-di-ipv-cri-kbv-front.london.cloudapps.digital"
-      build: "https://build-di-ipv-cri-fraud-front.london.cloudapps.digital"
-      staging: "https://staging-di-ipv-cri-fraud-front.london.cloudapps.digital"
-      integration: "https://integration-di-ipv-cri-fraud-front.london.cloudapps.digital"
+      dev: "https://review-f.dev.account.gov.uk"
+      build: "https://review-f.build.account.gov.uk"
+      staging: "https://review-f.staging.account.gov.uk"
+      integration: "https://review-f.integration.account.gov.uk"
 
   IPVCore1AudienceMapping:
     Environment:
-      staging: "https://staging-di-ipv-cri-kbv-front.london.cloudapps.digital"
-      integration: "https://integration-di-ipv-cri-fraud-front.london.cloudapps.digital"
-      production: "https://di-ipv-cri-fraud-front.london.cloudapps.digital"
+      staging: "https://review-f.staging.account.gov.uk"
+      integration: "https://review-f.integration.account.gov.uk"
+      production: "review-f.account.gov.uk"
 
   IPVCoreStubIssuerMapping:
     Environment:
@@ -153,19 +154,19 @@ Mappings:
 
   VerifiableCredentialIssuerMapping:
     Environment:
-      dev: "https://dev-di-ipv-cri-kbv-front.london.cloudapps.digital"
-      build: "https://build-di-ipv-cri-fraud-front.london.cloudapps.digital"
-      staging: "https://staging-di-ipv-cri-fraud-front.london.cloudapps.digital"
-      integration: "https://integration-di-ipv-cri-fraud-front.london.cloudapps.digital"
-      production: "https://di-ipv-cri-fraud-front.london.cloudapps.digital"
+      dev: "https://review-f.dev.account.gov.uk"
+      build: "https://review-f.build.account.gov.uk"
+      staging: "https://review-f.staging.account.gov.uk"
+      integration: "https://review-f.integration.account.gov.uk"
+      production: "https://review-f.account.gov.uk"
 
   FraudCriAudienceMapping:
     Environment:
-      dev: "https://dev-di-ipv-cri-kbv-front.london.cloudapps.digital"
-      build: "https://build-di-ipv-cri-fraud-front.london.cloudapps.digital"
-      staging: "https://staging-di-ipv-cri-fraud-front.london.cloudapps.digital"
-      integration: "https://integration-di-ipv-cri-fraud-front.london.cloudapps.digital"
-      production: "https://di-ipv-cri-fraud-front.london.cloudapps.digital"
+      dev: "https://review-f.dev.account.gov.uk"
+      build: "https://review-f.build.account.gov.uk"
+      staging: "https://review-f.staging.account.gov.uk"
+      integration: "https://review-f.integration.account.gov.uk"
+      production: "https://review-f.account.gov.uk"
 
 Resources:
 
