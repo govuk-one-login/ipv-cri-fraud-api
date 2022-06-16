@@ -73,10 +73,33 @@ public class ThirdPartyFraudGateway {
                 httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         LOGGER.info("Third party response code {}", httpResponse.statusCode());
 
-        String responseBody = httpResponse.body();
-        IdentityVerificationResponse response =
-                objectMapper.readValue(responseBody, IdentityVerificationResponse.class);
-        LOGGER.info("Thirdparty response: {}", objectMapper.writeValueAsString(response));
-        return responseMapper.mapIdentityVerificationResponse(response);
+        int statusCode = httpResponse.statusCode();
+
+        if (statusCode == 200) {
+            String responseBody = httpResponse.body();
+            IdentityVerificationResponse response =
+                    objectMapper.readValue(responseBody, IdentityVerificationResponse.class);
+            return responseMapper.mapIdentityVerificationResponse(response);
+        } else {
+
+            FraudCheckResult fraudCheckResult = new FraudCheckResult();
+            fraudCheckResult.setExecutedSuccessfully(false);
+
+            if (statusCode >= 300 && statusCode <= 399) {
+                fraudCheckResult.setErrorMessage(
+                        "Redirection Message returned from Fraud Check Response " + statusCode);
+            } else if (statusCode >= 400 && statusCode <= 499) {
+                fraudCheckResult.setErrorMessage(
+                        "Client Request Error returned from Fraud Check Response " + statusCode);
+            } else if (statusCode >= 500 && statusCode <= 599) {
+                fraudCheckResult.setErrorMessage(
+                        "Server Error returned from Fraud Check Response " + statusCode);
+            } else {
+                fraudCheckResult.setErrorMessage(
+                        "Unhandled Fraud Check HTTP Response " + statusCode);
+            }
+
+            return fraudCheckResult;
+        }
     }
 }

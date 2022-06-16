@@ -15,14 +15,17 @@ public class OverallResponse {
     @JsonProperty("decisionText")
     private String decisionText;
 
+    @JsonProperty("score")
+    private int score;
+
     @JsonProperty("decisionReasons")
     private List<String> decisionReasons = new ArrayList<>();
 
     @JsonProperty("recommendedNextActions")
-    private List<Object> recommendedNextActions = new ArrayList<>();
+    private List<String> recommendedNextActions = new ArrayList<>();
 
     @JsonProperty("spareObjects")
-    private List<Object> spareObjects = new ArrayList<>();
+    private List<String> spareObjects = new ArrayList<>();
 
     public String getDecision() {
         return decision;
@@ -34,6 +37,14 @@ public class OverallResponse {
 
     public String getDecisionText() {
         return decisionText;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
+    }
+
+    public int getScore() {
+        return score;
     }
 
     public void setDecisionText(String decisionText) {
@@ -48,19 +59,19 @@ public class OverallResponse {
         this.decisionReasons = decisionReasons;
     }
 
-    public List<Object> getRecommendedNextActions() {
+    public List<String> getRecommendedNextActions() {
         return recommendedNextActions;
     }
 
-    public void setRecommendedNextActions(List<Object> recommendedNextActions) {
+    public void setRecommendedNextActions(List<String> recommendedNextActions) {
         this.recommendedNextActions = recommendedNextActions;
     }
 
-    public List<Object> getSpareObjects() {
+    public List<String> getSpareObjects() {
         return spareObjects;
     }
 
-    public void setSpareObjects(List<Object> spareObjects) {
+    public void setSpareObjects(List<String> spareObjects) {
         this.spareObjects = spareObjects;
     }
 }
