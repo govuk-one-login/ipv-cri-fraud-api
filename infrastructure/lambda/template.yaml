@@ -288,7 +288,7 @@ Resources:
       Environment:
         Variables:
           POWERTOOLS_METRICS_NAMESPACE: di-ipv-cri-fraud-api
-          POWERTOOLS_SERVICE_NAME: di-ipv-cri-fraud-api-session
+          POWERTOOLS_SERVICE_NAME: di-ipv-cri-fraud-api-identitycheck
           SQS_AUDIT_EVENT_QUEUE_URL: !ImportValue AuditEventQueueUrl
           ENVIRONMENT: !Ref Environment
       Policies:

@@ -10,6 +10,8 @@ import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.AccessTokenType;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -39,6 +41,9 @@ import static org.apache.logging.log4j.Level.ERROR;
 
 public class IssueCredentialHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
+
+    private static final Logger LOGGER = LogManager.getLogger();
+
     public static final String AUTHORIZATION_HEADER_KEY = "Authorization";
     public static final String FRAUD_CREDENTIAL_ISSUER = "fraud_credential_issuer";
     private final VerifiableCredentialService verifiableCredentialService;
@@ -50,7 +55,6 @@ public class IssueCredentialHandler
 
     public IssueCredentialHandler(
             VerifiableCredentialService verifiableCredentialService,
-            // AddressService addressService,
             SessionService sessionService,
             EventProbe eventProbe,
             AuditService auditService,
@@ -85,34 +89,65 @@ public class IssueCredentialHandler
             APIGatewayProxyRequestEvent input, Context context) {
 
         try {
+            LOGGER.info(
+                    "Initiating lambda {} version {}",
+                    context.getFunctionName(),
+                    context.getFunctionVersion());
+
+            LOGGER.info("Validating authorization token...");
             var accessToken = validateInputHeaderBearerToken(input.getHeaders());
             var sessionItem = this.sessionService.getSessionByAccessToken(accessToken);
+            LOGGER.info("Extracted session from session store ID {}", sessionItem.getSessionId());
+
+            LOGGER.info("Retrieving identity details and fraud results...");
             var personIdentity =
                     personIdentityService.getPersonIdentityDetailed(sessionItem.getSessionId());
             FraudResultItem fraudResult =
                     fraudRetrievalService.getFraudResult(sessionItem.getSessionId());
+            LOGGER.info("VC content retrieved.");
 
+            LOGGER.info("Generating verifiable credential...");
             SignedJWT signedJWT =
                     verifiableCredentialService.generateSignedVerifiableCredentialJwt(
                             sessionItem.getSubject(), fraudResult, personIdentity);
             auditService.sendAuditEvent(AuditEventType.VC_ISSUED);
             eventProbe.counterMetric(FRAUD_CREDENTIAL_ISSUER, 0d);
 
+            LOGGER.info("Credential generated");
             return ApiGatewayResponseGenerator.proxyJwtResponse(
                     HttpStatusCode.OK, signedJWT.serialize());
         } catch (AwsServiceException ex) {
+            LOGGER.warn(
+                    "Exception while handling lambda {} exception {}",
+                    context.getFunctionName(),
+                    ex.getClass());
             eventProbe.log(ERROR, ex).counterMetric(FRAUD_CREDENTIAL_ISSUER, 0d);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, ex.awsErrorDetails().errorMessage());
         } catch (CredentialRequestException | ParseException | JOSEException e) {
+            LOGGER.warn(
+                    "Exception while handling lambda {} exception {}",
+                    context.getFunctionName(),
+                    e.getClass());
             eventProbe.log(ERROR, e).counterMetric(FRAUD_CREDENTIAL_ISSUER, 0d);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.BAD_REQUEST, ErrorResponse.VERIFIABLE_CREDENTIAL_ERROR);
         } catch (SqsException sqsException) {
+            LOGGER.error(
+                    "Exception while handling lambda {} exception {}",
+                    context.getFunctionName(),
+                    sqsException.getClass());
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, sqsException.getMessage());
+        } catch (Exception e) {
+            LOGGER.error(
+                    "Exception while handling lambda {} exception {}",
+                    context.getFunctionName(),
+                    e.getClass());
+            return ApiGatewayResponseGenerator.proxyJsonResponse(
+                    HttpStatusCode.INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 
