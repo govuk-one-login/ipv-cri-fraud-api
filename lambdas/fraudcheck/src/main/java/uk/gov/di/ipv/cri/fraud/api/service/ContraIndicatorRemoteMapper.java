@@ -59,7 +59,7 @@ public class ContraIndicatorRemoteMapper implements ContraindicationMapper {
         if (contraindicators.size() != thirdPartyFraudCodes.length) {
             String[] unmappedFraudCodes =
                     Arrays.stream(thirdPartyFraudCodes)
-                            .filter(fraudCode -> !contraindicators.contains(fraudCode))
+                            .filter(fraudCode -> !uCodeCIMap.containsKey(fraudCode))
                             .toArray(String[]::new);
 
             String unmappedFraudCodesAsString = String.join(", ", unmappedFraudCodes);
