@@ -1046,6 +1046,22 @@ public class IdentityVerificationInfoResponseValidatorTest {
     }
 
     @Test
+    void clientPayloadOrchestrationDecisionsCannotHaveANullElement() {
+        testIVResponse.getClientResponsePayload().getOrchestrationDecisions().set(0, null);
+
+        ValidationResult<List<String>> validationResult =
+                infoResponseValidator.validate(testIVResponse);
+
+        final String EXPECTED_ERROR =
+                IdentityVerificationInfoResponseValidator.NULL_ORCHESTRATION_DECISION_ERROR_MESSAGE;
+
+        assertNull(testIVResponse.getClientResponsePayload().getOrchestrationDecisions().get(0));
+        assertEquals(1, validationResult.getError().size());
+        assertEquals(EXPECTED_ERROR, validationResult.getError().get(0));
+        assertFalse(validationResult.isValid());
+    }
+
+    @Test
     void clientPayloadOrchestrationDecisionsOrchestrationDecisionSequenceIdCannotBeEmpty() {
         final String TEST_STRING = "";
         testIVResponse
@@ -1905,6 +1921,22 @@ public class IdentityVerificationInfoResponseValidatorTest {
                 "DecisionElements" + JsonValidationUtility.IS_EMPTY_ERROR_MESSAGE_SUFFIX;
 
         assertEquals(0, testIVResponse.getClientResponsePayload().getDecisionElements().size());
+        assertEquals(1, validationResult.getError().size());
+        assertEquals(EXPECTED_ERROR, validationResult.getError().get(0));
+        assertFalse(validationResult.isValid());
+    }
+
+    @Test
+    void clientPayloadDecisionElementsCannotHaveANullElement() {
+        testIVResponse.getClientResponsePayload().getDecisionElements().set(0, null);
+
+        ValidationResult<List<String>> validationResult =
+                infoResponseValidator.validate(testIVResponse);
+
+        final String EXPECTED_ERROR =
+                IdentityVerificationInfoResponseValidator.NULL_DECISION_ELEMENT_ERROR_MESSAGE;
+
+        assertNull(testIVResponse.getClientResponsePayload().getDecisionElements().get(0));
         assertEquals(1, validationResult.getError().size());
         assertEquals(EXPECTED_ERROR, validationResult.getError().get(0));
         assertFalse(validationResult.isValid());

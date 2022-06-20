@@ -49,6 +49,11 @@ public class IdentityVerificationInfoResponseValidator {
 
     public static final String NULL_RESPONSE_ERROR_MESSAGE = "Response is null";
     public static final String NULL_HEADER_ERROR_MESSAGE = "Header not found.";
+
+    public static final String NULL_ORCHESTRATION_DECISION_ERROR_MESSAGE =
+            "Orchestration Decision is null.";
+    public static final String NULL_DECISION_ELEMENT_ERROR_MESSAGE = "Decision Element is null.";
+
     public static final String NULL_HEADER_OVERALL_RESPONSE_ERROR_MESSAGE =
             "Header Overall response not found.";
     public static final String RESPONSE_TYPE_ERROR_MESSAGE =
@@ -222,7 +227,7 @@ public class IdentityVerificationInfoResponseValidator {
     private void validateIdentityVerificationResponseClientResponsePayloadOrchestrationDecision(
             OrchestrationDecision orchestrationDecision, List<String> validationErrors) {
         if (orchestrationDecision == null) {
-            validationErrors.add("OrchestrationDecision is null");
+            validationErrors.add(NULL_ORCHESTRATION_DECISION_ERROR_MESSAGE);
             return;
         }
 
@@ -293,7 +298,7 @@ public class IdentityVerificationInfoResponseValidator {
     private void validateIdentityVerificationResponseClientResponsePayloadDecisionElement(
             DecisionElement decisionElement, final List<String> validationErrors) {
         if (decisionElement == null) {
-            validationErrors.add("DecisionElement is null");
+            validationErrors.add(NULL_DECISION_ELEMENT_ERROR_MESSAGE);
             return;
         }
 
