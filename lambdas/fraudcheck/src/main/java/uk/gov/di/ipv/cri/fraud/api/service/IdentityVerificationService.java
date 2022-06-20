@@ -60,6 +60,12 @@ public class IdentityVerificationService {
                     result.setContraIndicators(contraindications);
                     result.setIdentityCheckScore(identityCheckScore);
                     result.setTransactionId(fraudCheckResult.getTransactionId());
+                } else {
+                    if (null != fraudCheckResult.getErrorMessage()) {
+                        result.setError(fraudCheckResult.getErrorMessage());
+                    } else {
+                        result.setError("Unknown error returned from supplier");
+                    }
                 }
                 return result;
             }
