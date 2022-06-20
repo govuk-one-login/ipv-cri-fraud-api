@@ -52,9 +52,11 @@ public class ConfigurationService {
             SecretsProvider secretsProvider, ParamProvider paramProvider, String env) {
         Objects.requireNonNull(secretsProvider, "secretsProvider must not be null");
         Objects.requireNonNull(paramProvider, "paramProvider must not be null");
+
         if (StringUtils.isBlank(env)) {
             throw new IllegalArgumentException("env must be specified");
         }
+
         this.tenantId = paramProvider.get(String.format(KEY_FORMAT, env, "thirdPartyApiTenantId"));
         this.endpointUrl =
                 paramProvider.get(String.format(KEY_FORMAT, env, "thirdPartyApiEndpointUrl"));

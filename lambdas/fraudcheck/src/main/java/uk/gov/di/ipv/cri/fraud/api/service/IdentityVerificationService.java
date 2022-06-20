@@ -1,5 +1,6 @@
 package uk.gov.di.ipv.cri.fraud.api.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
@@ -8,6 +9,7 @@ import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.ValidationResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyFraudGateway;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -34,17 +36,24 @@ public class IdentityVerificationService {
     public IdentityVerificationResult verifyIdentity(PersonIdentity personIdentity) {
         IdentityVerificationResult result = new IdentityVerificationResult();
         try {
+            LOGGER.info("Validating identity...");
+
             ValidationResult<List<String>> validationResult =
                     this.personIdentityValidator.validate(personIdentity);
 
             if (!validationResult.isValid()) {
                 result.setSuccess(false);
                 result.setValidationErrors(validationResult.getError());
+                result.setError("IdentityValidationError");
                 return result;
             }
             LOGGER.info("Identity info validated");
 
             FraudCheckResult fraudCheckResult = thirdPartyGateway.performFraudCheck(personIdentity);
+            LOGGER.info("Third party response mapped");
+            LOGGER.info(
+                    "Third party response {}",
+                    new ObjectMapper().writeValueAsString(fraudCheckResult));
 
             if (Objects.nonNull(fraudCheckResult)) {
                 result.setSuccess(fraudCheckResult.isExecutedSuccessfully());
@@ -60,7 +69,13 @@ public class IdentityVerificationService {
                     result.setContraIndicators(contraindications);
                     result.setIdentityCheckScore(identityCheckScore);
                     result.setTransactionId(fraudCheckResult.getTransactionId());
+
+                    LOGGER.info(
+                            "Fraud check passed successfully. Indicators {}, Score {}",
+                            Arrays.toString(contraindications),
+                            identityCheckScore);
                 } else {
+                    LOGGER.warn("Fraud check failed");
                     if (null != fraudCheckResult.getErrorMessage()) {
                         result.setError(fraudCheckResult.getErrorMessage());
                     } else {

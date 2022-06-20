@@ -10,6 +10,9 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.http.HttpStatusCode;
+import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
+import software.amazon.lambda.powertools.logging.Logging;
+import software.amazon.lambda.powertools.metrics.Metrics;
 import software.amazon.lambda.powertools.parameters.ParamManager;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
@@ -86,17 +89,19 @@ public class FraudHandler
     }
 
     @Override
+    @Logging(correlationIdPath = CorrelationIdPathConstants.API_GATEWAY_REST)
+    @Metrics(captureColdStart = true)
     public APIGatewayProxyResponseEvent handleRequest(
             APIGatewayProxyRequestEvent input, Context context) {
 
         try {
             LOGGER.info(
-                    "Initiating lambda {} version",
+                    "Initiating lambda {} version {}",
                     context.getFunctionName(),
                     context.getFunctionVersion());
             Map<String, String> headers = input.getHeaders();
             final String sessionId = headers.get("session_id");
-            LOGGER.info("Extracted session from header {}", sessionId);
+            LOGGER.info("Extracted session from header ID {}", sessionId);
 
             PersonIdentity personIdentity = null;
             if (null != sessionId) {
@@ -114,6 +119,10 @@ public class FraudHandler
 
             if (!result.isSuccess()) {
                 LOGGER.info("Third party failed to assert identity. Error {}", result.getError());
+
+                if (result.getError().equals("IdentityValidationError")) {
+                    LOGGER.error(String.join(",", result.getValidationErrors()));
+                }
 
                 return ApiGatewayResponseGenerator.proxyJsonResponse(
                         HttpStatusCode.INTERNAL_SERVER_ERROR,
@@ -136,10 +145,11 @@ public class FraudHandler
 
             LOGGER.info("Saving fraud results...");
             dataStore.create(fraudResultItem);
+            LOGGER.info("Fraud results saved");
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(HttpStatusCode.OK, result);
         } catch (Exception e) {
-            LOGGER.error("Exception while handling lambda {}", context.getFunctionName(), e);
+            LOGGER.warn("Exception while handling lambda {}", context.getFunctionName());
             eventProbe.log(Level.ERROR, e).counterMetric(LAMBDA_NAME, 0d);
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorResponse.GENERIC_SERVER_ERROR);
