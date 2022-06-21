@@ -635,14 +635,14 @@ Resources:
   LinkUsagePlanApiKey1:
     Type: AWS::ApiGateway::UsagePlanKey
     Properties:
-      KeyId: !Ref ApiKey1
+      KeyId: !ImportValue core-infrastructure-ApiKey1
       KeyType: API_KEY
       UsagePlanId: !Ref PublicFraudApiUsagePlan
 
   LinkUsagePlanApiKey2:
     Type: AWS::ApiGateway::UsagePlanKey
     Properties:
-      KeyId: !Ref ApiKey2
+      KeyId: !ImportValue core-infrastructure-ApiKey2
       KeyType: API_KEY
       UsagePlanId: !Ref PublicFraudApiUsagePlan
 
