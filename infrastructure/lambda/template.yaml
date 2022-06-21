@@ -252,6 +252,7 @@ Resources:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/FraudCriAudience"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/AuthRequestKmsEncryptionKeyId"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/PersonIdentityTableName"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/verifiable-credential/issuer"
         - Statement:
             - Effect: Allow
               Action:
@@ -310,6 +311,8 @@ Resources:
               Action:
                 - 'ssm:GetParameter*'
               Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${Environment}/credentialIssuers/fraud*'
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub "${AWS::StackName}/verifiable-credential/issuer"
         - Statement:
             - Sid: ReadSecretsPolicy
               Effect: Allow
