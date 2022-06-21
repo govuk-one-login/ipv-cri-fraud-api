@@ -71,6 +71,15 @@ Globals:
         SQS_AUDIT_EVENT_PREFIX: IPV_FRAUD_CRI
 
 Mappings:
+
+  VPCEndpointIdMapping:
+    Environment:
+      dev: vpce-082cab7c78139eb54
+      build: vpce-065cca195d9213386
+      staging: todo
+      integration: todo
+      production: todo
+
   SessionTtlMapping:
     Environment:
       dev: "172800" # 2 days
@@ -262,7 +271,23 @@ Resources:
             Location: './private-api.yaml'
       OpenApiVersion: 3.0.1
       EndpointConfiguration:
-        Type: REGIONAL
+        Type: PRIVATE
+      Auth:
+        ResourcePolicy:
+          CustomStatements:
+            - Action: 'execute-api:Invoke'
+              Effect: Allow
+              Principal: '*'
+              Resource:
+                - 'execute-api:/*'
+            - Action: 'execute-api:Invoke'
+              Effect: Deny
+              Principal: '*'
+              Resource:
+                - 'execute-api:/*'
+              Condition:
+                StringNotEquals:
+                  'aws:SourceVpce': !FindInMap [ VPCEndpointIdMapping, Environment, !Ref 'Environment' ]
 
 
   PublicFraudApiAccessLogGroup:
