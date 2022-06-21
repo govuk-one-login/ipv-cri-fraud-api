@@ -17,6 +17,11 @@ public class IdentityVerificationService {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final String ERROR_MSG_CONTEXT =
             "Error occurred when attempting to invoke the third party api";
+
+    private static final String ERROR_FRAUD_CHECK_RESULT_RETURN_NULL =
+            "Null FraudCheckResult returned when invoking third party API.";
+    private static final String ERROR_FRAUD_CHECK_RESULT_NO_ERR_MSG =
+            "FraudCheckResult had no error message.";
     private final ThirdPartyFraudGateway thirdPartyGateway;
     private final PersonIdentityValidator personIdentityValidator;
     private final ContraindicationMapper contraindicationMapper;
@@ -76,16 +81,17 @@ public class IdentityVerificationService {
                             identityCheckScore);
                 } else {
                     LOGGER.warn("Fraud check failed");
-                    if (null != fraudCheckResult.getErrorMessage()) {
+                    if (Objects.nonNull(fraudCheckResult.getErrorMessage())) {
                         result.setError(fraudCheckResult.getErrorMessage());
                     } else {
-                        result.setError("Unknown error returned from supplier");
+                        result.setError(ERROR_FRAUD_CHECK_RESULT_NO_ERR_MSG);
+                        LOGGER.warn(ERROR_FRAUD_CHECK_RESULT_NO_ERR_MSG);
                     }
                 }
                 return result;
             }
 
-            LOGGER.error("Unexpected null returned when invoking third party API");
+            LOGGER.error(ERROR_FRAUD_CHECK_RESULT_RETURN_NULL);
             result.setError(ERROR_MSG_CONTEXT);
             result.setSuccess(false);
         } catch (InterruptedException ie) {

@@ -1,5 +1,7 @@
 package uk.gov.di.ipv.cri.fraud.api.util;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.Address;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
@@ -12,6 +14,9 @@ import java.util.List;
 import static uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType.CURRENT;
 
 public class TestDataCreator {
+
+    private static final Logger LOGGER = LogManager.getLogger();
+
     public static PersonIdentity createTestPersonIdentity(AddressType addressType) {
         PersonIdentity personIdentity = new PersonIdentity();
         personIdentity.setDateOfBirth(LocalDate.of(1976, 12, 26));
@@ -32,11 +37,24 @@ public class TestDataCreator {
         return createTestPersonIdentity(CURRENT);
     }
 
-    public static IdentityVerificationResponse createTestVerificationInfoResponse() {
+    public static IdentityVerificationResponse createTestVerificationResponse(ResponseType type) {
+        switch (type) {
+            case INFO:
+                return createTestVerificationInfoResponse();
+            case ERROR:
+            case WARN:
+            case WARNING:
+                return createTestVerificationErrorResponse(type);
+            default:
+                throw new IllegalArgumentException("Unexpected response type encountered: " + type);
+        }
+    }
+
+    private static IdentityVerificationResponse createTestVerificationInfoResponse() {
         IdentityVerificationResponse testIVR = new IdentityVerificationResponse();
 
         ResponseHeader header = new ResponseHeader();
-        header.setRequestType("TEST_INFO_REQUEST");
+        header.setRequestType("TEST_INFO_RESPONSE");
         header.setClientReferenceId("1234567890abcdefghijklmnopqrstuvwxyz");
         header.setExpRequestId("1234");
         header.setMessageTime("2022-01-01T00:00:01Z");
@@ -100,5 +118,30 @@ public class TestDataCreator {
         testIVR.setClientResponsePayload(payload);
 
         return testIVR;
+    }
+
+    private static IdentityVerificationResponse createTestVerificationErrorResponse(
+            ResponseType type) {
+        if (type == ResponseType.INFO) {
+            String errorMessage = "Info is not an Error response Type.";
+            LOGGER.error(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
+        }
+
+        IdentityVerificationResponse testErrorResponse = new IdentityVerificationResponse();
+
+        ResponseHeader header = new ResponseHeader();
+        header.setRequestType("TEST_ERROR_RESPONSE");
+        header.setClientReferenceId("1234567890abcdefghijklmnopqrstuvwxyz");
+        header.setExpRequestId("1234");
+        header.setMessageTime("2022-01-01T00:00:01Z");
+
+        header.setResponseType(type);
+        header.setResponseCode("E101");
+        header.setResponseMessage("AnErrorOccured");
+
+        testErrorResponse.setResponseHeader(header);
+
+        return testErrorResponse;
     }
 }
