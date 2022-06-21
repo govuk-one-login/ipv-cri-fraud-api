@@ -329,7 +329,7 @@ public class IdentityVerificationInfoResponseValidator {
                 subObjectName + SCORE_FIELD_NAME,
                 validationErrors);
 
-        JsonValidationUtility.validateStringDataEmptyIsAllowed(
+        JsonValidationUtility.validateStringDataNullAndEmptyIsAllowed(
                 decisionElement.getDecisionText(),
                 DECISION_ELEMENTS_DECISION_TEXT_MAX_LEN,
                 subObjectName + DECISION_TEXT_FIELD_NAME,
