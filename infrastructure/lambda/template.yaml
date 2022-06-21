@@ -299,7 +299,7 @@ Resources:
   PrivateFraudApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PrivateFraudApi}-public-AccessLogs
+      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PrivateFraudApi}-private-AccessLogs
       RetentionInDays: 365
 
 ####################################################################
