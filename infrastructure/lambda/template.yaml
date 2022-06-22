@@ -39,6 +39,9 @@ Conditions:
     - !Equals [ !Ref Environment, staging ]
     - !Equals [ !Ref Environment, integration ]
     - !Equals [ !Ref Environment, production ]
+  IsProdEnvironment: !Equals
+    - !Ref Environment
+    - production
   UsePermissionsBoundary:
     Fn::Not:
       - Fn::Equals:
@@ -71,6 +74,7 @@ Globals:
         SQS_AUDIT_EVENT_PREFIX: IPV_FRAUD_CRI
 
 Mappings:
+
   SessionTtlMapping:
     Environment:
       dev: "172800" # 2 days
@@ -176,21 +180,34 @@ Resources:
 #                                                                  #
 ####################################################################
 
-  FraudApi:
+  PublicFraudApi:
     Type: AWS::Serverless::Api
     Properties:
+      Description: Public Fraud CRI API
       MethodSettings:
         - LoggingLevel: INFO
           ResourcePath: '/*'
           HttpMethod: '*'
           # Disable data trace in production to avoid logging customer sensitive information
-          DataTraceEnabled: true
+          DataTraceEnabled: !If [IsProdEnvironment, false, true]
           MetricsEnabled: true
           ThrottlingRateLimit: 5
           ThrottlingBurstLimit: 10
       AccessLogSetting:
-        DestinationArn: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${ApiAccessLogGroup}'
-        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }'
+        DestinationArn: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${PublicFraudApiAccessLogGroup}'
+        Format: >-
+          {
+          "requestId":"$context.requestId",
+          "ip":"$context.identity.sourceIp",
+          "requestTime":"$context.requestTime",
+          "httpMethod":"$context.httpMethod",
+          "path":"$context.path",
+          "routeKey":"$context.routeKey",
+          "status":"$context.status",
+          "protocol":"$context.protocol",
+          "responseLatency":"$context.responseLatency",
+          "responseLength":"$context.responseLength"
+          }
       TracingEnabled: true
       Name: !Sub "fraud-cri-${AWS::StackName}"
       StageName: !Ref Environment
@@ -202,15 +219,84 @@ Resources:
         Fn::Transform:
           Name: AWS::Include
           Parameters:
-            Location: './api.yaml'
+            Location: './public-api.yaml'
       OpenApiVersion: 3.0.1
       EndpointConfiguration:
         Type: REGIONAL
 
-  ApiAccessLogGroup:
+  PrivateFraudApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Description: Private Fraud CRI API
+      MethodSettings:
+        - LoggingLevel: INFO
+          ResourcePath: '/*'
+          HttpMethod: '*'
+          # Disable data trace in production to avoid logging customer sensitive information
+          DataTraceEnabled: !If [IsProdEnvironment, false, true]
+          MetricsEnabled: true
+          ThrottlingRateLimit: 5
+          ThrottlingBurstLimit: 10
+      AccessLogSetting:
+        DestinationArn: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${PrivateFraudApiAccessLogGroup}'
+        Format: >-
+          {
+          "requestId":"$context.requestId",
+          "ip":"$context.identity.sourceIp",
+          "requestTime":"$context.requestTime",
+          "httpMethod":"$context.httpMethod",
+          "path":"$context.path",
+          "routeKey":"$context.routeKey",
+          "status":"$context.status",
+          "protocol":"$context.protocol",
+          "responseLatency":"$context.responseLatency",
+          "responseLength":"$context.responseLength"
+          }
+      TracingEnabled: true
+      Name: !Sub "fraud-cri-${AWS::StackName}"
+      StageName: !Ref Environment
+      DefinitionBody:
+        openapi: "3.0.1" # workaround to get `sam validate` to work
+        paths: # workaround to get `sam validate` to work
+          /never-created:
+            options: { } # workaround to get `sam validate` to work
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: './private-api.yaml'
+      OpenApiVersion: 3.0.1
+      EndpointConfiguration:
+        Type: PRIVATE
+      Auth:
+        ResourcePolicy:
+          CustomStatements:
+            - Action: 'execute-api:Invoke'
+              Effect: Allow
+              Principal: '*'
+              Resource:
+                - 'execute-api:/*'
+            - Action: 'execute-api:Invoke'
+              Effect: Deny
+              Principal: '*'
+              Resource:
+                - 'execute-api:/*'
+              Condition:
+                StringNotEquals:
+                  aws:SourceVpce: !If
+                    - CreateDevResources
+                    - vpce-082cab7c78139eb54
+                    - !ImportValue cri-vpc-ApiGatewayVpcEndpointId
+
+  PublicFraudApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/apigateway/AccessLog-${FraudApi}/${Environment}
+      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PublicFraudApi}-public-AccessLogs
+      RetentionInDays: 365
+
+  PrivateFraudApiAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PrivateFraudApi}-private-AccessLogs
       RetentionInDays: 365
 
 ####################################################################
@@ -608,13 +694,28 @@ Resources:
 #                                                                  #
 ####################################################################
 
-  ApiUsagePlan:
+  PublicFraudApiUsagePlan:
     Type: AWS::ApiGateway::UsagePlan
     DependsOn:
-      - FraudApiStage
+      - PublicFraudApiStage
     Properties:
       ApiStages:
-        - ApiId: !Ref FraudApi
+        - ApiId: !Ref PublicFraudApi
+          Stage: !Ref Environment
+      Quota:
+        Limit: 500000
+        Period: DAY
+      Throttle:
+        BurstLimit: 100 # requests the API can handle concurrently
+        RateLimit: 50 # allowed requests per second
+
+  PrivateFraudApiUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn:
+      - PrivateFraudApiStage
+    Properties:
+      ApiStages:
+        - ApiId: !Ref PrivateFraudApi
           Stage: !Ref Environment
       Quota:
         Limit: 500000
@@ -638,16 +739,16 @@ Resources:
   LinkUsagePlanApiKey1:
     Type: AWS::ApiGateway::UsagePlanKey
     Properties:
-      KeyId: !Ref ApiKey1
+      KeyId: !ImportValue core-infrastructure-ApiKey1
       KeyType: API_KEY
-      UsagePlanId: !Ref ApiUsagePlan
+      UsagePlanId: !Ref PublicFraudApiUsagePlan
 
   LinkUsagePlanApiKey2:
     Type: AWS::ApiGateway::UsagePlanKey
     Properties:
-      KeyId: !Ref ApiKey2
+      KeyId: !ImportValue core-infrastructure-ApiKey2
       KeyType: API_KEY
-      UsagePlanId: !Ref ApiUsagePlan
+      UsagePlanId: !Ref PublicFraudApiUsagePlan
 
 ####################################################################
 #                                                                  #
@@ -811,42 +912,66 @@ Resources:
 Outputs:
   SessionApiUrl:
     Description: "URL for the Fraud API /session resource"
-    Value: !Sub "https://${FraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/session"
+    Value: !Sub "https://${PublicFraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/session"
     Export:
       Name: !Sub ${AWS::StackName}-SessionApiUrl
 
-  FraudApiUrl:
+  PublicFraudApiUrl:
     Description: "URL for the Fraud API /identity-check resource"
-    Value: !Sub "https://${FraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/identity-check"
+    Value: !Sub "https://${PublicFraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/identity-check"
     Export:
-      Name: !Sub ${AWS::StackName}-FraudApiUrl
+      Name: !Sub ${AWS::StackName}-PublicFraudApiUrl
 
   TokenApiUrl:
     Description: "URL for the Fraud API /token resource"
-    Value: !Sub "https://${FraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/token"
+    Value: !Sub "https://${PublicFraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/token"
     Export:
       Name: !Sub ${AWS::StackName}-TokenApiUrl
 
   CredentialIssueApiUrl:
     Description: "URL for the Fraud API /credential/issue resource"
-    Value: !Sub "https://${FraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/credential/issue"
+    Value: !Sub "https://${PublicFraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/credential/issue"
     Export:
       Name: !Sub ${AWS::StackName}-CredentialIssueApiUrl
 
   JWKSetApiUrl:
     Description: "URL for the Fraud API /.well-known/jwks.json resource"
-    Value: !Sub "https://${FraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/.well-known/jwks.json"
+    Value: !Sub "https://${PublicFraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/.well-known/jwks.json"
     Export:
       Name: !Sub ${AWS::StackName}-JWKSetApiUrl
 
   FraudApiBaseUrl:
-    Description: "Base url of the Fraud CRI API"
-    Value: !Sub "https://${FraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
+    Description: "Base url of the Fraud CRI API, please reference the PublicFraudApiBaseUrl"
+    Value: !Sub "https://${PublicFraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
     Export:
       Name: !Sub ${AWS::StackName}-FraudApiBaseUrl
-      
+
   FraudApiGatewayId:
-    Description: "API GatewayID of the Fraud CRI API"
-    Value: !Sub "${FraudApi}"
+    Description: "API GatewayID of the public Fraud CRI API, please reference the PublicFraudApiGatewayId"
+    Value: !Sub "${PublicFraudApi}"
     Export:
       Name: !Sub ${AWS::StackName}-FraudApiGatewayId
+
+  PublicFraudApiBaseUrl:
+    Description: "Base url of the public Fraud CRI API"
+    Value: !Sub "https://${PublicFraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
+    Export:
+      Name: !Sub ${AWS::StackName}-PublicFraudApiBaseUrl
+  
+  PublicFraudApiGatewayId:
+    Description: "API GatewayID of the public Fraud CRI API"
+    Value: !Sub "${PublicFraudApi}"
+    Export:
+      Name: !Sub ${AWS::StackName}-PublicFraudApiGatewayId
+
+  PrivateFraudApiBaseUrl:
+    Description: "Base url of the privateFraud CRI API"
+    Value: !Sub "https://${PrivateFraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
+    Export:
+      Name: !Sub ${AWS::StackName}-PrivateFraudApiBaseUrl
+
+  PrivateFraudApiGatewayId:
+    Description: "API GatewayID of the private Fraud CRI API"
+    Value: !Sub "${PrivateFraudApi}"
+    Export:
+      Name: !Sub ${AWS::StackName}-PrivateFraudApiGatewayId
