@@ -27,6 +27,16 @@ public class ThirdPartyFraudGateway {
     private final HmacGenerator hmacGenerator;
     private final URI endpointUri;
 
+    public static final String HTTP_300_REDIRECT_MESSAGE =
+            "Redirection Message returned from Fraud Check Response, Status Code - ";
+    public static final String HTTP_400_CLIENT_REQUEST_ERROR =
+            "Client Request Error returned from Fraud Check Response, Status Code - ";
+    public static final String HTTP_500_SERVER_ERROR =
+            "Server Error returned from Fraud Check Response, Status Code - ";
+
+    public static final String HTTP_UNHANDLED_ERROR =
+            "Unhandled HTTP Response from Fraud Check Response, Status Code - ";
+
     public ThirdPartyFraudGateway(
             HttpClient httpClient,
             IdentityVerificationRequestMapper requestMapper,
@@ -85,17 +95,13 @@ public class ThirdPartyFraudGateway {
             fraudCheckResult.setExecutedSuccessfully(false);
 
             if (statusCode >= 300 && statusCode <= 399) {
-                fraudCheckResult.setErrorMessage(
-                        "Redirection Message returned from Fraud Check Response " + statusCode);
+                fraudCheckResult.setErrorMessage(HTTP_300_REDIRECT_MESSAGE + statusCode);
             } else if (statusCode >= 400 && statusCode <= 499) {
-                fraudCheckResult.setErrorMessage(
-                        "Client Request Error returned from Fraud Check Response " + statusCode);
+                fraudCheckResult.setErrorMessage(HTTP_400_CLIENT_REQUEST_ERROR + statusCode);
             } else if (statusCode >= 500 && statusCode <= 599) {
-                fraudCheckResult.setErrorMessage(
-                        "Server Error returned from Fraud Check Response " + statusCode);
+                fraudCheckResult.setErrorMessage(HTTP_500_SERVER_ERROR + statusCode);
             } else {
-                fraudCheckResult.setErrorMessage(
-                        "Unhandled Fraud Check HTTP Response " + statusCode);
+                fraudCheckResult.setErrorMessage(HTTP_UNHANDLED_ERROR + statusCode);
             }
 
             return fraudCheckResult;

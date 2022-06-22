@@ -101,7 +101,7 @@ class ThirdPartyFraudGatewayTest {
         ArgumentCaptor<HttpRequest> httpRequestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
         when(this.mockHttpClient.send(
                         httpRequestCaptor.capture(), eq(HttpResponse.BodyHandlers.ofString())))
-                .thenReturn(createMockApiResponse());
+                .thenReturn(createMockApiResponse(200));
         when(this.mockObjectMapper.readValue(
                         TEST_API_RESPONSE_BODY, IdentityVerificationResponse.class))
                 .thenReturn(testResponse);
@@ -114,10 +114,191 @@ class ThirdPartyFraudGatewayTest {
         verify(mockRequestMapper).mapPersonIdentity(personIdentity);
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHmacGenerator).generateHmac(testRequestBody);
+        verify(mockHttpClient)
+                .send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString()));
         verify(mockResponseMapper).mapIdentityVerificationResponse(testResponse);
+        assertNotNull(actualFraudCheckResult);
+        assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().uri().toString());
+        assertEquals("POST", httpRequestCaptor.getValue().method());
+        HttpHeaders capturedHttpRequestHeaders = httpRequestCaptor.getValue().headers();
+        assertEquals("application/json", capturedHttpRequestHeaders.firstValue("Accept").get());
+        assertEquals(
+                "application/json", capturedHttpRequestHeaders.firstValue("Content-Type").get());
+        assertEquals(
+                hmacOfRequestBody, capturedHttpRequestHeaders.firstValue("hmac-signature").get());
+    }
+
+    @Test
+    void thirdPartyApiReturnsErrorOnHTTP300Response() throws IOException, InterruptedException {
+        final String testRequestBody = "serialisedCrossCoreApiRequest";
+        final IdentityVerificationRequest testApiRequest = new IdentityVerificationRequest();
+
+        final String hmacOfRequestBody = "hmac-of-request-body";
+        PersonIdentity personIdentity =
+                TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
+        when(mockRequestMapper.mapPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+
+        when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
+        when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(hmacOfRequestBody);
+        ArgumentCaptor<HttpRequest> httpRequestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+
+        final int MOCK_HTTP_STATUS_CODE = 300;
+
+        when(this.mockHttpClient.send(
+                        httpRequestCaptor.capture(), eq(HttpResponse.BodyHandlers.ofString())))
+                .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE));
+
+        FraudCheckResult actualFraudCheckResult =
+                thirdPartyFraudGateway.performFraudCheck(personIdentity);
+
+        final String EXPECTED_ERROR =
+                ThirdPartyFraudGateway.HTTP_300_REDIRECT_MESSAGE + MOCK_HTTP_STATUS_CODE;
+
+        verify(mockRequestMapper).mapPersonIdentity(personIdentity);
+        verify(mockObjectMapper).writeValueAsString(testApiRequest);
+        verify(mockHmacGenerator).generateHmac(testRequestBody);
+
         verify(mockHttpClient)
                 .send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString()));
         assertNotNull(actualFraudCheckResult);
+        assertEquals(EXPECTED_ERROR, actualFraudCheckResult.getErrorMessage());
+
+        assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().uri().toString());
+        assertEquals("POST", httpRequestCaptor.getValue().method());
+        HttpHeaders capturedHttpRequestHeaders = httpRequestCaptor.getValue().headers();
+        assertEquals("application/json", capturedHttpRequestHeaders.firstValue("Accept").get());
+        assertEquals(
+                "application/json", capturedHttpRequestHeaders.firstValue("Content-Type").get());
+        assertEquals(
+                hmacOfRequestBody, capturedHttpRequestHeaders.firstValue("hmac-signature").get());
+    }
+
+    @Test
+    void thirdPartyApiReturnsErrorOnHTTP400Response() throws IOException, InterruptedException {
+        final String testRequestBody = "serialisedCrossCoreApiRequest";
+        final IdentityVerificationRequest testApiRequest = new IdentityVerificationRequest();
+
+        final String hmacOfRequestBody = "hmac-of-request-body";
+        PersonIdentity personIdentity =
+                TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
+        when(mockRequestMapper.mapPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+
+        when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
+        when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(hmacOfRequestBody);
+        ArgumentCaptor<HttpRequest> httpRequestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+
+        final int MOCK_HTTP_STATUS_CODE = 400;
+
+        when(this.mockHttpClient.send(
+                        httpRequestCaptor.capture(), eq(HttpResponse.BodyHandlers.ofString())))
+                .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE));
+
+        FraudCheckResult actualFraudCheckResult =
+                thirdPartyFraudGateway.performFraudCheck(personIdentity);
+
+        final String EXPECTED_ERROR =
+                ThirdPartyFraudGateway.HTTP_400_CLIENT_REQUEST_ERROR + MOCK_HTTP_STATUS_CODE;
+
+        verify(mockRequestMapper).mapPersonIdentity(personIdentity);
+        verify(mockObjectMapper).writeValueAsString(testApiRequest);
+        verify(mockHmacGenerator).generateHmac(testRequestBody);
+
+        verify(mockHttpClient)
+                .send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString()));
+        assertNotNull(actualFraudCheckResult);
+        assertEquals(EXPECTED_ERROR, actualFraudCheckResult.getErrorMessage());
+
+        assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().uri().toString());
+        assertEquals("POST", httpRequestCaptor.getValue().method());
+        HttpHeaders capturedHttpRequestHeaders = httpRequestCaptor.getValue().headers();
+        assertEquals("application/json", capturedHttpRequestHeaders.firstValue("Accept").get());
+        assertEquals(
+                "application/json", capturedHttpRequestHeaders.firstValue("Content-Type").get());
+        assertEquals(
+                hmacOfRequestBody, capturedHttpRequestHeaders.firstValue("hmac-signature").get());
+    }
+
+    @Test
+    void thirdPartyApiReturnsErrorOnHTTP500Response() throws IOException, InterruptedException {
+        final String testRequestBody = "serialisedCrossCoreApiRequest";
+        final IdentityVerificationRequest testApiRequest = new IdentityVerificationRequest();
+
+        final String hmacOfRequestBody = "hmac-of-request-body";
+        PersonIdentity personIdentity =
+                TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
+        when(mockRequestMapper.mapPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+
+        when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
+        when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(hmacOfRequestBody);
+        ArgumentCaptor<HttpRequest> httpRequestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+
+        final int MOCK_HTTP_STATUS_CODE = 500;
+
+        when(this.mockHttpClient.send(
+                        httpRequestCaptor.capture(), eq(HttpResponse.BodyHandlers.ofString())))
+                .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE));
+
+        FraudCheckResult actualFraudCheckResult =
+                thirdPartyFraudGateway.performFraudCheck(personIdentity);
+
+        final String EXPECTED_ERROR =
+                ThirdPartyFraudGateway.HTTP_500_SERVER_ERROR + MOCK_HTTP_STATUS_CODE;
+
+        verify(mockRequestMapper).mapPersonIdentity(personIdentity);
+        verify(mockObjectMapper).writeValueAsString(testApiRequest);
+        verify(mockHmacGenerator).generateHmac(testRequestBody);
+
+        verify(mockHttpClient)
+                .send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString()));
+        assertNotNull(actualFraudCheckResult);
+        assertEquals(EXPECTED_ERROR, actualFraudCheckResult.getErrorMessage());
+
+        assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().uri().toString());
+        assertEquals("POST", httpRequestCaptor.getValue().method());
+        HttpHeaders capturedHttpRequestHeaders = httpRequestCaptor.getValue().headers();
+        assertEquals("application/json", capturedHttpRequestHeaders.firstValue("Accept").get());
+        assertEquals(
+                "application/json", capturedHttpRequestHeaders.firstValue("Content-Type").get());
+        assertEquals(
+                hmacOfRequestBody, capturedHttpRequestHeaders.firstValue("hmac-signature").get());
+    }
+
+    @Test
+    void thirdPartyApiReturnsErrorOnUnhandledHTTPResponse()
+            throws IOException, InterruptedException {
+        final String testRequestBody = "serialisedCrossCoreApiRequest";
+        final IdentityVerificationRequest testApiRequest = new IdentityVerificationRequest();
+
+        final String hmacOfRequestBody = "hmac-of-request-body";
+        PersonIdentity personIdentity =
+                TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
+        when(mockRequestMapper.mapPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+
+        when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
+        when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(hmacOfRequestBody);
+        ArgumentCaptor<HttpRequest> httpRequestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+
+        final int MOCK_HTTP_STATUS_CODE = -1;
+
+        when(this.mockHttpClient.send(
+                        httpRequestCaptor.capture(), eq(HttpResponse.BodyHandlers.ofString())))
+                .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE));
+
+        FraudCheckResult actualFraudCheckResult =
+                thirdPartyFraudGateway.performFraudCheck(personIdentity);
+
+        final String EXPECTED_ERROR =
+                ThirdPartyFraudGateway.HTTP_UNHANDLED_ERROR + MOCK_HTTP_STATUS_CODE;
+
+        verify(mockRequestMapper).mapPersonIdentity(personIdentity);
+        verify(mockObjectMapper).writeValueAsString(testApiRequest);
+        verify(mockHmacGenerator).generateHmac(testRequestBody);
+
+        verify(mockHttpClient)
+                .send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString()));
+        assertNotNull(actualFraudCheckResult);
+        assertEquals(EXPECTED_ERROR, actualFraudCheckResult.getErrorMessage());
+
         assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().uri().toString());
         assertEquals("POST", httpRequestCaptor.getValue().method());
         HttpHeaders capturedHttpRequestHeaders = httpRequestCaptor.getValue().headers();
@@ -185,11 +366,12 @@ class ThirdPartyFraudGatewayTest {
                                 errorMessage));
     }
 
-    private HttpResponse<String> createMockApiResponse() {
+    private HttpResponse<String> createMockApiResponse(int statusCode) {
+
         return new HttpResponse<>() {
             @Override
             public int statusCode() {
-                return 200;
+                return statusCode;
             }
 
             @Override

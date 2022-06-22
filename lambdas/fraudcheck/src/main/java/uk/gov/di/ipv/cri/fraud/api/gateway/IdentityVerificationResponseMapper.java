@@ -19,37 +19,27 @@ import java.util.stream.Collectors;
 public class IdentityVerificationResponseMapper {
 
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final String ERROR_MESSAGE_FORMAT = "Error code: %s, error description: %s";
-    private static final String DF_VALUE_REPLACEMENT = "Not specified";
-    private static final String IV_INFO_RESPONSE_VALIDATION_FAILED_MSG =
+    public static final String IV_ERROR_RESPONSE_ERROR_MESSAGE_FORMAT =
+            "Error code: %s, error description: %s";
+    public static final String IV_ERROR_RESPONSE_ERROR_MESSAGE_DEFAULT_FIELD_VALUE_IF_BLANK =
+            "Not specified";
+    public static final String IV_INFO_RESPONSE_VALIDATION_FAILED_MSG =
             "Identity Verification Info Response failed validation.";
 
     FraudCheckResult mapIdentityVerificationResponse(IdentityVerificationResponse response) {
         ResponseType responseType = response.getResponseHeader().getResponseType();
 
         switch (responseType) {
-            case ERROR:
-            case WARN:
-                return mapErrorResponse(response.getResponseHeader());
-            case WARNING:
-                return mapErrorResponse(response.getResponseHeader());
             case INFO:
                 return mapResponse(response, new IdentityVerificationInfoResponseValidator());
+            case ERROR:
+            case WARN:
+            case WARNING:
+                return mapErrorResponse(response.getResponseHeader());
             default:
                 throw new IllegalArgumentException(
-                        "Unexpected response type encountered: " + responseType);
+                        "Unmapped response type encountered: " + responseType);
         }
-    }
-
-    private FraudCheckResult mapErrorResponse(ResponseHeader responseHeader) {
-        FraudCheckResult identityContraindication = new FraudCheckResult();
-        identityContraindication.setExecutedSuccessfully(false);
-        identityContraindication.setErrorMessage(
-                String.format(
-                        ERROR_MESSAGE_FORMAT,
-                        replaceIfBlank(responseHeader.getResponseCode()),
-                        replaceIfBlank(responseHeader.getResponseMessage())));
-        return identityContraindication;
     }
 
     private FraudCheckResult mapResponse(
@@ -88,7 +78,20 @@ public class IdentityVerificationResponseMapper {
         return fraudCheckResult;
     }
 
-    private String replaceIfBlank(String input) {
-        return StringUtils.isBlank(input) ? DF_VALUE_REPLACEMENT : input;
+    private FraudCheckResult mapErrorResponse(ResponseHeader responseHeader) {
+        FraudCheckResult fraudCheckResult = new FraudCheckResult();
+        fraudCheckResult.setExecutedSuccessfully(false);
+        fraudCheckResult.setErrorMessage(
+                String.format(
+                        IV_ERROR_RESPONSE_ERROR_MESSAGE_FORMAT,
+                        replaceWithDefaultErrorValueIfBlank(responseHeader.getResponseCode()),
+                        replaceWithDefaultErrorValueIfBlank(responseHeader.getResponseMessage())));
+        return fraudCheckResult;
+    }
+
+    private String replaceWithDefaultErrorValueIfBlank(String input) {
+        return StringUtils.isBlank(input)
+                ? IV_ERROR_RESPONSE_ERROR_MESSAGE_DEFAULT_FIELD_VALUE_IF_BLANK
+                : input;
     }
 }

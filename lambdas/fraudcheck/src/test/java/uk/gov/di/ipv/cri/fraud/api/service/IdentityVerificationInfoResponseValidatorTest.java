@@ -28,7 +28,7 @@ public class IdentityVerificationInfoResponseValidatorTest {
 
     @BeforeEach
     public void PreEachTestSetup() {
-        testIVResponse = TestDataCreator.createTestVerificationInfoResponse();
+        testIVResponse = TestDataCreator.createTestVerificationResponse(ResponseType.INFO);
     }
 
     @Test

@@ -3,11 +3,7 @@ package uk.gov.di.ipv.cri.fraud.api.gateway;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.DecisionElement;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.IdentityVerificationResponse;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.ResponseHeader;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.ResponseType;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.Rule;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.*;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 
 import java.util.List;
@@ -27,33 +23,9 @@ class IdentityVerificationResponseMapperTest {
     }
 
     @Test
-    void mapIdentityVerificationResponseShouldMapWarnErrorResponse() {
-        String responseCode = "response-code";
-        String responseMessage = "response-message";
-        IdentityVerificationResponse testIdentityVerificationResponse =
-                new IdentityVerificationResponse();
-        ResponseHeader responseHeader = new ResponseHeader();
-        responseHeader.setResponseType(ResponseType.ERROR);
-        responseHeader.setResponseCode(responseCode);
-        responseHeader.setResponseMessage(responseMessage);
-        testIdentityVerificationResponse.setResponseHeader(responseHeader);
-
-        FraudCheckResult fraudCheckResult =
-                this.responseMapper.mapIdentityVerificationResponse(
-                        testIdentityVerificationResponse);
-
-        assertNotNull(fraudCheckResult);
-        assertFalse(fraudCheckResult.isExecutedSuccessfully());
-        assertEquals(
-                "Error code: " + responseCode + ", error description: " + responseMessage,
-                fraudCheckResult.getErrorMessage());
-        assertEquals(0, fraudCheckResult.getThirdPartyFraudCodes().length);
-    }
-
-    @Test
     void mapIdentityVerificationResponseShouldMapInfoResponse() {
         IdentityVerificationResponse testIdentityVerificationResponse =
-                TestDataCreator.createTestVerificationInfoResponse();
+                TestDataCreator.createTestVerificationResponse(ResponseType.INFO);
 
         DecisionElement decisionElement =
                 testIdentityVerificationResponse
@@ -76,5 +48,310 @@ class IdentityVerificationResponseMapperTest {
         assertNull(fraudCheckResult.getErrorMessage());
         assertEquals(1, fraudCheckResult.getThirdPartyFraudCodes().length);
         assertEquals(rule.getRuleId(), fraudCheckResult.getThirdPartyFraudCodes()[0]);
+    }
+
+    @Test
+    void mapIdentityVerificationInfoResponsesThatFailReturnFail() {
+        IdentityVerificationResponse testIdentityVerificationResponse =
+                TestDataCreator.createTestVerificationResponse(ResponseType.INFO);
+
+        testIdentityVerificationResponse.getResponseHeader().setTenantID(null);
+
+        FraudCheckResult fraudCheckResult =
+                this.responseMapper.mapIdentityVerificationResponse(
+                        testIdentityVerificationResponse);
+
+        final String EXPECTED_ERROR =
+                IdentityVerificationResponseMapper.IV_INFO_RESPONSE_VALIDATION_FAILED_MSG;
+
+        assertNotNull(fraudCheckResult);
+        assertFalse(fraudCheckResult.isExecutedSuccessfully());
+        assertEquals(EXPECTED_ERROR, fraudCheckResult.getErrorMessage());
+    }
+
+    @Test
+    void mapIdentityVerificationResponseShouldMapWarnResponse() {
+        String responseCode = "response-code";
+        String responseMessage = "response-message";
+        final ResponseType TYPE = ResponseType.WARN;
+
+        IdentityVerificationResponse testIdentityVerificationResponse =
+                TestDataCreator.createTestVerificationResponse(TYPE);
+
+        ResponseHeader responseHeader = testIdentityVerificationResponse.getResponseHeader();
+        responseHeader.setResponseCode(responseCode);
+        responseHeader.setResponseMessage(responseMessage);
+
+        testIdentityVerificationResponse.setResponseHeader(responseHeader);
+
+        FraudCheckResult fraudCheckResult =
+                this.responseMapper.mapIdentityVerificationResponse(
+                        testIdentityVerificationResponse);
+
+        assertEquals(responseHeader, testIdentityVerificationResponse.getResponseHeader());
+        assertEquals(TYPE, testIdentityVerificationResponse.getResponseHeader().getResponseType());
+        assertEquals(
+                responseCode,
+                testIdentityVerificationResponse.getResponseHeader().getResponseCode());
+        assertEquals(
+                responseMessage,
+                testIdentityVerificationResponse.getResponseHeader().getResponseMessage());
+
+        final String EXPECTED_ERROR =
+                String.format(
+                        IdentityVerificationResponseMapper.IV_ERROR_RESPONSE_ERROR_MESSAGE_FORMAT,
+                        responseCode,
+                        responseMessage);
+
+        assertNotNull(fraudCheckResult);
+        assertFalse(fraudCheckResult.isExecutedSuccessfully());
+        assertEquals(EXPECTED_ERROR, fraudCheckResult.getErrorMessage());
+        assertEquals(0, fraudCheckResult.getThirdPartyFraudCodes().length);
+    }
+
+    @Test
+    void mapIdentityVerificationResponseShouldMapWarningResponse() {
+        String responseCode = "response-code";
+        String responseMessage = "response-message";
+        final ResponseType TYPE = ResponseType.WARNING;
+
+        IdentityVerificationResponse testIdentityVerificationResponse =
+                TestDataCreator.createTestVerificationResponse(TYPE);
+
+        ResponseHeader responseHeader = testIdentityVerificationResponse.getResponseHeader();
+        responseHeader.setResponseCode(responseCode);
+        responseHeader.setResponseMessage(responseMessage);
+
+        testIdentityVerificationResponse.setResponseHeader(responseHeader);
+
+        FraudCheckResult fraudCheckResult =
+                this.responseMapper.mapIdentityVerificationResponse(
+                        testIdentityVerificationResponse);
+
+        assertEquals(responseHeader, testIdentityVerificationResponse.getResponseHeader());
+        assertEquals(TYPE, testIdentityVerificationResponse.getResponseHeader().getResponseType());
+        assertEquals(
+                responseCode,
+                testIdentityVerificationResponse.getResponseHeader().getResponseCode());
+        assertEquals(
+                responseMessage,
+                testIdentityVerificationResponse.getResponseHeader().getResponseMessage());
+
+        final String EXPECTED_ERROR =
+                String.format(
+                        IdentityVerificationResponseMapper.IV_ERROR_RESPONSE_ERROR_MESSAGE_FORMAT,
+                        responseCode,
+                        responseMessage);
+
+        assertNotNull(fraudCheckResult);
+        assertFalse(fraudCheckResult.isExecutedSuccessfully());
+        assertEquals(EXPECTED_ERROR, fraudCheckResult.getErrorMessage());
+        assertEquals(0, fraudCheckResult.getThirdPartyFraudCodes().length);
+    }
+
+    @Test
+    void mapIdentityVerificationResponseShouldMapErrorResponse() {
+        String responseCode = "response-code";
+        String responseMessage = "response-message";
+        final ResponseType TYPE = ResponseType.ERROR;
+
+        IdentityVerificationResponse testIdentityVerificationResponse =
+                TestDataCreator.createTestVerificationResponse(TYPE);
+
+        ResponseHeader responseHeader = testIdentityVerificationResponse.getResponseHeader();
+        responseHeader.setResponseCode(responseCode);
+        responseHeader.setResponseMessage(responseMessage);
+
+        testIdentityVerificationResponse.setResponseHeader(responseHeader);
+
+        FraudCheckResult fraudCheckResult =
+                this.responseMapper.mapIdentityVerificationResponse(
+                        testIdentityVerificationResponse);
+
+        assertEquals(responseHeader, testIdentityVerificationResponse.getResponseHeader());
+        assertEquals(TYPE, testIdentityVerificationResponse.getResponseHeader().getResponseType());
+        assertEquals(
+                responseCode,
+                testIdentityVerificationResponse.getResponseHeader().getResponseCode());
+        assertEquals(
+                responseMessage,
+                testIdentityVerificationResponse.getResponseHeader().getResponseMessage());
+
+        final String EXPECTED_ERROR =
+                String.format(
+                        IdentityVerificationResponseMapper.IV_ERROR_RESPONSE_ERROR_MESSAGE_FORMAT,
+                        responseCode,
+                        responseMessage);
+
+        assertNotNull(fraudCheckResult);
+        assertFalse(fraudCheckResult.isExecutedSuccessfully());
+        assertEquals(EXPECTED_ERROR, fraudCheckResult.getErrorMessage());
+        assertEquals(0, fraudCheckResult.getThirdPartyFraudCodes().length);
+    }
+
+    @Test
+    void mapIdentityVerificationResponseFraudCheckErrorMessageCannotBeNullWithNullResponseCode() {
+        String responseCode = null;
+        String responseMessage = "response-message";
+        final ResponseType TYPE = ResponseType.ERROR;
+
+        IdentityVerificationResponse testIdentityVerificationResponse =
+                TestDataCreator.createTestVerificationResponse(TYPE);
+
+        ResponseHeader responseHeader = testIdentityVerificationResponse.getResponseHeader();
+        responseHeader.setResponseCode(responseCode);
+        responseHeader.setResponseMessage(responseMessage);
+
+        testIdentityVerificationResponse.setResponseHeader(responseHeader);
+
+        FraudCheckResult fraudCheckResult =
+                this.responseMapper.mapIdentityVerificationResponse(
+                        testIdentityVerificationResponse);
+
+        assertEquals(responseHeader, testIdentityVerificationResponse.getResponseHeader());
+        assertEquals(TYPE, testIdentityVerificationResponse.getResponseHeader().getResponseType());
+        assertEquals(
+                responseCode,
+                testIdentityVerificationResponse.getResponseHeader().getResponseCode());
+        assertEquals(
+                responseMessage,
+                testIdentityVerificationResponse.getResponseHeader().getResponseMessage());
+
+        final String EXPECTED_ERROR =
+                String.format(
+                        IdentityVerificationResponseMapper.IV_ERROR_RESPONSE_ERROR_MESSAGE_FORMAT,
+                        IdentityVerificationResponseMapper
+                                .IV_ERROR_RESPONSE_ERROR_MESSAGE_DEFAULT_FIELD_VALUE_IF_BLANK,
+                        responseMessage);
+
+        assertNotNull(fraudCheckResult);
+        assertFalse(fraudCheckResult.isExecutedSuccessfully());
+        assertEquals(EXPECTED_ERROR, fraudCheckResult.getErrorMessage());
+        assertEquals(0, fraudCheckResult.getThirdPartyFraudCodes().length);
+    }
+
+    @Test
+    void mapIdentityVerificationResponseFraudCheckErrorMessageCannotBeEmptyWithEmptyResponseCode() {
+        String responseCode = "";
+        String responseMessage = "response-message";
+        final ResponseType TYPE = ResponseType.ERROR;
+
+        IdentityVerificationResponse testIdentityVerificationResponse =
+                TestDataCreator.createTestVerificationResponse(TYPE);
+
+        ResponseHeader responseHeader = testIdentityVerificationResponse.getResponseHeader();
+        responseHeader.setResponseCode(responseCode);
+        responseHeader.setResponseMessage(responseMessage);
+
+        testIdentityVerificationResponse.setResponseHeader(responseHeader);
+
+        FraudCheckResult fraudCheckResult =
+                this.responseMapper.mapIdentityVerificationResponse(
+                        testIdentityVerificationResponse);
+
+        assertEquals(responseHeader, testIdentityVerificationResponse.getResponseHeader());
+        assertEquals(TYPE, testIdentityVerificationResponse.getResponseHeader().getResponseType());
+        assertEquals(
+                responseCode,
+                testIdentityVerificationResponse.getResponseHeader().getResponseCode());
+        assertEquals(
+                responseMessage,
+                testIdentityVerificationResponse.getResponseHeader().getResponseMessage());
+
+        final String EXPECTED_ERROR =
+                String.format(
+                        IdentityVerificationResponseMapper.IV_ERROR_RESPONSE_ERROR_MESSAGE_FORMAT,
+                        IdentityVerificationResponseMapper
+                                .IV_ERROR_RESPONSE_ERROR_MESSAGE_DEFAULT_FIELD_VALUE_IF_BLANK,
+                        responseMessage);
+
+        assertNotNull(fraudCheckResult);
+        assertFalse(fraudCheckResult.isExecutedSuccessfully());
+        assertEquals(EXPECTED_ERROR, fraudCheckResult.getErrorMessage());
+        assertEquals(0, fraudCheckResult.getThirdPartyFraudCodes().length);
+    }
+
+    @Test
+    void
+            mapIdentityVerificationResponseFraudCheckErrorMessageCannotBeNullWithNullResponseMessage() {
+        String responseCode = "response-code";
+        String responseMessage = null;
+        final ResponseType TYPE = ResponseType.ERROR;
+
+        IdentityVerificationResponse testIdentityVerificationResponse =
+                TestDataCreator.createTestVerificationResponse(TYPE);
+
+        ResponseHeader responseHeader = testIdentityVerificationResponse.getResponseHeader();
+        responseHeader.setResponseCode(responseCode);
+        responseHeader.setResponseMessage(responseMessage);
+
+        testIdentityVerificationResponse.setResponseHeader(responseHeader);
+
+        FraudCheckResult fraudCheckResult =
+                this.responseMapper.mapIdentityVerificationResponse(
+                        testIdentityVerificationResponse);
+
+        assertEquals(responseHeader, testIdentityVerificationResponse.getResponseHeader());
+        assertEquals(TYPE, testIdentityVerificationResponse.getResponseHeader().getResponseType());
+        assertEquals(
+                responseCode,
+                testIdentityVerificationResponse.getResponseHeader().getResponseCode());
+        assertEquals(
+                responseMessage,
+                testIdentityVerificationResponse.getResponseHeader().getResponseMessage());
+
+        final String EXPECTED_ERROR =
+                String.format(
+                        IdentityVerificationResponseMapper.IV_ERROR_RESPONSE_ERROR_MESSAGE_FORMAT,
+                        responseCode,
+                        IdentityVerificationResponseMapper
+                                .IV_ERROR_RESPONSE_ERROR_MESSAGE_DEFAULT_FIELD_VALUE_IF_BLANK);
+
+        assertNotNull(fraudCheckResult);
+        assertFalse(fraudCheckResult.isExecutedSuccessfully());
+        assertEquals(EXPECTED_ERROR, fraudCheckResult.getErrorMessage());
+        assertEquals(0, fraudCheckResult.getThirdPartyFraudCodes().length);
+    }
+
+    @Test
+    void
+            mapIdentityVerificationResponseFraudCheckErrorMessageCannotBeEmptyWithEmptyResponseMessage() {
+        String responseCode = "response-code";
+        String responseMessage = "";
+        final ResponseType TYPE = ResponseType.ERROR;
+
+        IdentityVerificationResponse testIdentityVerificationResponse =
+                TestDataCreator.createTestVerificationResponse(TYPE);
+
+        ResponseHeader responseHeader = testIdentityVerificationResponse.getResponseHeader();
+        responseHeader.setResponseCode(responseCode);
+        responseHeader.setResponseMessage(responseMessage);
+
+        testIdentityVerificationResponse.setResponseHeader(responseHeader);
+
+        FraudCheckResult fraudCheckResult =
+                this.responseMapper.mapIdentityVerificationResponse(
+                        testIdentityVerificationResponse);
+
+        assertEquals(responseHeader, testIdentityVerificationResponse.getResponseHeader());
+        assertEquals(TYPE, testIdentityVerificationResponse.getResponseHeader().getResponseType());
+        assertEquals(
+                responseCode,
+                testIdentityVerificationResponse.getResponseHeader().getResponseCode());
+        assertEquals(
+                responseMessage,
+                testIdentityVerificationResponse.getResponseHeader().getResponseMessage());
+
+        final String EXPECTED_ERROR =
+                String.format(
+                        IdentityVerificationResponseMapper.IV_ERROR_RESPONSE_ERROR_MESSAGE_FORMAT,
+                        responseCode,
+                        IdentityVerificationResponseMapper
+                                .IV_ERROR_RESPONSE_ERROR_MESSAGE_DEFAULT_FIELD_VALUE_IF_BLANK);
+
+        assertNotNull(fraudCheckResult);
+        assertFalse(fraudCheckResult.isExecutedSuccessfully());
+        assertEquals(EXPECTED_ERROR, fraudCheckResult.getErrorMessage());
+        assertEquals(0, fraudCheckResult.getThirdPartyFraudCodes().length);
     }
 }
