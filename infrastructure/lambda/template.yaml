@@ -39,6 +39,9 @@ Conditions:
     - !Equals [ !Ref Environment, staging ]
     - !Equals [ !Ref Environment, integration ]
     - !Equals [ !Ref Environment, production ]
+  IsProdEnvironment: !Equals
+    - !Ref Environment
+    - production
   UsePermissionsBoundary:
     Fn::Not:
       - Fn::Equals:
@@ -194,7 +197,7 @@ Resources:
           ResourcePath: '/*'
           HttpMethod: '*'
           # Disable data trace in production to avoid logging customer sensitive information
-          DataTraceEnabled: true
+          DataTraceEnabled: !If [IsProdEnvironment, false, true]
           MetricsEnabled: true
           ThrottlingRateLimit: 5
           ThrottlingBurstLimit: 10
@@ -238,7 +241,7 @@ Resources:
           ResourcePath: '/*'
           HttpMethod: '*'
           # Disable data trace in production to avoid logging customer sensitive information
-          DataTraceEnabled: true
+          DataTraceEnabled: !If [IsProdEnvironment, false, true]
           MetricsEnabled: true
           ThrottlingRateLimit: 5
           ThrottlingBurstLimit: 10
