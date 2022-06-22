@@ -283,7 +283,7 @@ Resources:
               Condition:
                 StringNotEquals:
                   aws:SourceVpce: !If
-                    - IsDevEnvironment
+                    - CreateDevResources
                     - vpce-082cab7c78139eb54
                     - !ImportValue cri-vpc-ApiGatewayVpcEndpointId
 
