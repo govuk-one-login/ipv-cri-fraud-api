@@ -219,7 +219,7 @@ Resources:
         Fn::Transform:
           Name: AWS::Include
           Parameters:
-            Location: './api.yaml'
+            Location: './public-api.yaml'
       OpenApiVersion: 3.0.1
       EndpointConfiguration:
         Type: REGIONAL
