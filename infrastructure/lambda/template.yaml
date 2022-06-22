@@ -75,14 +75,6 @@ Globals:
 
 Mappings:
 
-  VPCEndpointIdMapping:
-    Environment:
-      dev: vpce-082cab7c78139eb54
-      build: vpce-065cca195d9213386
-      staging: todo
-      integration: todo
-      production: todo
-
   SessionTtlMapping:
     Environment:
       dev: "172800" # 2 days
@@ -290,8 +282,10 @@ Resources:
                 - 'execute-api:/*'
               Condition:
                 StringNotEquals:
-                  'aws:SourceVpce': !FindInMap [ VPCEndpointIdMapping, Environment, !Ref 'Environment' ]
-
+                  aws:SourceVpce: !If
+                    - IsDevEnvironment
+                    - vpce-082cab7c78139eb54
+                    - !ImportValue cri-vpc-ApiGatewayVpcEndpointId
 
   PublicFraudApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
