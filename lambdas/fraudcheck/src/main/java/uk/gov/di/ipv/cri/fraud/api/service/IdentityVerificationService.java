@@ -3,10 +3,13 @@ package uk.gov.di.ipv.cri.fraud.api.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
+import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.ValidationResult;
+import uk.gov.di.ipv.cri.fraud.api.domain.audit.TPREFraudAuditExtension;
 import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyFraudGateway;
 
 import java.util.Arrays;
@@ -27,15 +30,19 @@ public class IdentityVerificationService {
     private final ContraindicationMapper contraindicationMapper;
     private final IdentityScoreCalaculator identityScoreCalaculator;
 
+    private final AuditService auditService;
+
     IdentityVerificationService(
             ThirdPartyFraudGateway thirdPartyGateway,
             PersonIdentityValidator personIdentityValidator,
             ContraindicationMapper contraindicationMapper,
-            IdentityScoreCalaculator identityScoreCalaculator) {
+            IdentityScoreCalaculator identityScoreCalaculator,
+            AuditService auditService) {
         this.thirdPartyGateway = thirdPartyGateway;
         this.personIdentityValidator = personIdentityValidator;
         this.contraindicationMapper = contraindicationMapper;
         this.identityScoreCalaculator = identityScoreCalaculator;
+        this.auditService = auditService;
     }
 
     public IdentityVerificationResult verifyIdentity(PersonIdentity personIdentity) {
@@ -79,6 +86,9 @@ public class IdentityVerificationService {
                             "Fraud check passed successfully. Indicators {}, Score {}",
                             Arrays.toString(contraindications),
                             identityCheckScore);
+                    auditService.sendAuditEvent(
+                            AuditEventType.THIRD_PARTY_REQUEST_ENDED,
+                            new TPREFraudAuditExtension(List.of(contraindications)));
                 } else {
                     LOGGER.warn("Fraud check failed");
                     if (Objects.nonNull(fraudCheckResult.getErrorMessage())) {
