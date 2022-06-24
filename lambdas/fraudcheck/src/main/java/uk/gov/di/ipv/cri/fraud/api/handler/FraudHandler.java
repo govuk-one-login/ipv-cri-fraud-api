@@ -10,15 +10,18 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.http.HttpStatusCode;
+import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
 import software.amazon.lambda.powertools.parameters.ParamManager;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
+import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.common.library.persistence.DataStore;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
+import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.ApiGatewayResponseGenerator;
@@ -32,6 +35,7 @@ import uk.gov.di.ipv.cri.fraud.api.service.ServiceFactory;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
@@ -50,6 +54,7 @@ public class FraudHandler
     private final SessionService sessionService;
     private final DataStore<FraudResultItem> dataStore;
     private final ConfigurationService configurationService;
+    private final AuditService auditService;
 
     public FraudHandler(
             ServiceFactory serviceFactory,
@@ -58,7 +63,8 @@ public class FraudHandler
             PersonIdentityService personIdentityService,
             SessionService sessionService,
             DataStore<FraudResultItem> dataStore,
-            ConfigurationService configurationService) {
+            ConfigurationService configurationService,
+            AuditService auditService) {
         this.identityVerificationService = serviceFactory.getIdentityVerificationService();
         this.objectMapper = objectMapper;
         this.eventProbe = eventProbe;
@@ -66,6 +72,7 @@ public class FraudHandler
         this.sessionService = sessionService;
         this.configurationService = configurationService;
         this.dataStore = dataStore;
+        this.auditService = auditService;
     }
 
     @ExcludeFromGeneratedCoverageReport
@@ -86,6 +93,12 @@ public class FraudHandler
                         configurationService.getFraudResultTableName(),
                         FraudResultItem.class,
                         DataStore.getClient());
+        this.auditService =
+                new AuditService(
+                        SqsClient.builder().build(),
+                        new uk.gov.di.ipv.cri.common.library.service.ConfigurationService(),
+                        this.objectMapper,
+                        Clock.systemUTC());
     }
 
     @Override
@@ -116,7 +129,7 @@ public class FraudHandler
             LOGGER.info("Verifying identity...");
             IdentityVerificationResult result =
                     identityVerificationService.verifyIdentity(personIdentity);
-
+            auditService.sendAuditEvent(AuditEventType.REQUEST_SENT, personIdentity);
             if (!result.isSuccess()) {
                 LOGGER.info("Third party failed to assert identity. Error {}", result.getError());
 

@@ -10,9 +10,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
+import uk.gov.di.ipv.cri.common.library.exception.SqsException;
 import uk.gov.di.ipv.cri.common.library.persistence.DataStore;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
+import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
@@ -28,6 +31,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,6 +45,7 @@ class CredentialHandlerTest {
     @Mock private SessionService sessionService;
     @Mock private DataStore dataStore;
     @Mock private ConfigurationService configurationService;
+    @Mock private AuditService auditService;
 
     private FraudHandler fraudHandler;
 
@@ -56,11 +61,13 @@ class CredentialHandlerTest {
                         personIdentityService,
                         sessionService,
                         dataStore,
-                        configurationService);
+                        configurationService,
+                        auditService);
     }
 
     @Test
-    void handleResponseShouldReturnOkResponseWhenValidInputProvided() throws IOException {
+    void handleResponseShouldReturnOkResponseWhenValidInputProvided()
+            throws IOException, SqsException {
         String testRequestBody = "request body";
         PersonIdentity testPersonIdentity = new PersonIdentity();
         IdentityVerificationResult testIdentityVerificationResult =
@@ -76,6 +83,9 @@ class CredentialHandlerTest {
                 .thenReturn(Map.of("session_id", UUID.randomUUID().toString()));
         when(mockObjectMapper.readValue(testRequestBody, PersonIdentity.class))
                 .thenReturn(testPersonIdentity);
+        doNothing()
+                .when(auditService)
+                .sendAuditEvent(AuditEventType.REQUEST_SENT, testPersonIdentity);
         when(mockIdentityVerificationService.verifyIdentity(testPersonIdentity))
                 .thenReturn(testIdentityVerificationResult);
         when(context.getFunctionName()).thenReturn("functionName");

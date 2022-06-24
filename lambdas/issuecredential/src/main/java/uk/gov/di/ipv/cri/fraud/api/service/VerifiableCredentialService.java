@@ -99,6 +99,10 @@ public class VerifiableCredentialService {
         return signedJwtFactory.createSignedJwt(claimsSet);
     }
 
+    public String getVerifiableCredentialIssuer() {
+        return configurationService.getVerifiableCredentialIssuer();
+    }
+
     private Object[] convertAddresses(List<Address> addresses) {
         return addresses.stream()
                 .map(address -> objectMapper.convertValue(address, ThirdPartyAddress.class))

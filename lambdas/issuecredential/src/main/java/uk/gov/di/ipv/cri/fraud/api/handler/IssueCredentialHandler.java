@@ -27,12 +27,17 @@ import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.ApiGatewayResponseGenerator;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
+import uk.gov.di.ipv.cri.fraud.api.domain.Evidence;
+import uk.gov.di.ipv.cri.fraud.api.domain.EvidenceType;
+import uk.gov.di.ipv.cri.fraud.api.domain.FraudAuditExtension;
 import uk.gov.di.ipv.cri.fraud.api.exception.CredentialRequestException;
 import uk.gov.di.ipv.cri.fraud.api.persistence.item.FraudResultItem;
 import uk.gov.di.ipv.cri.fraud.api.service.FraudRetrievalService;
 import uk.gov.di.ipv.cri.fraud.api.service.VerifiableCredentialService;
 
 import java.time.Clock;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -110,7 +115,11 @@ public class IssueCredentialHandler
             SignedJWT signedJWT =
                     verifiableCredentialService.generateSignedVerifiableCredentialJwt(
                             sessionItem.getSubject(), fraudResult, personIdentity);
-            auditService.sendAuditEvent(AuditEventType.VC_ISSUED);
+            auditService.sendAuditEvent(
+                    AuditEventType.VC_ISSUED,
+                    generateFraudAuditExtension(
+                            verifiableCredentialService.getVerifiableCredentialIssuer(),
+                            List.of(fraudResult)));
             eventProbe.counterMetric(FRAUD_CREDENTIAL_ISSUER, 0d);
 
             LOGGER.info("Credential generated");
@@ -172,5 +181,25 @@ public class IssueCredentialHandler
     private VerifiableCredentialService getVerifiableCredentialService() {
         Supplier<VerifiableCredentialService> factory = VerifiableCredentialService::new;
         return factory.get();
+    }
+
+    private FraudAuditExtension generateFraudAuditExtension(
+            String vcIssuer, List<FraudResultItem> fraudResultItems) {
+
+        List<Evidence> evidenceList = new ArrayList<>();
+
+        for (FraudResultItem fraudResultItem : fraudResultItems) {
+
+            Evidence evidence = new Evidence();
+
+            evidence.setType(EvidenceType.IDENTITY_CHECK.toString());
+            evidence.setTxn(fraudResultItem.getTransactionId());
+            evidence.setIdentityFraudScore(fraudResultItem.getIdentityFraudScore());
+            evidence.setCi(fraudResultItem.getContraIndicators());
+
+            evidenceList.add(evidence);
+        }
+
+        return new FraudAuditExtension(vcIssuer, evidenceList);
     }
 }
