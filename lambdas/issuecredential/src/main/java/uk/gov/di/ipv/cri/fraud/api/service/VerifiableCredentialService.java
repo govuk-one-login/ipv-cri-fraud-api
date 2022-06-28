@@ -12,9 +12,9 @@ import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentityDeta
 import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.util.KMSSigner;
 import uk.gov.di.ipv.cri.common.library.util.SignedJWTFactory;
-import uk.gov.di.ipv.cri.fraud.api.domain.Evidence;
 import uk.gov.di.ipv.cri.fraud.api.domain.ThirdPartyAddress;
 import uk.gov.di.ipv.cri.fraud.api.domain.VerifiableCredentialConstants;
+import uk.gov.di.ipv.cri.fraud.api.domain.audit.Evidence;
 import uk.gov.di.ipv.cri.fraud.api.persistence.item.FraudResultItem;
 
 import java.time.Instant;
@@ -97,6 +97,10 @@ public class VerifiableCredentialService {
                         .build();
 
         return signedJwtFactory.createSignedJwt(claimsSet);
+    }
+
+    public String getVerifiableCredentialIssuer() {
+        return configurationService.getVerifiableCredentialIssuer();
     }
 
     private Object[] convertAddresses(List<Address> addresses) {

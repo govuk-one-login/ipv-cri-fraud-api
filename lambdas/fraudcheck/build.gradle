@@ -10,7 +10,8 @@ dependencies {
 			configurations.lambda,
 			configurations.nimbus,
 			configurations.dynamodb,
-			configurations.jackson
+			configurations.jackson,
+			configurations.sqs
 
 	aspect configurations.powertools
 

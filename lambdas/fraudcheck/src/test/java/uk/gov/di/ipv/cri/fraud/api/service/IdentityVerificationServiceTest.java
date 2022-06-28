@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
+import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.ValidationResult;
@@ -28,6 +29,7 @@ class IdentityVerificationServiceTest {
     @Mock private PersonIdentityValidator personIdentityValidator;
     @Mock private ContraindicationMapper mockContraindicationMapper;
     @Mock private IdentityScoreCalaculator identityScoreCalaculator;
+    @Mock private AuditService mockAuditService;
 
     private IdentityVerificationService identityVerificationService;
 
@@ -38,7 +40,8 @@ class IdentityVerificationServiceTest {
                         mockThirdPartyGateway,
                         personIdentityValidator,
                         mockContraindicationMapper,
-                        identityScoreCalaculator);
+                        identityScoreCalaculator,
+                        mockAuditService);
     }
 
     @Test

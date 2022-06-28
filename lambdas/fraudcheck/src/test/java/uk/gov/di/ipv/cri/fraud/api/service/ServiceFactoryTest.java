@@ -5,14 +5,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import uk.gov.di.ipv.cri.common.library.service.AuditService;
 
 import java.net.http.HttpClient;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ServiceFactoryTest {
@@ -22,6 +22,8 @@ class ServiceFactoryTest {
     @Mock private ContraindicationMapper mockContraindicationMapper;
     @Mock private PersonIdentityValidator mockPersonIdentityValidator;
     @Mock private HttpClient mockHttpClient;
+
+    @Mock private AuditService mockAuditService;
 
     @Test
     void shouldCreateIdentityVerificationService()
@@ -35,7 +37,8 @@ class ServiceFactoryTest {
                         mockSslContextFactory,
                         mockContraindicationMapper,
                         mockPersonIdentityValidator,
-                        mockHttpClient);
+                        mockHttpClient,
+                        mockAuditService);
 
         IdentityVerificationService identityVerificationService =
                 serviceFactory.getIdentityVerificationService();

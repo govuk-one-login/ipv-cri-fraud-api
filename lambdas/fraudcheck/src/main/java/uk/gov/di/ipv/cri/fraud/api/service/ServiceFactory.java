@@ -1,8 +1,10 @@
 package uk.gov.di.ipv.cri.fraud.api.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.lambda.powertools.parameters.ParamManager;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
+import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.fraud.api.gateway.HmacGenerator;
 import uk.gov.di.ipv.cri.fraud.api.gateway.IdentityVerificationRequestMapper;
 import uk.gov.di.ipv.cri.fraud.api.gateway.IdentityVerificationResponseMapper;
@@ -12,6 +14,7 @@ import java.io.IOException;
 import java.net.http.HttpClient;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
 import java.time.Duration;
 
 public class ServiceFactory {
@@ -22,6 +25,7 @@ public class ServiceFactory {
     private final PersonIdentityValidator personIdentityValidator;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
+    private final AuditService auditService;
 
     @ExcludeFromGeneratedCoverageReport
     public ServiceFactory(ObjectMapper objectMapper)
@@ -39,7 +43,8 @@ public class ServiceFactory {
                         this.configurationService.getKeyStorePassword());
         this.contraindicationMapper = new ContraIndicatorRemoteMapper();
         this.httpClient = createHttpClient();
-        this.identityVerificationService = createIdentityVerificationService();
+        this.auditService = createAuditService(this.objectMapper);
+        this.identityVerificationService = createIdentityVerificationService(this.auditService);
     }
 
     ServiceFactory(
@@ -48,7 +53,8 @@ public class ServiceFactory {
             SSLContextFactory sslContextFactory,
             ContraindicationMapper contraindicationMapper,
             PersonIdentityValidator personIdentityValidator,
-            HttpClient httpClient)
+            HttpClient httpClient,
+            AuditService auditService)
             throws NoSuchAlgorithmException, InvalidKeyException {
         this.objectMapper = objectMapper;
         this.configurationService = configurationService;
@@ -56,14 +62,15 @@ public class ServiceFactory {
         this.contraindicationMapper = contraindicationMapper;
         this.personIdentityValidator = personIdentityValidator;
         this.httpClient = httpClient;
-        this.identityVerificationService = createIdentityVerificationService();
+        this.auditService = auditService;
+        this.identityVerificationService = createIdentityVerificationService(this.auditService);
     }
 
     public IdentityVerificationService getIdentityVerificationService() {
         return this.identityVerificationService;
     }
 
-    private IdentityVerificationService createIdentityVerificationService()
+    private IdentityVerificationService createIdentityVerificationService(AuditService auditService)
             throws NoSuchAlgorithmException, InvalidKeyException {
 
         ThirdPartyFraudGateway thirdPartyGateway =
@@ -81,7 +88,20 @@ public class ServiceFactory {
                 thirdPartyGateway,
                 this.personIdentityValidator,
                 this.contraindicationMapper,
-                identityScoreCalaculator);
+                identityScoreCalaculator,
+                auditService);
+    }
+
+    public AuditService getAuditService() {
+        return auditService;
+    }
+
+    private AuditService createAuditService(ObjectMapper objectMapper) {
+        return new AuditService(
+                SqsClient.builder().build(),
+                new uk.gov.di.ipv.cri.common.library.service.ConfigurationService(),
+                objectMapper,
+                Clock.systemUTC());
     }
 
     private HttpClient createHttpClient() {

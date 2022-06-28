@@ -15,10 +15,12 @@ import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
 import software.amazon.lambda.powertools.parameters.ParamManager;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
-import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
+import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
+import uk.gov.di.ipv.cri.common.library.domain.personidentity.*;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.common.library.persistence.DataStore;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
+import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.ApiGatewayResponseGenerator;
@@ -28,13 +30,12 @@ import uk.gov.di.ipv.cri.fraud.api.persistence.item.FraudResultItem;
 import uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationService;
 import uk.gov.di.ipv.cri.fraud.api.service.ServiceFactory;
+import uk.gov.di.ipv.cri.fraud.api.util.FraudPersonIdentityDetailedMapper;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class FraudHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
@@ -50,6 +51,7 @@ public class FraudHandler
     private final SessionService sessionService;
     private final DataStore<FraudResultItem> dataStore;
     private final ConfigurationService configurationService;
+    private final AuditService auditService;
 
     public FraudHandler(
             ServiceFactory serviceFactory,
@@ -58,7 +60,8 @@ public class FraudHandler
             PersonIdentityService personIdentityService,
             SessionService sessionService,
             DataStore<FraudResultItem> dataStore,
-            ConfigurationService configurationService) {
+            ConfigurationService configurationService,
+            AuditService auditService) {
         this.identityVerificationService = serviceFactory.getIdentityVerificationService();
         this.objectMapper = objectMapper;
         this.eventProbe = eventProbe;
@@ -66,6 +69,7 @@ public class FraudHandler
         this.sessionService = sessionService;
         this.configurationService = configurationService;
         this.dataStore = dataStore;
+        this.auditService = auditService;
     }
 
     @ExcludeFromGeneratedCoverageReport
@@ -86,6 +90,7 @@ public class FraudHandler
                         configurationService.getFraudResultTableName(),
                         FraudResultItem.class,
                         DataStore.getClient());
+        this.auditService = new ServiceFactory(this.objectMapper).getAuditService();
     }
 
     @Override
@@ -117,6 +122,10 @@ public class FraudHandler
             IdentityVerificationResult result =
                     identityVerificationService.verifyIdentity(personIdentity);
 
+            auditService.sendAuditEvent(
+                    AuditEventType.REQUEST_SENT,
+                    FraudPersonIdentityDetailedMapper.generatePersonIdentityDetailed(
+                            personIdentity));
             if (!result.isSuccess()) {
                 LOGGER.info("Third party failed to assert identity. Error {}", result.getError());
 

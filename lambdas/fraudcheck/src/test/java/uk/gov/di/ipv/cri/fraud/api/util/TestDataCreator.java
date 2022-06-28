@@ -19,6 +19,11 @@ public class TestDataCreator {
 
     public static PersonIdentity createTestPersonIdentity(AddressType addressType) {
         PersonIdentity personIdentity = new PersonIdentity();
+
+        personIdentity.setFirstName("FirstName");
+        personIdentity.setMiddleNames("MiddleName");
+        personIdentity.setSurname("Surname");
+
         personIdentity.setDateOfBirth(LocalDate.of(1976, 12, 26));
         Address address = new Address();
         address.setValidFrom(LocalDate.now().minusYears(3));

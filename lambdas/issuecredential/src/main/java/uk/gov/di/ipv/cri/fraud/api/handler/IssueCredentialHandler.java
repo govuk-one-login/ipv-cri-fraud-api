@@ -31,8 +31,10 @@ import uk.gov.di.ipv.cri.fraud.api.exception.CredentialRequestException;
 import uk.gov.di.ipv.cri.fraud.api.persistence.item.FraudResultItem;
 import uk.gov.di.ipv.cri.fraud.api.service.FraudRetrievalService;
 import uk.gov.di.ipv.cri.fraud.api.service.VerifiableCredentialService;
+import uk.gov.di.ipv.cri.fraud.api.util.IssueCredentialFraudAuditExtensionUtil;
 
 import java.time.Clock;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -110,7 +112,11 @@ public class IssueCredentialHandler
             SignedJWT signedJWT =
                     verifiableCredentialService.generateSignedVerifiableCredentialJwt(
                             sessionItem.getSubject(), fraudResult, personIdentity);
-            auditService.sendAuditEvent(AuditEventType.VC_ISSUED);
+            auditService.sendAuditEvent(
+                    AuditEventType.VC_ISSUED,
+                    IssueCredentialFraudAuditExtensionUtil.generateVCISSFraudAuditExtension(
+                            verifiableCredentialService.getVerifiableCredentialIssuer(),
+                            List.of(fraudResult)));
             eventProbe.counterMetric(FRAUD_CREDENTIAL_ISSUER, 0d);
 
             LOGGER.info("Credential generated");
