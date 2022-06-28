@@ -88,7 +88,8 @@ public class IdentityVerificationService {
                             identityCheckScore);
                     auditService.sendAuditEvent(
                             AuditEventType.THIRD_PARTY_REQUEST_ENDED,
-                            new TPREFraudAuditExtension(List.of(contraindications)));
+                            new TPREFraudAuditExtension(
+                                    List.of(fraudCheckResult.getThirdPartyFraudCodes())));
                 } else {
                     LOGGER.warn("Fraud check failed");
                     if (Objects.nonNull(fraudCheckResult.getErrorMessage())) {
