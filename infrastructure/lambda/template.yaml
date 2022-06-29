@@ -376,20 +376,13 @@ Resources:
               Resource:
                 - !ImportValue AuditEventQueueEncryptionKeyArn
 
-  SessionFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      RetentionInDays: 14
-      LogGroupName: !Sub "/aws/lambda/${SessionFunction}"
-      KmsKeyId: !GetAtt LoggingKmsKey.Arn
-
   SessionFunctionLogGroupSubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsNotDevEnvironment
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
       FilterPattern: ""
-      LogGroupName: !Ref SessionFunctionLogGroup
+      LogGroupName: !Sub "/aws/lambda/${SessionFunction}"
 
   SessionFunctionPermission:
     Type: AWS::Lambda::Permission
@@ -474,20 +467,13 @@ Resources:
         - SSMParameterReadPolicy:
             ParameterName: !Sub "${AWS::StackName}/*"
 
-  IdentityCheckingFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      RetentionInDays: 14
-      LogGroupName: !Sub "/aws/lambda/${IdentityCheckingFunction}"
-      KmsKeyId: !GetAtt LoggingKmsKey.Arn
-
   IdentityCheckingFunctionLogGroupSubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsNotDevEnvironment
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
       FilterPattern: ""
-      LogGroupName: !Ref IdentityCheckingFunctionLogGroup
+      LogGroupName: !Sub "/aws/lambda/${IdentityCheckingFunction}"
 
   IdentityCheckingFunctionPermission:
     Type: AWS::Lambda::Permission
@@ -539,20 +525,13 @@ Resources:
             Resource:
               - !ImportValue AuditEventQueueEncryptionKeyArn
 
-  IssueCredentialFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      RetentionInDays: 14
-      LogGroupName: !Sub "/aws/lambda/${IssueCredentialFunction}"
-      KmsKeyId: !GetAtt LoggingKmsKey.Arn
-
   IssueCredentialFunctionLogGroupSubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsNotDevEnvironment
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
       FilterPattern: ""
-      LogGroupName: !Ref IssueCredentialFunctionLogGroup
+      LogGroupName: !Sub "/aws/lambda/${IssueCredentialFunction}"
 
   IssueCredentialFunctionPermission:
     Type: AWS::Lambda::Permission
@@ -593,12 +572,6 @@ Resources:
                 - ssm:GetParametersByPath
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
-  AccessTokenFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      RetentionInDays: 14
-      LogGroupName: !Sub "/aws/lambda/${AccessTokenFunction}"
-      KmsKeyId: !GetAtt LoggingKmsKey.Arn
 
   AccessTokenFunctionLogGroupSubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
@@ -606,7 +579,7 @@ Resources:
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
       FilterPattern: ""
-      LogGroupName: !Ref AccessTokenFunctionLogGroup
+      LogGroupName: !Sub "/aws/lambda/${AccessTokenFunction}"
 
   AccessTokenFunctionPermission:
     Type: AWS::Lambda::Permission
@@ -688,20 +661,13 @@ Resources:
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
 
-  AuthorizationFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      RetentionInDays: 14
-      LogGroupName: !Sub "/aws/lambda/${AuthorizationFunction}"
-      KmsKeyId: !GetAtt LoggingKmsKey.Arn
-
   AuthorizationFunctionLogGroupSubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsNotDevEnvironment
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
       FilterPattern: ""
-      LogGroupName: !Ref AuthorizationFunctionLogGroup
+      LogGroupName: !Sub "/aws/lambda/${AuthorizationFunction}"
 
   AuthorizationFunctionPermission:
     Type: AWS::Lambda::Permission
