@@ -42,6 +42,12 @@ Conditions:
   IsProdEnvironment: !Equals
     - !Ref Environment
     - production
+  IsDevEnvironment: !Equals
+    - !Ref Environment
+    - dev
+  IsNotDevEnvironment: !Not
+    - Condition: IsDevEnvironment
+
   UsePermissionsBoundary:
     Fn::Not:
       - Fn::Equals:
@@ -293,11 +299,27 @@ Resources:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PublicFraudApi}-public-AccessLogs
       RetentionInDays: 365
 
+  PublicFraudApiAccessLogGroupSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsNotDevEnvironment
+    Properties:
+      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
+      FilterPattern: ""
+      LogGroupName: !Ref PublicFraudApiAccessLogGroup
+
   PrivateFraudApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PrivateFraudApi}-private-AccessLogs
       RetentionInDays: 365
+
+  PrivateFraudApiAccessLogGroupSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsNotDevEnvironment
+    Properties:
+      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
+      FilterPattern: ""
+      LogGroupName: !Ref PrivateFraudApiAccessLogGroup
 
 ####################################################################
 #                                                                  #
@@ -353,6 +375,21 @@ Resources:
                 - 'kms:GenerateDataKey'
               Resource:
                 - !ImportValue AuditEventQueueEncryptionKeyArn
+
+  SessionFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 14
+      LogGroupName: !Sub "/aws/lambda/${SessionFunction}"
+      KmsKeyId: !GetAtt LoggingKmsKey.Arn
+
+  SessionFunctionLogGroupSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsNotDevEnvironment
+    Properties:
+      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
+      FilterPattern: ""
+      LogGroupName: !Ref SessionFunctionLogGroup
 
   SessionFunctionPermission:
     Type: AWS::Lambda::Permission
@@ -437,6 +474,21 @@ Resources:
         - SSMParameterReadPolicy:
             ParameterName: !Sub "${AWS::StackName}/*"
 
+  IdentityCheckingFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 14
+      LogGroupName: !Sub "/aws/lambda/${IdentityCheckingFunction}"
+      KmsKeyId: !GetAtt LoggingKmsKey.Arn
+
+  IdentityCheckingFunctionLogGroupSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsNotDevEnvironment
+    Properties:
+      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
+      FilterPattern: ""
+      LogGroupName: !Ref IdentityCheckingFunctionLogGroup
+
   IdentityCheckingFunctionPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -487,6 +539,21 @@ Resources:
             Resource:
               - !ImportValue AuditEventQueueEncryptionKeyArn
 
+  IssueCredentialFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 14
+      LogGroupName: !Sub "/aws/lambda/${IssueCredentialFunction}"
+      KmsKeyId: !GetAtt LoggingKmsKey.Arn
+
+  IssueCredentialFunctionLogGroupSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsNotDevEnvironment
+    Properties:
+      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
+      FilterPattern: ""
+      LogGroupName: !Ref IssueCredentialFunctionLogGroup
+
   IssueCredentialFunctionPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -526,6 +593,20 @@ Resources:
                 - ssm:GetParametersByPath
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
+  AccessTokenFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 14
+      LogGroupName: !Sub "/aws/lambda/${AccessTokenFunction}"
+      KmsKeyId: !GetAtt LoggingKmsKey.Arn
+
+  AccessTokenFunctionLogGroupSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsNotDevEnvironment
+    Properties:
+      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
+      FilterPattern: ""
+      LogGroupName: !Ref AccessTokenFunctionLogGroup
 
   AccessTokenFunctionPermission:
     Type: AWS::Lambda::Permission
@@ -606,6 +687,21 @@ Resources:
                 - ssm:GetParametersByPath
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
+
+  AuthorizationFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 14
+      LogGroupName: !Sub "/aws/lambda/${AuthorizationFunction}"
+      KmsKeyId: !GetAtt LoggingKmsKey.Arn
+
+  AuthorizationFunctionLogGroupSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsNotDevEnvironment
+    Properties:
+      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
+      FilterPattern: ""
+      LogGroupName: !Ref AuthorizationFunctionLogGroup
 
   AuthorizationFunctionPermission:
     Type: AWS::Lambda::Permission
@@ -908,6 +1004,33 @@ Resources:
       Type: String
       Value: !ImportValue core-infrastructure-CriVcSigningKey1Id
       Description: Verifiable Credential Key Id
+
+  LoggingKmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - kms:*
+            Resource: "*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub "logs.${AWS::Region}.amazonaws.com"
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:Describe*"
+            Resource: "*"
+            Condition:
+              ArnLike:
+                "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
 
 Outputs:
   SessionApiUrl:
