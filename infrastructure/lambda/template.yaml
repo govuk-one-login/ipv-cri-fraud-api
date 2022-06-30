@@ -78,6 +78,10 @@ Globals:
         AWS_STACK_NAME: !Sub ${AWS::StackName}
         POWERTOOLS_LOG_LEVEL: INFO
         SQS_AUDIT_EVENT_PREFIX: IPV_FRAUD_CRI
+    ProvisionedConcurrencyConfig: !If
+      - IsProdEnvironment
+      - ProvisionedConcurrentExecutions: 1
+      - !Ref AWS::NoValue
 
 Mappings:
 
