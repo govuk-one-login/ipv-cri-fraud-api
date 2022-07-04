@@ -86,7 +86,7 @@ public class ServiceFactory {
 
     private HttpClient createHttpClient() {
         return HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(30))
+                .connectTimeout(Duration.ofSeconds(10))
                 .sslContext(this.sslContextFactory.getSSLContext())
                 .build();
     }
