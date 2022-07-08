@@ -36,7 +36,7 @@ See onboarding guide for instructions on how to setup the following command line
 
 Before your **first** deploy, build a sam config toml file.
 > The stack name *must* be unique to you.
-> **Ensure you change the environment name**, when asked, to `dev` instead of `default`.
+> Ensure you set **Parameter Environment** and **SAM configuration environment**, when asked to `dev`.
 > All other defaults can be accepted by leaving them blank
 
 The command to run is: 
