@@ -31,9 +31,11 @@ public class TestDataCreator {
             address.setValidUntil(LocalDate.now().minusMonths(1));
         }
 
-        address.setPostalCode("Postcode");
         address.setStreetName("Street Name");
         address.setAddressLocality("PostTown");
+        address.setPostalCode("Postcode");
+        address.setAddressCountry("GB");
+
         personIdentity.setAddresses(List.of(address));
         return personIdentity;
     }
