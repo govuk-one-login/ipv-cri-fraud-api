@@ -13,7 +13,6 @@ import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
-import software.amazon.lambda.powertools.parameters.ParamManager;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.*;
@@ -75,22 +74,18 @@ public class FraudHandler
     @ExcludeFromGeneratedCoverageReport
     public FraudHandler() throws NoSuchAlgorithmException, IOException, InvalidKeyException {
         this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        ServiceFactory serviceFactory = new ServiceFactory(objectMapper);
         this.eventProbe = new EventProbe();
-        this.identityVerificationService =
-                new ServiceFactory(this.objectMapper).getIdentityVerificationService();
+        this.identityVerificationService = serviceFactory.getIdentityVerificationService();
         this.personIdentityService = new PersonIdentityService();
         this.sessionService = new SessionService();
-        this.configurationService =
-                new ConfigurationService(
-                        ParamManager.getSecretsProvider(),
-                        ParamManager.getSsmProvider(),
-                        System.getenv("ENVIRONMENT"));
+        this.configurationService = serviceFactory.getConfigurationService();
         this.dataStore =
-                new DataStore<FraudResultItem>(
+                new DataStore<>(
                         configurationService.getFraudResultTableName(),
                         FraudResultItem.class,
                         DataStore.getClient());
-        this.auditService = new ServiceFactory(this.objectMapper).getAuditService();
+        this.auditService = serviceFactory.getAuditService();
     }
 
     @Override

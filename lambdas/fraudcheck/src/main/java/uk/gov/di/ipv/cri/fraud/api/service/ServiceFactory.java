@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.lambda.powertools.parameters.ParamManager;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
+import uk.gov.di.ipv.cri.common.library.service.AuditEventFactory;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.fraud.api.gateway.HmacGenerator;
 import uk.gov.di.ipv.cri.fraud.api.gateway.IdentityVerificationRequestMapper;
@@ -27,26 +28,6 @@ public class ServiceFactory {
     private final HttpClient httpClient;
     private final AuditService auditService;
 
-    @ExcludeFromGeneratedCoverageReport
-    public ServiceFactory(ObjectMapper objectMapper)
-            throws NoSuchAlgorithmException, InvalidKeyException, IOException {
-        this.objectMapper = objectMapper;
-        this.personIdentityValidator = new PersonIdentityValidator();
-        this.configurationService =
-                new ConfigurationService(
-                        ParamManager.getSecretsProvider(),
-                        ParamManager.getSsmProvider(),
-                        System.getenv("ENVIRONMENT"));
-        this.sslContextFactory =
-                new SSLContextFactory(
-                        this.configurationService.getEncodedKeyStore(),
-                        this.configurationService.getKeyStorePassword());
-        this.contraindicationMapper = new ContraIndicatorRemoteMapper();
-        this.httpClient = createHttpClient();
-        this.auditService = createAuditService(this.objectMapper);
-        this.identityVerificationService = createIdentityVerificationService(this.auditService);
-    }
-
     ServiceFactory(
             ObjectMapper objectMapper,
             ConfigurationService configurationService,
@@ -64,6 +45,33 @@ public class ServiceFactory {
         this.httpClient = httpClient;
         this.auditService = auditService;
         this.identityVerificationService = createIdentityVerificationService(this.auditService);
+    }
+
+    @ExcludeFromGeneratedCoverageReport
+    public ServiceFactory(ObjectMapper objectMapper)
+            throws NoSuchAlgorithmException, InvalidKeyException, IOException {
+        this.objectMapper = objectMapper;
+        this.personIdentityValidator = new PersonIdentityValidator();
+        this.configurationService = createConfigurationService();
+        this.sslContextFactory =
+                new SSLContextFactory(
+                        this.configurationService.getEncodedKeyStore(),
+                        this.configurationService.getKeyStorePassword());
+        this.contraindicationMapper = new ContraIndicatorRemoteMapper();
+        this.httpClient = createHttpClient();
+        this.auditService = createAuditService(this.objectMapper);
+        this.identityVerificationService = createIdentityVerificationService(this.auditService);
+    }
+
+    private ConfigurationService createConfigurationService() {
+        return new ConfigurationService(
+                ParamManager.getSecretsProvider(),
+                ParamManager.getSsmProvider(),
+                System.getenv("ENVIRONMENT"));
+    }
+
+    public ConfigurationService getConfigurationService() {
+        return configurationService;
     }
 
     public IdentityVerificationService getIdentityVerificationService() {
@@ -97,11 +105,13 @@ public class ServiceFactory {
     }
 
     private AuditService createAuditService(ObjectMapper objectMapper) {
+        var commonLibConfigurationService =
+                new uk.gov.di.ipv.cri.common.library.service.ConfigurationService();
         return new AuditService(
                 SqsClient.builder().build(),
-                new uk.gov.di.ipv.cri.common.library.service.ConfigurationService(),
+                commonLibConfigurationService,
                 objectMapper,
-                Clock.systemUTC());
+                new AuditEventFactory(commonLibConfigurationService, Clock.systemUTC()));
     }
 
     private HttpClient createHttpClient() {

@@ -42,8 +42,8 @@ public class VerifiableCredentialService {
 
     private final ObjectMapper objectMapper;
 
-    public VerifiableCredentialService() {
-        this.configurationService = new ConfigurationService();
+    public VerifiableCredentialService(ConfigurationService configurationService) {
+        this.configurationService = configurationService;
         this.signedJwtFactory =
                 new SignedJWTFactory(
                         new KMSSigner(
