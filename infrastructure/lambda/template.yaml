@@ -8,9 +8,6 @@ Parameters:
     Default: "none"
     Description: >
       The ARN of the Code Signing Config to use, provided by the deployment pipeline
-  ContraIndicationTableName:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: /dev/credentialIssuers/fraud/contraindicationMappingTableName
   Environment:
     Description: "The environment type"
     Type: "String"
@@ -413,8 +410,6 @@ Resources:
           SQS_AUDIT_EVENT_QUEUE_URL: !ImportValue AuditEventQueueUrl
           ENVIRONMENT: !Ref Environment
       Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref ContraIndicationTableName
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
         - DynamoDBWritePolicy:
@@ -789,18 +784,6 @@ Resources:
       Throttle:
         BurstLimit: 100 # requests the API can handle concurrently
         RateLimit: 50 # allowed requests per second
-
-  ApiKey1:
-    Type: AWS::ApiGateway::ApiKey
-    Properties:
-      Description: Api key 1
-      Enabled: true
-
-  ApiKey2:
-    Type: AWS::ApiGateway::ApiKey
-    Properties:
-      Description: Api key 2
-      Enabled: true
 
   LinkUsagePlanApiKey1:
     Type: AWS::ApiGateway::UsagePlanKey
