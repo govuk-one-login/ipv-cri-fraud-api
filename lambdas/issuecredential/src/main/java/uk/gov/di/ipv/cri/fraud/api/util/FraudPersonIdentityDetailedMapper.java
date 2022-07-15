@@ -18,15 +18,24 @@ public class FraudPersonIdentityDetailedMapper {
         List<NamePart> nameParts = new ArrayList<>();
 
         if (Objects.nonNull(personIdentity.getFirstName())) {
-            nameParts.add(setNamePart(personIdentity.getFirstName(), "GivenName"));
+            NamePart givenName1 = new NamePart();
+            givenName1.setValue(personIdentity.getFirstName());
+            givenName1.setType("GivenName");
+            nameParts.add(givenName1);
         }
 
         if (Objects.nonNull(personIdentity.getMiddleNames())) {
-            nameParts.add(setNamePart(personIdentity.getMiddleNames(), "GivenName"));
+            NamePart givenName2 = new NamePart();
+            givenName2.setValue(personIdentity.getMiddleNames());
+            givenName2.setType("GivenName");
+            nameParts.add(givenName2);
         }
 
         if (Objects.nonNull(personIdentity.getSurname())) {
-            nameParts.add(setNamePart(personIdentity.getSurname(), "FamilyName"));
+            NamePart familyName = new NamePart();
+            familyName.setValue(personIdentity.getSurname());
+            familyName.setType("FamilyName");
+            nameParts.add(familyName);
         }
 
         Name name1 = new Name();
@@ -37,12 +46,5 @@ public class FraudPersonIdentityDetailedMapper {
 
         return new PersonIdentityDetailed(
                 List.of(name1), List.of(birthDate), personIdentity.getAddresses());
-    }
-
-    private static NamePart setNamePart(String value, String type) {
-        NamePart namePart = new NamePart();
-        namePart.setValue(value);
-        namePart.setType(type);
-        return namePart;
     }
 }

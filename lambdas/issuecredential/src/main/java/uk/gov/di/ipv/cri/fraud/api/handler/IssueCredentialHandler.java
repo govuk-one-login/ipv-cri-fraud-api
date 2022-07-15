@@ -102,7 +102,7 @@ public class IssueCredentialHandler
             LOGGER.info("Extracted session from session store ID {}", sessionItem.getSessionId());
 
             LOGGER.info("Retrieving identity details and fraud results...");
-            var personIdentity =
+            var personIdentityDetailed =
                     personIdentityService.getPersonIdentityDetailed(sessionItem.getSessionId());
             FraudResultItem fraudResult =
                     fraudRetrievalService.getFraudResult(sessionItem.getSessionId());
@@ -111,7 +111,7 @@ public class IssueCredentialHandler
             LOGGER.info("Generating verifiable credential...");
             SignedJWT signedJWT =
                     verifiableCredentialService.generateSignedVerifiableCredentialJwt(
-                            sessionItem.getSubject(), fraudResult, personIdentity);
+                            sessionItem.getSubject(), fraudResult, personIdentityDetailed);
             auditService.sendAuditEvent(
                     AuditEventType.VC_ISSUED,
                     IssueCredentialFraudAuditExtensionUtil.generateVCISSFraudAuditExtension(

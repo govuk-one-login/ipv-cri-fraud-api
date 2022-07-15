@@ -39,7 +39,6 @@ public class VerifiableCredentialService {
 
     private final SignedJWTFactory signedJwtFactory;
     private final ConfigurationService configurationService;
-
     private final ObjectMapper objectMapper;
 
     public VerifiableCredentialService() {
@@ -64,7 +63,9 @@ public class VerifiableCredentialService {
     }
 
     public SignedJWT generateSignedVerifiableCredentialJwt(
-            String subject, FraudResultItem fraudResultItem, PersonIdentityDetailed personIdentity)
+            String subject,
+            FraudResultItem fraudResultItem,
+            PersonIdentityDetailed personIdentityDetailed)
             throws JOSEException {
         var now = Instant.now();
 
@@ -87,11 +88,13 @@ public class VerifiableCredentialService {
                                         VC_CREDENTIAL_SUBJECT,
                                         Map.of(
                                                 VC_ADDRESS_KEY,
-                                                convertAddresses(personIdentity.getAddresses()),
+                                                convertAddresses(
+                                                        personIdentityDetailed.getAddresses()),
                                                 VC_NAME_KEY,
-                                                personIdentity.getNames(),
+                                                personIdentityDetailed.getNames(),
                                                 VC_BIRTHDATE_KEY,
-                                                convertBirthDates(personIdentity.getBirthDates())),
+                                                convertBirthDates(
+                                                        personIdentityDetailed.getBirthDates())),
                                         VC_EVIDENCE_KEY,
                                         calculateEvidence(fraudResultItem)))
                         .build();

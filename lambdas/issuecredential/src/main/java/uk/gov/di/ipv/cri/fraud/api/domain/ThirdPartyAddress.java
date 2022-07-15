@@ -7,7 +7,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ThirdPartyAddress {
     private String id;
-    private String addressType;
     private String poBoxNumber;
 
     private String subBuildingName;
@@ -20,20 +19,14 @@ public class ThirdPartyAddress {
 
     private String postalCode;
 
+    private String addressCountry;
+
     public String getId() {
         return id;
     }
 
     public void setId(String id) {
         this.id = id;
-    }
-
-    public String getAddressType() {
-        return addressType;
-    }
-
-    public void setAddressType(String addressType) {
-        this.addressType = addressType;
     }
 
     public String getPoBoxNumber() {
@@ -90,5 +83,13 @@ public class ThirdPartyAddress {
 
     public void setPostalCode(String postalCode) {
         this.postalCode = postalCode;
+    }
+
+    public String getAddressCountry() {
+        return "GB";
+    }
+
+    public void setAddressCountry(String addressCountry) {
+        this.addressCountry = addressCountry;
     }
 }
