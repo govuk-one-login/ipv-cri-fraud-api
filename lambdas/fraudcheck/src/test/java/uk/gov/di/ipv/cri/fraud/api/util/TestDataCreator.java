@@ -10,6 +10,7 @@ import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType.CURRENT;
 
@@ -31,6 +32,7 @@ public class TestDataCreator {
             address.setValidUntil(LocalDate.now().minusMonths(1));
         }
 
+        address.setBuildingNumber("101");
         address.setStreetName("Street Name");
         address.setAddressLocality("PostTown");
         address.setPostalCode("Postcode");
@@ -44,6 +46,27 @@ public class TestDataCreator {
         return createTestPersonIdentity(CURRENT);
     }
 
+    public static PersonIdentity createTestPersonIdentityMultipleAddresses(int totalAddresses) {
+        PersonIdentity personIdentity = new PersonIdentity();
+
+        personIdentity.setFirstName("FirstName");
+        personIdentity.setMiddleNames("MiddleName");
+        personIdentity.setSurname("Surname");
+
+        personIdentity.setDateOfBirth(LocalDate.of(1976, 12, 26));
+
+        List<Address> addresses = new ArrayList<>();
+        IntStream.range(0, totalAddresses)
+                .forEach(
+                        a -> {
+                            addresses.add(createAddress(a));
+                        });
+
+        personIdentity.setAddresses(addresses);
+
+        return personIdentity;
+    }
+
     public static IdentityVerificationResponse createTestVerificationResponse(ResponseType type) {
         switch (type) {
             case INFO:
@@ -55,6 +78,37 @@ public class TestDataCreator {
             default:
                 throw new IllegalArgumentException("Unexpected response type encountered: " + type);
         }
+    }
+
+    private static Address createAddress(int id) {
+
+        Address address = new Address();
+
+        final int yearsBetweenAddresses = 2;
+
+        int startYear = id + (id + yearsBetweenAddresses);
+        int endYear = id + id;
+
+        address.setValidFrom(LocalDate.now().minusYears(startYear));
+
+        address.setValidUntil(
+                (id == 0 ? null : LocalDate.now().minusYears(endYear).minusMonths(1)));
+
+        address.setPostalCode("Postcode" + id);
+        address.setStreetName("Street Name" + id);
+        address.setAddressLocality("PostTown" + id);
+
+        LOGGER.info(
+                "createAddress "
+                        + id
+                        + " "
+                        + address.getAddressType()
+                        + " from "
+                        + address.getValidFrom()
+                        + " until "
+                        + address.getValidUntil());
+
+        return address;
     }
 
     private static IdentityVerificationResponse createTestVerificationInfoResponse() {

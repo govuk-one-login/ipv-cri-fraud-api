@@ -13,8 +13,9 @@ import com.nimbusds.jwt.SignedJWT;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.*;
@@ -30,6 +31,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.text.ParseException;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -40,11 +42,11 @@ class VerifiableCredentialServiceTest implements TestFixtures {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
+    private static final int ADDRESSES_TO_GENERATE_IN_TEST = 5;
+
     private final String UNIT_TEST_VC_ISSUER = "UNIT_TEST_VC_ISSUER";
     private final long UNIT_TEST_MAX_JWT_TTL = 100L;
     private final String UNIT_TEST_SUBJECT = "UNIT_TEST_SUBJECT";
-
-    private final String TEST_KEY = "UNIT_TEST_KEY";
 
     @Mock private ConfigurationService mockConfigurationService;
 
@@ -65,14 +67,15 @@ class VerifiableCredentialServiceTest implements TestFixtures {
                         signedJwtFactory, mockConfigurationService, objectMapper);
     }
 
-    @Test
-    void testGenerateSignedVerifiableCredentialJwt()
+    @ParameterizedTest
+    @MethodSource("getAddressCount")
+    void testGenerateSignedVerifiableCredentialJWTWithAddressCount(int addressCount)
             throws JOSEException, JsonProcessingException, ParseException {
         FraudResultItem fraudResultItem = new FraudResultItem(UUID.randomUUID(), List.of("A01"), 1);
 
         PersonIdentityDetailed personIdentityDetailed =
                 FraudPersonIdentityDetailedMapper.generatePersonIdentityDetailed(
-                        TestDataCreator.createTestPersonIdentity());
+                        TestDataCreator.createTestPersonIdentityMultipleAddresses(addressCount));
 
         when(mockConfigurationService.getVerifiableCredentialIssuer())
                 .thenReturn(UNIT_TEST_VC_ISSUER);
@@ -98,8 +101,6 @@ class VerifiableCredentialServiceTest implements TestFixtures {
         JsonNode claimsSet = objectMapper.readTree(generatedClaims.toString());
         assertEquals(5, claimsSet.size());
 
-        Address address = personIdentityDetailed.getAddresses().get(0);
-
         assertAll(
                 () -> {
                     assertEquals(
@@ -119,51 +120,37 @@ class VerifiableCredentialServiceTest implements TestFixtures {
                                     .get(0)
                                     .get("identityFraudScore")
                                     .asInt());
-                    assertEquals(
-                            address.getBuildingNumber(),
-                            claimsSet
-                                    .get(VC_CLAIM)
-                                    .get(VC_CREDENTIAL_SUBJECT)
-                                    .get(VC_ADDRESS_KEY)
-                                    .get(0)
-                                    .get("buildingNumber")
-                                    .asText());
-                    assertEquals(
-                            address.getStreetName(),
-                            claimsSet
-                                    .get(VC_CLAIM)
-                                    .get(VC_CREDENTIAL_SUBJECT)
-                                    .get(VC_ADDRESS_KEY)
-                                    .get(0)
-                                    .get("streetName")
-                                    .asText());
-                    assertEquals(
-                            address.getAddressLocality(),
-                            claimsSet
-                                    .get(VC_CLAIM)
-                                    .get(VC_CREDENTIAL_SUBJECT)
-                                    .get(VC_ADDRESS_KEY)
-                                    .get(0)
-                                    .get("addressLocality")
-                                    .asText());
-                    assertEquals(
-                            address.getPostalCode(),
-                            claimsSet
-                                    .get(VC_CLAIM)
-                                    .get(VC_CREDENTIAL_SUBJECT)
-                                    .get(VC_ADDRESS_KEY)
-                                    .get(0)
-                                    .get("postalCode")
-                                    .asText());
-                    assertEquals(
-                            address.getAddressCountry(),
-                            claimsSet
-                                    .get(VC_CLAIM)
-                                    .get(VC_CREDENTIAL_SUBJECT)
-                                    .get(VC_ADDRESS_KEY)
-                                    .get(0)
-                                    .get("addressCountry")
-                                    .asText());
+
+                    assertNotEquals(0, addressCount);
+
+                    IntStream.range(0, addressCount)
+                            .forEach(
+                                    a -> {
+                                        Address address =
+                                                personIdentityDetailed.getAddresses().get(a);
+                                        JsonNode claimSetJWTAddress =
+                                                claimsSet
+                                                        .get(VC_CLAIM)
+                                                        .get(VC_CREDENTIAL_SUBJECT)
+                                                        .get(VC_ADDRESS_KEY)
+                                                        .get(a);
+                                        assertEquals(
+                                                address.getBuildingNumber(),
+                                                claimSetJWTAddress.get("buildingNumber").asText());
+
+                                        assertEquals(
+                                                address.getStreetName(),
+                                                claimSetJWTAddress.get("streetName").asText());
+                                        assertEquals(
+                                                address.getAddressLocality(),
+                                                claimSetJWTAddress.get("addressLocality").asText());
+                                        assertEquals(
+                                                address.getPostalCode(),
+                                                claimSetJWTAddress.get("postalCode").asText());
+                                        assertEquals(
+                                                "GB",
+                                                claimSetJWTAddress.get("addressCountry").asText());
+                                    });
                 });
         assertEquals(UNIT_TEST_VC_ISSUER, claimsSet.get("iss").textValue());
         assertEquals(UNIT_TEST_SUBJECT, claimsSet.get("sub").textValue());
@@ -174,5 +161,9 @@ class VerifiableCredentialServiceTest implements TestFixtures {
 
         ECDSAVerifier ecVerifier = new ECDSAVerifier(ECKey.parse(TestFixtures.EC_PUBLIC_JWK_1));
         assertTrue(signedJWT.verify(ecVerifier));
+    }
+
+    private static int[] getAddressCount() {
+        return IntStream.range(1, ADDRESSES_TO_GENERATE_IN_TEST).toArray();
     }
 }
