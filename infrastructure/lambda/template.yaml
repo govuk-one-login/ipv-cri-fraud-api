@@ -986,6 +986,10 @@ Resources:
                 "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
 
 Outputs:
+  StackName:
+    Description: "CloudFormation stack name"
+    Value: !Sub "${AWS::StackName}"
+
   SessionApiUrl:
     Description: "URL for the Fraud API /session resource"
     Value: !Sub "https://${PublicFraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/session"
