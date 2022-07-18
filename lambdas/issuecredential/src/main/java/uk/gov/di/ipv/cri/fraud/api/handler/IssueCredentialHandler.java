@@ -21,10 +21,7 @@ import software.amazon.lambda.powertools.metrics.Metrics;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.common.library.exception.SqsException;
-import uk.gov.di.ipv.cri.common.library.service.AuditService;
-import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
-import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
-import uk.gov.di.ipv.cri.common.library.service.SessionService;
+import uk.gov.di.ipv.cri.common.library.service.*;
 import uk.gov.di.ipv.cri.common.library.util.ApiGatewayResponseGenerator;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.exception.CredentialRequestException;
@@ -71,16 +68,17 @@ public class IssueCredentialHandler
     }
 
     public IssueCredentialHandler() {
-        this.verifiableCredentialService = getVerifiableCredentialService();
+        ConfigurationService configurationService = new ConfigurationService();
+        this.verifiableCredentialService = getVerifiableCredentialService(configurationService);
         this.personIdentityService = new PersonIdentityService();
         this.sessionService = new SessionService();
         this.eventProbe = new EventProbe();
         this.auditService =
                 new AuditService(
                         SqsClient.builder().build(),
-                        new ConfigurationService(),
+                        configurationService,
                         new ObjectMapper(),
-                        Clock.systemUTC());
+                        new AuditEventFactory(configurationService, Clock.systemUTC()));
         this.fraudRetrievalService = new FraudRetrievalService();
     }
 
@@ -175,8 +173,10 @@ public class IssueCredentialHandler
         return AccessToken.parse(token, AccessTokenType.BEARER);
     }
 
-    private VerifiableCredentialService getVerifiableCredentialService() {
-        Supplier<VerifiableCredentialService> factory = VerifiableCredentialService::new;
+    private VerifiableCredentialService getVerifiableCredentialService(
+            ConfigurationService configurationService) {
+        Supplier<VerifiableCredentialService> factory =
+                () -> new VerifiableCredentialService(configurationService);
         return factory.get();
     }
 }
