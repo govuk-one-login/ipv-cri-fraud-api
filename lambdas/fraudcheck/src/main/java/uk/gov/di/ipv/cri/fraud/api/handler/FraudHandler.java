@@ -137,7 +137,7 @@ public class FraudHandler
                         HttpStatusCode.INTERNAL_SERVER_ERROR,
                         Map.of("error_description", result.getError()));
             }
-            LOGGER.info("Identity verified");
+            LOGGER.info("Identity verified.");
 
             eventProbe.counterMetric(LAMBDA_NAME);
 
@@ -154,7 +154,7 @@ public class FraudHandler
 
             LOGGER.info("Saving fraud results...");
             dataStore.create(fraudResultItem);
-            LOGGER.info("Fraud results saved");
+            LOGGER.info("Fraud results saved.");
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(HttpStatusCode.OK, result);
         } catch (Exception e) {
