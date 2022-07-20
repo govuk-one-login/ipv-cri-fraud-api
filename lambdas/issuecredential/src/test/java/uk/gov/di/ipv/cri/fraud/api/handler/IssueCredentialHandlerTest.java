@@ -1,16 +1,59 @@
 package uk.gov.di.ipv.cri.fraud.api.handler;
 
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.common.contenttype.ContentType;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jwt.JWTClaimNames;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.PlainJWT;
+import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.oauth2.sdk.token.AccessToken;
+import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
+import org.apache.logging.log4j.Level;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.http.HttpStatusCode;
+import software.amazon.awssdk.http.SdkHttpResponse;
+import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
+import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
+import uk.gov.di.ipv.cri.common.library.exception.SqsException;
+import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
+import uk.gov.di.ipv.cri.common.library.service.AuditService;
+import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
+import uk.gov.di.ipv.cri.common.library.service.SessionService;
+import uk.gov.di.ipv.cri.common.library.util.EventProbe;
+import uk.gov.di.ipv.cri.fraud.api.domain.audit.VCISSFraudAuditExtension;
+import uk.gov.di.ipv.cri.fraud.api.persistence.item.FraudResultItem;
+import uk.gov.di.ipv.cri.fraud.api.service.FraudRetrievalService;
+import uk.gov.di.ipv.cri.fraud.api.service.VerifiableCredentialService;
+import uk.gov.di.ipv.cri.fraud.api.util.FraudPersonIdentityDetailedMapper;
+import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import static org.apache.logging.log4j.Level.ERROR;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class IssueCredentialHandlerTest {
-    /*public static final String SUBJECT = "subject";
+    public static final String SUBJECT = "subject";
     @Mock private Context context;
     @Mock private VerifiableCredentialService mockVerifiableCredentialService;
     @Mock private SessionService mockSessionService;
-
-    @Mock private AddressService mockAddressService;
+    @Mock private PersonIdentityService mockPersonIdentityService;
+    @Mock private FraudRetrievalService mockFraudRetrievalService;
     @Mock private EventProbe mockEventProbe;
     @Mock private AuditService mockAuditService;
     @InjectMocks private IssueCredentialHandler handler;
@@ -25,33 +68,35 @@ class IssueCredentialHandlerTest {
                         accessToken.toAuthorizationHeader()));
         setRequestBodyAsPlainJWT(event);
 
-        final UUID sessionId = UUID.randomUUID();
-        CanonicalAddress address = new CanonicalAddress();
-        address.setBuildingNumber("114");
-        address.setStreetName("Wellington Street");
-        address.setPostalCode("LS1 1BA");
-        AddressItem addressItem = new AddressItem();
-        List<CanonicalAddress> canonicalAddresses = List.of(address);
-
+        var personIdentityDetailed =
+                FraudPersonIdentityDetailedMapper.generatePersonIdentityDetailed(
+                        TestDataCreator.createTestPersonIdentity());
         SessionItem sessionItem = new SessionItem();
-        sessionItem.setSubject(SUBJECT);
-        sessionItem.setSessionId(sessionId);
-        addressItem.setAddresses(canonicalAddresses);
+        FraudResultItem fraudResultItem = new FraudResultItem(UUID.randomUUID(), List.of(""), 1);
 
         when(mockSessionService.getSessionByAccessToken(accessToken)).thenReturn(sessionItem);
-        when(mockAddressService.getAddressItem(sessionId)).thenReturn(addressItem);
+        when(mockPersonIdentityService.getPersonIdentityDetailed(any()))
+                .thenReturn(personIdentityDetailed);
+        when(mockFraudRetrievalService.getFraudResult(sessionItem.getSessionId()))
+                .thenReturn(fraudResultItem);
         when(mockVerifiableCredentialService.generateSignedVerifiableCredentialJwt(
-                        SUBJECT, canonicalAddresses))
+                        sessionItem.getSubject(), fraudResultItem, personIdentityDetailed))
                 .thenReturn(mock(SignedJWT.class));
+        doNothing()
+                .when(mockAuditService)
+                .sendAuditEvent(eq(AuditEventType.VC_ISSUED), any(VCISSFraudAuditExtension.class));
 
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, context);
 
         verify(mockSessionService).getSessionByAccessToken(accessToken);
-        verify(mockAddressService).getAddressItem(sessionId);
+        verify(mockFraudRetrievalService).getFraudResult(sessionItem.getSessionId());
+        verify(mockPersonIdentityService).getPersonIdentityDetailed(any());
         verify(mockVerifiableCredentialService)
-                .generateSignedVerifiableCredentialJwt(SUBJECT, canonicalAddresses);
+                .generateSignedVerifiableCredentialJwt(
+                        sessionItem.getSubject(), fraudResultItem, personIdentityDetailed);
+        verify(mockAuditService)
+                .sendAuditEvent(eq(AuditEventType.VC_ISSUED), any(VCISSFraudAuditExtension.class));
         verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
-        verify(mockAuditService).sendAuditEvent(AuditEventTypes.IPV_ADDRESS_CRI_VC_ISSUED);
         assertEquals(
                 ContentType.APPLICATION_JWT.getType(), response.getHeaders().get("Content-Type"));
         assertEquals(HttpStatusCode.OK, response.getStatusCode());
@@ -59,7 +104,7 @@ class IssueCredentialHandlerTest {
 
     @Test
     void shouldThrowJOSEExceptionWhenGenerateVerifiableCredentialIsMalformed()
-            throws JsonProcessingException, JOSEException, SqsException {
+            throws JsonProcessingException, JOSEException, SqsException, JsonProcessingException {
         APIGatewayProxyRequestEvent event = new APIGatewayProxyRequestEvent();
         AccessToken accessToken = new BearerAccessToken();
         event.withHeaders(
@@ -70,35 +115,34 @@ class IssueCredentialHandlerTest {
         setupEventProbeErrorBehaviour();
         var unExpectedJOSEException = new JOSEException("Unexpected JOSE object type: JWSObject");
 
-        final UUID sessionId = UUID.randomUUID();
-        CanonicalAddress address = new CanonicalAddress();
-        address.setBuildingNumber("114");
-        address.setStreetName("Wellington Street");
-        address.setPostalCode("LS1 1BA");
-        AddressItem addressItem = new AddressItem();
-        List<CanonicalAddress> canonicalAddresses = List.of(address);
+        var personIdentityDetailed =
+                FraudPersonIdentityDetailedMapper.generatePersonIdentityDetailed(
+                        TestDataCreator.createTestPersonIdentity());
 
         SessionItem sessionItem = new SessionItem();
-        sessionItem.setSubject(SUBJECT);
-        sessionItem.setSessionId(sessionId);
-        addressItem.setAddresses(canonicalAddresses);
+        FraudResultItem fraudResultItem = new FraudResultItem(UUID.randomUUID(), List.of(""), 1);
 
         when(mockSessionService.getSessionByAccessToken(accessToken)).thenReturn(sessionItem);
-        when(mockAddressService.getAddressItem(sessionId)).thenReturn(addressItem);
+        when(mockPersonIdentityService.getPersonIdentityDetailed(any()))
+                .thenReturn(personIdentityDetailed);
+        when(mockFraudRetrievalService.getFraudResult(sessionItem.getSessionId()))
+                .thenReturn(fraudResultItem);
         when(mockVerifiableCredentialService.generateSignedVerifiableCredentialJwt(
-                        SUBJECT, canonicalAddresses))
+                        sessionItem.getSubject(), fraudResultItem, personIdentityDetailed))
                 .thenThrow(unExpectedJOSEException);
 
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, context);
 
         verify(mockSessionService).getSessionByAccessToken(accessToken);
-        verify(mockAddressService).getAddressItem(sessionId);
+        verify(mockFraudRetrievalService).getFraudResult(sessionItem.getSessionId());
+        verify(mockPersonIdentityService).getPersonIdentityDetailed(any());
         verify(mockVerifiableCredentialService)
-                .generateSignedVerifiableCredentialJwt(SUBJECT, canonicalAddresses);
-        verify(mockEventProbe).log(Level.ERROR, unExpectedJOSEException);
+                .generateSignedVerifiableCredentialJwt(
+                        sessionItem.getSubject(), fraudResultItem, personIdentityDetailed);
         verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
         verifyNoMoreInteractions(mockVerifiableCredentialService);
-        verify(mockAuditService, never()).sendAuditEvent(any());
+        verify(mockAuditService, never())
+                .sendAuditEvent(eq(AuditEventType.VC_ISSUED), any(VCISSFraudAuditExtension.class));
         Map responseBody = new ObjectMapper().readValue(response.getBody(), Map.class);
         assertEquals(HttpStatusCode.BAD_REQUEST, response.getStatusCode());
         assertEquals(ErrorResponse.VERIFIABLE_CREDENTIAL_ERROR.getCode(), responseBody.get("code"));
@@ -115,7 +159,8 @@ class IssueCredentialHandlerTest {
 
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, context);
         verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
-        verify(mockAuditService, never()).sendAuditEvent(any());
+        verify(mockAuditService, never())
+                .sendAuditEvent(eq(AuditEventType.VC_ISSUED), any(VCISSFraudAuditExtension.class));
         assertEquals(
                 ContentType.APPLICATION_JSON.getType(), response.getHeaders().get("Content-Type"));
         assertEquals(HttpStatusCode.BAD_REQUEST, response.getStatusCode());
@@ -154,15 +199,18 @@ class IssueCredentialHandlerTest {
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, context);
 
         verify(mockSessionService).getSessionByAccessToken(accessToken);
+        verify(mockPersonIdentityService, never()).getPersonIdentityDetailed(UUID.randomUUID());
+        verify(mockAuditService, never())
+                .sendAuditEvent(eq(AuditEventType.VC_ISSUED), any(VCISSFraudAuditExtension.class));
         verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
-        verify(mockAuditService, never()).sendAuditEvent(any());
+        verify(mockAuditService, never()).sendAuditEvent((AuditEventType) any());
         String responseBody = new ObjectMapper().readValue(response.getBody(), String.class);
         assertEquals(awsErrorDetails.sdkHttpResponse().statusCode(), response.getStatusCode());
         assertEquals(awsErrorDetails.errorMessage(), responseBody);
     }
 
     @Test
-    void shouldThrowAWSExceptionWhenAServerErrorOccursDuringRetrievingAnAddressItemWithSessionId()
+    void shouldThrowAWSExceptionWhenAServerErrorOccursDuringRetrievingPersonIdentityWithSessionId()
             throws JsonProcessingException, SqsException {
         APIGatewayProxyRequestEvent event = new APIGatewayProxyRequestEvent();
         AccessToken accessToken = new BearerAccessToken();
@@ -184,11 +232,9 @@ class IssueCredentialHandlerTest {
                         .errorMessage("AWS DynamoDbException Occurred")
                         .build();
 
-        final UUID sessionId = UUID.randomUUID();
-        SessionItem mockSessionItem = mock(SessionItem.class);
-        when(mockSessionItem.getSessionId()).thenReturn(sessionId);
-        when(mockSessionService.getSessionByAccessToken(accessToken)).thenReturn(mockSessionItem);
-        when(mockAddressService.getAddressItem(sessionId))
+        SessionItem sessionItem = new SessionItem();
+        when(mockSessionService.getSessionByAccessToken(accessToken)).thenReturn(sessionItem);
+        when(mockPersonIdentityService.getPersonIdentityDetailed(sessionItem.getSessionId()))
                 .thenThrow(
                         AwsServiceException.builder()
                                 .statusCode(500)
@@ -198,9 +244,11 @@ class IssueCredentialHandlerTest {
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, context);
 
         verify(mockSessionService).getSessionByAccessToken(accessToken);
-        verify(mockAddressService).getAddressItem(sessionId);
+        verify(mockPersonIdentityService).getPersonIdentityDetailed(sessionItem.getSessionId());
+        verify(mockAuditService, never())
+                .sendAuditEvent(eq(AuditEventType.VC_ISSUED), any(VCISSFraudAuditExtension.class));
+        verify(mockEventProbe).log(eq(ERROR), any(AwsServiceException.class));
         verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
-        verify(mockAuditService, never()).sendAuditEvent(any());
         String responseBody = new ObjectMapper().readValue(response.getBody(), String.class);
         assertEquals(awsErrorDetails.sdkHttpResponse().statusCode(), response.getStatusCode());
         assertEquals(awsErrorDetails.errorMessage(), responseBody);
@@ -220,5 +268,5 @@ class IssueCredentialHandlerTest {
                         .serialize();
 
         event.setBody(requestJWT);
-    }*/
+    }
 }
