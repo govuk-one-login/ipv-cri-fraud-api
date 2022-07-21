@@ -14,7 +14,10 @@ import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IdentityVerificationInfoResponseValidatorTest {
     private static IdentityVerificationInfoResponseValidator infoResponseValidator;
@@ -391,9 +394,16 @@ public class IdentityVerificationInfoResponseValidatorTest {
         ValidationResult<List<String>> validationResult =
                 infoResponseValidator.validate(testIVResponse);
 
+        final String TEST_INTEGER_NAME = "OverallResponse:Score";
+
         final String EXPECTED_ERROR =
-                "OverallResponse:Score"
-                        + JsonValidationUtility.INVALID_VALUE_RANGE_ERROR_MESSAGE_SUFFIX;
+                JsonValidationUtility.createIntegerRangeErrorMessage(
+                        TEST_VALUE,
+                        IdentityVerificationInfoResponseValidator
+                                .OVERALL_RESPONSE_DECISION_SCORE_MIN_VALUE,
+                        IdentityVerificationInfoResponseValidator
+                                .OVERALL_RESPONSE_DECISION_SCORE_MAX_VALUE,
+                        TEST_INTEGER_NAME);
 
         assertEquals(
                 TEST_VALUE, testIVResponse.getResponseHeader().getOverallResponse().getScore());
@@ -438,9 +448,16 @@ public class IdentityVerificationInfoResponseValidatorTest {
         ValidationResult<List<String>> validationResult =
                 infoResponseValidator.validate(testIVResponse);
 
+        final String TEST_INTEGER_NAME = "OverallResponse:Score";
+
         final String EXPECTED_ERROR =
-                "OverallResponse:Score"
-                        + JsonValidationUtility.INVALID_VALUE_RANGE_ERROR_MESSAGE_SUFFIX;
+                JsonValidationUtility.createIntegerRangeErrorMessage(
+                        TEST_VALUE,
+                        IdentityVerificationInfoResponseValidator
+                                .OVERALL_RESPONSE_DECISION_SCORE_MIN_VALUE,
+                        IdentityVerificationInfoResponseValidator
+                                .OVERALL_RESPONSE_DECISION_SCORE_MAX_VALUE,
+                        TEST_INTEGER_NAME);
 
         assertEquals(
                 TEST_VALUE, testIVResponse.getResponseHeader().getOverallResponse().getScore());
@@ -1470,9 +1487,16 @@ public class IdentityVerificationInfoResponseValidatorTest {
         ValidationResult<List<String>> validationResult =
                 infoResponseValidator.validate(testIVResponse);
 
+        final String TEST_INTEGER_NAME = "OrchestrationDecision:Score";
+
         final String EXPECTED_ERROR =
-                "OrchestrationDecision:Score"
-                        + JsonValidationUtility.INVALID_VALUE_RANGE_ERROR_MESSAGE_SUFFIX;
+                JsonValidationUtility.createIntegerRangeErrorMessage(
+                        TEST_VALUE,
+                        IdentityVerificationInfoResponseValidator
+                                .ORCHESTRATION_DECISION_SCORE_MIN_VALUE,
+                        IdentityVerificationInfoResponseValidator
+                                .ORCHESTRATION_DECISION_SCORE_MAX_VALUE,
+                        TEST_INTEGER_NAME);
 
         assertEquals(
                 TEST_VALUE,
@@ -1521,9 +1545,16 @@ public class IdentityVerificationInfoResponseValidatorTest {
         ValidationResult<List<String>> validationResult =
                 infoResponseValidator.validate(testIVResponse);
 
+        final String TEST_INTEGER_NAME = "OrchestrationDecision:Score";
+
         final String EXPECTED_ERROR =
-                "OrchestrationDecision:Score"
-                        + JsonValidationUtility.INVALID_VALUE_RANGE_ERROR_MESSAGE_SUFFIX;
+                JsonValidationUtility.createIntegerRangeErrorMessage(
+                        TEST_VALUE,
+                        IdentityVerificationInfoResponseValidator
+                                .ORCHESTRATION_DECISION_SCORE_MIN_VALUE,
+                        IdentityVerificationInfoResponseValidator
+                                .ORCHESTRATION_DECISION_SCORE_MAX_VALUE,
+                        TEST_INTEGER_NAME);
 
         assertEquals(
                 TEST_VALUE,
@@ -2183,9 +2214,14 @@ public class IdentityVerificationInfoResponseValidatorTest {
         ValidationResult<List<String>> validationResult =
                 infoResponseValidator.validate(testIVResponse);
 
+        final String TEST_INTEGER_NAME = "DecisionElement:Score";
+
         final String EXPECTED_ERROR =
-                "DecisionElement:Score"
-                        + JsonValidationUtility.INVALID_VALUE_RANGE_ERROR_MESSAGE_SUFFIX;
+                JsonValidationUtility.createIntegerRangeErrorMessage(
+                        TEST_VALUE,
+                        IdentityVerificationInfoResponseValidator.DECISION_ELEMENTS_SCORE_MIN_VALUE,
+                        IdentityVerificationInfoResponseValidator.DECISION_ELEMENTS_SCORE_MAX_VALUE,
+                        TEST_INTEGER_NAME);
 
         assertEquals(
                 TEST_VALUE,
@@ -2218,9 +2254,14 @@ public class IdentityVerificationInfoResponseValidatorTest {
         ValidationResult<List<String>> validationResult =
                 infoResponseValidator.validate(testIVResponse);
 
+        final String TEST_INTEGER_NAME = "DecisionElement:Score";
+
         final String EXPECTED_ERROR =
-                "DecisionElement:Score"
-                        + JsonValidationUtility.INVALID_VALUE_RANGE_ERROR_MESSAGE_SUFFIX;
+                JsonValidationUtility.createIntegerRangeErrorMessage(
+                        TEST_VALUE,
+                        IdentityVerificationInfoResponseValidator.DECISION_ELEMENTS_SCORE_MIN_VALUE,
+                        IdentityVerificationInfoResponseValidator.DECISION_ELEMENTS_SCORE_MAX_VALUE,
+                        TEST_INTEGER_NAME);
 
         assertEquals(
                 TEST_VALUE,
@@ -2523,10 +2564,12 @@ public class IdentityVerificationInfoResponseValidatorTest {
 
     @Test
     void clientPayloadDecisionElementsDecisionElementRuleScoreUnderMinFails() {
+        final int TEST_VALUE = -1;
+
         final Rule testRule = new Rule();
         testRule.setRuleName("ScoreUnderMinFail");
         testRule.setRuleId("");
-        testRule.setRuleScore(-1);
+        testRule.setRuleScore(TEST_VALUE);
         testRule.setRuleText("Test");
 
         testIVResponse
@@ -2538,9 +2581,29 @@ public class IdentityVerificationInfoResponseValidatorTest {
         ValidationResult<List<String>> validationResult =
                 infoResponseValidator.validate(testIVResponse);
 
+        final String TEST_INTEGER_NAME = "DecisionElement:Rules:Rule:Score";
+
         final String EXPECTED_ERROR =
-                "DecisionElement:Rules:Rule:Score"
-                        + JsonValidationUtility.INVALID_VALUE_RANGE_ERROR_MESSAGE_SUFFIX;
+                JsonValidationUtility.createIntegerRangeErrorMessage(
+                        TEST_VALUE,
+                        IdentityVerificationInfoResponseValidator
+                                .DECISION_ELEMENTS_RULE_NAME_SERVICE_LEVEL_SCORE_MIN,
+                        IdentityVerificationInfoResponseValidator
+                                .DECISION_ELEMENTS_RULE_NAME_SERVICE_LEVEL_SCORE_MAX,
+                        TEST_INTEGER_NAME);
+
+        assertEquals(
+                TEST_VALUE,
+                testIVResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .getRules()
+                        .get(0)
+                        .getRuleScore());
+        assertEquals(1, validationResult.getError().size());
+        assertEquals(EXPECTED_ERROR, validationResult.getError().get(0));
+        assertFalse(validationResult.isValid());
 
         assertEquals(
                 1,
@@ -2565,10 +2628,11 @@ public class IdentityVerificationInfoResponseValidatorTest {
 
     @Test
     void clientPayloadDecisionElementsDecisionElementRuleScoreMinOK() {
+        final int TEST_VALUE = 0;
         final Rule testRule = new Rule();
         testRule.setRuleName("ScoreUnderMinFail");
         testRule.setRuleId("");
-        testRule.setRuleScore(0);
+        testRule.setRuleScore(TEST_VALUE);
         testRule.setRuleText("Test");
 
         testIVResponse
@@ -2589,23 +2653,25 @@ public class IdentityVerificationInfoResponseValidatorTest {
                         .getRules()
                         .size());
         assertEquals(
-                testRule,
+                TEST_VALUE,
                 testIVResponse
                         .getClientResponsePayload()
                         .getDecisionElements()
                         .get(0)
                         .getRules()
-                        .get(0));
+                        .get(0)
+                        .getRuleScore());
         assertEquals(0, validationResult.getError().size());
         assertTrue(validationResult.isValid());
     }
 
     @Test
     void clientPayloadDecisionElementsDecisionElementRuleScoreOverMaxFails() {
+        final int TEST_VALUE = 91;
         final Rule testRule = new Rule();
         testRule.setRuleName("ScoreUnderMinFail");
         testRule.setRuleId("");
-        testRule.setRuleScore(91);
+        testRule.setRuleScore(TEST_VALUE);
         testRule.setRuleText("Test");
 
         testIVResponse
@@ -2617,9 +2683,16 @@ public class IdentityVerificationInfoResponseValidatorTest {
         ValidationResult<List<String>> validationResult =
                 infoResponseValidator.validate(testIVResponse);
 
+        final String TEST_INTEGER_NAME = "DecisionElement:Rules:Rule:Score";
+
         final String EXPECTED_ERROR =
-                "DecisionElement:Rules:Rule:Score"
-                        + JsonValidationUtility.INVALID_VALUE_RANGE_ERROR_MESSAGE_SUFFIX;
+                JsonValidationUtility.createIntegerRangeErrorMessage(
+                        TEST_VALUE,
+                        IdentityVerificationInfoResponseValidator
+                                .DECISION_ELEMENTS_RULE_NAME_SERVICE_LEVEL_SCORE_MIN,
+                        IdentityVerificationInfoResponseValidator
+                                .DECISION_ELEMENTS_RULE_NAME_SERVICE_LEVEL_SCORE_MAX,
+                        TEST_INTEGER_NAME);
 
         assertEquals(
                 1,
@@ -2630,13 +2703,14 @@ public class IdentityVerificationInfoResponseValidatorTest {
                         .getRules()
                         .size());
         assertEquals(
-                testRule,
+                TEST_VALUE,
                 testIVResponse
                         .getClientResponsePayload()
                         .getDecisionElements()
                         .get(0)
                         .getRules()
-                        .get(0));
+                        .get(0)
+                        .getRuleScore());
         assertEquals(1, validationResult.getError().size());
         assertEquals(EXPECTED_ERROR, validationResult.getError().get(0));
         assertFalse(validationResult.isValid());
@@ -2644,10 +2718,11 @@ public class IdentityVerificationInfoResponseValidatorTest {
 
     @Test
     void clientPayloadDecisionElementsDecisionElementRuleScoreMaxOK() {
+        final int TEST_VALUE = 90;
         final Rule testRule = new Rule();
-        testRule.setRuleName("ScoreUnderMinFail");
+        testRule.setRuleName("RuleScoreMaxOK");
         testRule.setRuleId("");
-        testRule.setRuleScore(90);
+        testRule.setRuleScore(TEST_VALUE);
         testRule.setRuleText("Test");
 
         testIVResponse
@@ -2675,6 +2750,16 @@ public class IdentityVerificationInfoResponseValidatorTest {
                         .get(0)
                         .getRules()
                         .get(0));
+
+        assertEquals(
+                TEST_VALUE,
+                testIVResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .getRules()
+                        .get(0)
+                        .getRuleScore());
         assertEquals(0, validationResult.getError().size());
         assertTrue(validationResult.isValid());
     }

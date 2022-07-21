@@ -14,7 +14,10 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType.CURRENT;
 import static uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType.PREVIOUS;
 
@@ -91,7 +94,9 @@ class IdentityVerificationRequestMapperTest {
     @MethodSource("getAddressCount")
     void shouldConvertPersonIdentityToCrossCoreApiRequestWithAddressCount(int addressCount) {
 
-        personIdentity = TestDataCreator.createTestPersonIdentityMultipleAddresses(addressCount);
+        personIdentity =
+                TestDataCreator.createTestPersonIdentityMultipleAddresses(
+                        addressCount, 0, 0, false);
 
         IdentityVerificationRequest result = requestMapper.mapPersonIdentity(personIdentity);
 
