@@ -43,7 +43,6 @@ public class ConfigurationService {
     private final String encodedKeyStore;
     private final String keyStorePassword;
     private final String thirdPartyId;
-    private final String contraindicationMappingTableName;
     private final String fraudResultTableName;
     private final String contraindicationMappings;
     private final String parameterPrefix;
@@ -62,9 +61,6 @@ public class ConfigurationService {
                 paramProvider.get(String.format(KEY_FORMAT, env, "thirdPartyApiEndpointUrl"));
         this.hmacKey = secretsProvider.get(String.format(KEY_FORMAT, env, "thirdPartyApiHmacKey"));
         this.thirdPartyId = paramProvider.get(String.format(KEY_FORMAT, env, "thirdPartyId"));
-        this.contraindicationMappingTableName =
-                paramProvider.get(
-                        String.format(KEY_FORMAT, env, "contraindicationMappingTableName"));
 
         this.parameterPrefix = System.getenv("AWS_STACK_NAME");
         this.contraindicationMappings =
@@ -104,10 +100,6 @@ public class ConfigurationService {
 
     public String getThirdPartyId() {
         return thirdPartyId;
-    }
-
-    public String getContraindicationMappingTableName() {
-        return contraindicationMappingTableName;
     }
 
     public String getFraudResultTableName() {

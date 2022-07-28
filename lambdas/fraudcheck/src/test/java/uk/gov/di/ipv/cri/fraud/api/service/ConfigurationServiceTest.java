@@ -34,8 +34,6 @@ class ConfigurationServiceTest {
         String endpointValue = "test-endpoint";
         String thirdPartyIdKey = "thirdPartyId";
         String thirdPartyIdValue = "third-party-id";
-        String tableNameKey = "contraindicationMappingTableName";
-        String tableNameValue = "test-table-name";
         String keyStoreKey = "thirdPartyApiKeyStore";
 
         ConfigurationService.KeyStoreParams testKeyStoreParams =
@@ -49,8 +47,6 @@ class ConfigurationServiceTest {
                 .thenReturn(endpointValue);
         when(mockParamProvider.get(String.format(KEY_FORMAT, env, thirdPartyIdKey)))
                 .thenReturn(thirdPartyIdValue);
-        when(mockParamProvider.get(String.format(KEY_FORMAT, env, tableNameKey)))
-                .thenReturn(tableNameValue);
 
         when(mockSecretsProvider.get(String.format(KEY_FORMAT, env, hmacKey)))
                 .thenReturn(testHmacKeyValue);
@@ -67,7 +63,6 @@ class ConfigurationServiceTest {
         verify(mockParamProvider).get(String.format(KEY_FORMAT, env, tenantIdKey));
         verify(mockParamProvider).get(String.format(KEY_FORMAT, env, endpointKey));
         verify(mockParamProvider).get(String.format(KEY_FORMAT, env, thirdPartyIdKey));
-        verify(mockParamProvider).get(String.format(KEY_FORMAT, env, tableNameKey));
         verify(mockSecretsProvider).get(String.format(KEY_FORMAT, env, hmacKey));
         verify(mockSecretsProvider)
                 .get(
@@ -80,7 +75,6 @@ class ConfigurationServiceTest {
         assertEquals(testHmacKeyValue, configurationService.getHmacKey());
         assertEquals(thirdPartyIdValue, configurationService.getThirdPartyId());
         assertEquals(endpointValue, configurationService.getEndpointUrl());
-        assertEquals(tableNameValue, configurationService.getContraindicationMappingTableName());
         assertEquals(tenantIdValue, configurationService.getTenantId());
     }
 
