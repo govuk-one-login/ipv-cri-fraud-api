@@ -3,6 +3,7 @@ package uk.gov.di.ipv.cri.fraud.api.handler;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,9 +11,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import uk.gov.di.ipv.cri.common.library.domain.AuditEventContext;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
-import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentityDetailed;
 import uk.gov.di.ipv.cri.common.library.exception.SqsException;
 import uk.gov.di.ipv.cri.common.library.persistence.DataStore;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
@@ -77,25 +78,31 @@ class CredentialHandlerTest {
         testIdentityVerificationResult.setSuccess(true);
         testIdentityVerificationResult.setContraIndicators(new String[] {"A01"});
         testIdentityVerificationResult.setIdentityCheckScore(1);
+
         APIGatewayProxyRequestEvent mockRequestEvent =
                 Mockito.mock(APIGatewayProxyRequestEvent.class);
 
         when(mockRequestEvent.getBody()).thenReturn(testRequestBody);
-        when(mockRequestEvent.getHeaders())
-                .thenReturn(Map.of("session_id", UUID.randomUUID().toString()));
+        Map<String, String> requestHeaders = Map.of("session_id", UUID.randomUUID().toString());
+        when(mockRequestEvent.getHeaders()).thenReturn(requestHeaders);
+
+        final var sessionItem = new SessionItem();
+        sessionItem.setSessionId(UUID.randomUUID());
+        when(sessionService.validateSessionId(anyString())).thenReturn(sessionItem);
+
         when(mockObjectMapper.readValue(testRequestBody, PersonIdentity.class))
                 .thenReturn(testPersonIdentity);
+
         doNothing()
                 .when(auditService)
-                .sendAuditEvent(eq(AuditEventType.REQUEST_SENT), any(PersonIdentityDetailed.class));
-        when(mockIdentityVerificationService.verifyIdentity(testPersonIdentity))
+                .sendAuditEvent(eq(AuditEventType.REQUEST_SENT), any(AuditEventContext.class));
+
+        when(mockIdentityVerificationService.verifyIdentity(
+                        testPersonIdentity, sessionItem, requestHeaders))
                 .thenReturn(testIdentityVerificationResult);
+
         when(context.getFunctionName()).thenReturn("functionName");
         when(context.getFunctionVersion()).thenReturn("1.0");
-        final SessionItem sessionItem = new SessionItem();
-        sessionItem.setSessionId(UUID.randomUUID());
-        when(sessionService.getSession(anyString())).thenReturn(sessionItem);
-
         APIGatewayProxyResponseEvent responseEvent =
                 fraudHandler.handleRequest(mockRequestEvent, context);
 
@@ -108,7 +115,7 @@ class CredentialHandlerTest {
 
     @Test
     void handleResponseShouldReturnInternalServerErrorResponseWhenUnableToContactThirdPartyApi()
-            throws IOException {
+            throws JsonProcessingException, SqsException {
         String testRequestBody = "request body";
         String errorMessage = "error message";
         PersonIdentity testPersonIdentity = new PersonIdentity();
@@ -118,21 +125,37 @@ class CredentialHandlerTest {
         testIdentityVerificationResult.setError(errorMessage);
         testIdentityVerificationResult.setContraIndicators(new String[] {});
         testIdentityVerificationResult.setIdentityCheckScore(0);
+
         APIGatewayProxyRequestEvent mockRequestEvent =
                 Mockito.mock(APIGatewayProxyRequestEvent.class);
+
         when(mockRequestEvent.getBody()).thenReturn(testRequestBody);
+        Map<String, String> requestHeaders = Map.of("session_id", UUID.randomUUID().toString());
+        when(mockRequestEvent.getHeaders()).thenReturn(requestHeaders);
+
+        final var sessionItem = new SessionItem();
+        sessionItem.setSessionId(UUID.randomUUID());
+        when(sessionService.validateSessionId(anyString())).thenReturn(sessionItem);
+
         when(mockObjectMapper.readValue(testRequestBody, PersonIdentity.class))
                 .thenReturn(testPersonIdentity);
-        when(mockIdentityVerificationService.verifyIdentity(testPersonIdentity))
+
+        when(mockIdentityVerificationService.verifyIdentity(
+                        testPersonIdentity, sessionItem, requestHeaders))
                 .thenReturn(testIdentityVerificationResult);
+
+        doNothing()
+                .when(auditService)
+                .sendAuditEvent(eq(AuditEventType.REQUEST_SENT), any(AuditEventContext.class));
+
         when(context.getFunctionName()).thenReturn("functionName");
         when(context.getFunctionVersion()).thenReturn("1.0");
-
         APIGatewayProxyResponseEvent responseEvent =
                 fraudHandler.handleRequest(mockRequestEvent, context);
 
         assertNotNull(responseEvent);
         assertEquals(500, responseEvent.getStatusCode());
-        assertEquals("{\"error_description\":\"error message\"}", responseEvent.getBody());
+        final String EXPECTED_ERROR = "{\"error_description\":\"error message\"}";
+        assertEquals(EXPECTED_ERROR, responseEvent.getBody());
     }
 }
