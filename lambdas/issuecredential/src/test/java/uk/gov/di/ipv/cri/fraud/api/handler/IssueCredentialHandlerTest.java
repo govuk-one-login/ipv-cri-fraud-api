@@ -23,6 +23,7 @@ import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.awssdk.http.SdkHttpResponse;
+import uk.gov.di.ipv.cri.common.library.domain.AuditEventContext;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.common.library.exception.SqsException;
@@ -84,7 +85,10 @@ class IssueCredentialHandlerTest {
                 .thenReturn(mock(SignedJWT.class));
         doNothing()
                 .when(mockAuditService)
-                .sendAuditEvent(eq(AuditEventType.VC_ISSUED), any(VCISSFraudAuditExtension.class));
+                .sendAuditEvent(
+                        eq(AuditEventType.VC_ISSUED),
+                        any(AuditEventContext.class),
+                        any(VCISSFraudAuditExtension.class));
 
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, context);
 
@@ -95,7 +99,10 @@ class IssueCredentialHandlerTest {
                 .generateSignedVerifiableCredentialJwt(
                         sessionItem.getSubject(), fraudResultItem, personIdentityDetailed);
         verify(mockAuditService)
-                .sendAuditEvent(eq(AuditEventType.VC_ISSUED), any(VCISSFraudAuditExtension.class));
+                .sendAuditEvent(
+                        eq(AuditEventType.VC_ISSUED),
+                        any(AuditEventContext.class),
+                        any(VCISSFraudAuditExtension.class));
         verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
         assertEquals(
                 ContentType.APPLICATION_JWT.getType(), response.getHeaders().get("Content-Type"));
@@ -142,7 +149,10 @@ class IssueCredentialHandlerTest {
         verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
         verifyNoMoreInteractions(mockVerifiableCredentialService);
         verify(mockAuditService, never())
-                .sendAuditEvent(eq(AuditEventType.VC_ISSUED), any(VCISSFraudAuditExtension.class));
+                .sendAuditEvent(
+                        eq(AuditEventType.VC_ISSUED),
+                        any(AuditEventContext.class),
+                        any(VCISSFraudAuditExtension.class));
         Map responseBody = new ObjectMapper().readValue(response.getBody(), Map.class);
         assertEquals(HttpStatusCode.BAD_REQUEST, response.getStatusCode());
         assertEquals(ErrorResponse.VERIFIABLE_CREDENTIAL_ERROR.getCode(), responseBody.get("code"));
@@ -160,7 +170,10 @@ class IssueCredentialHandlerTest {
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, context);
         verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
         verify(mockAuditService, never())
-                .sendAuditEvent(eq(AuditEventType.VC_ISSUED), any(VCISSFraudAuditExtension.class));
+                .sendAuditEvent(
+                        eq(AuditEventType.VC_ISSUED),
+                        any(AuditEventContext.class),
+                        any(VCISSFraudAuditExtension.class));
         assertEquals(
                 ContentType.APPLICATION_JSON.getType(), response.getHeaders().get("Content-Type"));
         assertEquals(HttpStatusCode.BAD_REQUEST, response.getStatusCode());
@@ -201,7 +214,10 @@ class IssueCredentialHandlerTest {
         verify(mockSessionService).getSessionByAccessToken(accessToken);
         verify(mockPersonIdentityService, never()).getPersonIdentityDetailed(UUID.randomUUID());
         verify(mockAuditService, never())
-                .sendAuditEvent(eq(AuditEventType.VC_ISSUED), any(VCISSFraudAuditExtension.class));
+                .sendAuditEvent(
+                        eq(AuditEventType.VC_ISSUED),
+                        any(AuditEventContext.class),
+                        any(VCISSFraudAuditExtension.class));
         verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
         verify(mockAuditService, never()).sendAuditEvent((AuditEventType) any());
         String responseBody = new ObjectMapper().readValue(response.getBody(), String.class);
@@ -246,7 +262,10 @@ class IssueCredentialHandlerTest {
         verify(mockSessionService).getSessionByAccessToken(accessToken);
         verify(mockPersonIdentityService).getPersonIdentityDetailed(sessionItem.getSessionId());
         verify(mockAuditService, never())
-                .sendAuditEvent(eq(AuditEventType.VC_ISSUED), any(VCISSFraudAuditExtension.class));
+                .sendAuditEvent(
+                        eq(AuditEventType.VC_ISSUED),
+                        any(AuditEventContext.class),
+                        any(VCISSFraudAuditExtension.class));
         verify(mockEventProbe).log(eq(ERROR), any(AwsServiceException.class));
         verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
         String responseBody = new ObjectMapper().readValue(response.getBody(), String.class);
