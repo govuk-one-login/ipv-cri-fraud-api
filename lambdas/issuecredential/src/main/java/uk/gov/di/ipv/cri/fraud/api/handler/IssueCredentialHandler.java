@@ -18,10 +18,15 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
+import uk.gov.di.ipv.cri.common.library.domain.AuditEventContext;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.common.library.exception.SqsException;
-import uk.gov.di.ipv.cri.common.library.service.*;
+import uk.gov.di.ipv.cri.common.library.service.AuditEventFactory;
+import uk.gov.di.ipv.cri.common.library.service.AuditService;
+import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
+import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
+import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.ApiGatewayResponseGenerator;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.exception.CredentialRequestException;
@@ -112,6 +117,7 @@ public class IssueCredentialHandler
                             sessionItem.getSubject(), fraudResult, personIdentityDetailed);
             auditService.sendAuditEvent(
                     AuditEventType.VC_ISSUED,
+                    new AuditEventContext(input.getHeaders(), sessionItem),
                     IssueCredentialFraudAuditExtensionUtil.generateVCISSFraudAuditExtension(
                             verifiableCredentialService.getVerifiableCredentialIssuer(),
                             List.of(fraudResult)));

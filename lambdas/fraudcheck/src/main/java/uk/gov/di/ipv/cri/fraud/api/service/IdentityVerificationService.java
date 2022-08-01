@@ -3,8 +3,10 @@ package uk.gov.di.ipv.cri.fraud.api.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.gov.di.ipv.cri.common.library.domain.AuditEventContext;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
+import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
@@ -14,6 +16,7 @@ import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyFraudGateway;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class IdentityVerificationService {
@@ -45,7 +48,10 @@ public class IdentityVerificationService {
         this.auditService = auditService;
     }
 
-    public IdentityVerificationResult verifyIdentity(PersonIdentity personIdentity) {
+    public IdentityVerificationResult verifyIdentity(
+            PersonIdentity personIdentity,
+            SessionItem sessionItem,
+            Map<String, String> requestHeaders) {
         IdentityVerificationResult result = new IdentityVerificationResult();
         try {
             LOGGER.info("Validating identity...");
@@ -88,6 +94,7 @@ public class IdentityVerificationService {
                             identityCheckScore);
                     auditService.sendAuditEvent(
                             AuditEventType.THIRD_PARTY_REQUEST_ENDED,
+                            new AuditEventContext(requestHeaders, sessionItem),
                             new TPREFraudAuditExtension(
                                     List.of(fraudCheckResult.getThirdPartyFraudCodes())));
                 } else {

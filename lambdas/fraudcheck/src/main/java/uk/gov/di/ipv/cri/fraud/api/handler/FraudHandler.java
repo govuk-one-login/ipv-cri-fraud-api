@@ -14,11 +14,11 @@ import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
+import uk.gov.di.ipv.cri.common.library.domain.AuditEventContext;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
-import uk.gov.di.ipv.cri.common.library.domain.personidentity.*;
+import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.common.library.persistence.DataStore;
-import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
@@ -34,7 +34,9 @@ import uk.gov.di.ipv.cri.fraud.api.util.FraudPersonIdentityDetailedMapper;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.UUID;
 
 public class FraudHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
@@ -101,7 +103,8 @@ public class FraudHandler
                     context.getFunctionVersion());
             Map<String, String> headers = input.getHeaders();
             final String sessionId = headers.get("session_id");
-            LOGGER.info("Extracted session from header ID {}", sessionId);
+            LOGGER.info("Extracting session from header ID {}", sessionId);
+            var sessionItem = sessionService.validateSessionId(sessionId);
 
             PersonIdentity personIdentity = null;
             if (null != sessionId) {
@@ -115,12 +118,16 @@ public class FraudHandler
 
             LOGGER.info("Verifying identity...");
             IdentityVerificationResult result =
-                    identityVerificationService.verifyIdentity(personIdentity);
+                    identityVerificationService.verifyIdentity(
+                            personIdentity, sessionItem, headers);
 
             auditService.sendAuditEvent(
                     AuditEventType.REQUEST_SENT,
-                    FraudPersonIdentityDetailedMapper.generatePersonIdentityDetailed(
-                            personIdentity));
+                    new AuditEventContext(
+                            FraudPersonIdentityDetailedMapper.generatePersonIdentityDetailed(
+                                    personIdentity),
+                            input.getHeaders(),
+                            sessionItem));
             if (!result.isSuccess()) {
                 LOGGER.info("Third party failed to assert identity. Error {}", result.getError());
 
@@ -137,8 +144,7 @@ public class FraudHandler
             eventProbe.counterMetric(LAMBDA_NAME);
 
             LOGGER.info("Generating authorization code...");
-            final SessionItem session = sessionService.getSession(sessionId);
-            sessionService.createAuthorizationCode(session);
+            sessionService.createAuthorizationCode(sessionItem);
 
             final FraudResultItem fraudResultItem =
                     new FraudResultItem(

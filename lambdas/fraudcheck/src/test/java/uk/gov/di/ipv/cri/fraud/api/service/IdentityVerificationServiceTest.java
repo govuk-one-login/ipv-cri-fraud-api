@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
+import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
@@ -15,6 +16,7 @@ import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,6 +32,8 @@ class IdentityVerificationServiceTest {
     @Mock private ContraindicationMapper mockContraindicationMapper;
     @Mock private IdentityScoreCalaculator identityScoreCalaculator;
     @Mock private AuditService mockAuditService;
+    @Mock private SessionItem sessionItem;
+    @Mock private Map<String, String> requestHeaders;
 
     private IdentityVerificationService identityVerificationService;
 
@@ -61,7 +65,8 @@ class IdentityVerificationServiceTest {
                 .thenReturn(mappedFraudCodes);
 
         IdentityVerificationResult result =
-                this.identityVerificationService.verifyIdentity(testPersonIdentity);
+                this.identityVerificationService.verifyIdentity(
+                        testPersonIdentity, sessionItem, requestHeaders);
 
         assertNotNull(result);
         assertEquals(mappedFraudCodes[0], result.getContraIndicators()[0]);
@@ -78,7 +83,8 @@ class IdentityVerificationServiceTest {
                 .thenReturn(new ValidationResult<>(false, validationErrors));
 
         IdentityVerificationResult result =
-                this.identityVerificationService.verifyIdentity(testPersonIdentity);
+                this.identityVerificationService.verifyIdentity(
+                        testPersonIdentity, sessionItem, requestHeaders);
 
         assertNotNull(result);
         assertNull(result.getContraIndicators());
@@ -95,7 +101,8 @@ class IdentityVerificationServiceTest {
         when(mockThirdPartyGateway.performFraudCheck(testPersonIdentity)).thenReturn(null);
 
         IdentityVerificationResult result =
-                this.identityVerificationService.verifyIdentity(testPersonIdentity);
+                this.identityVerificationService.verifyIdentity(
+                        testPersonIdentity, sessionItem, requestHeaders);
 
         assertNotNull(result);
         assertFalse(result.isSuccess());
