@@ -5,10 +5,18 @@ import org.apache.logging.log4j.Logger;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.Address;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.*;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.ClientResponsePayload;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.DecisionElement;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.IdentityVerificationResponse;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.OrchestrationDecision;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.OverallResponse;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.ResponseHeader;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.ResponseType;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.Rule;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -46,7 +54,11 @@ public class TestDataCreator {
         return createTestPersonIdentity(CURRENT);
     }
 
-    public static PersonIdentity createTestPersonIdentityMultipleAddresses(int totalAddresses) {
+    public static PersonIdentity createTestPersonIdentityMultipleAddresses(
+            int addressChainLength,
+            int additionalCurrentAddresses,
+            int additionalPreviousAddresses,
+            boolean addressShuffle) {
         PersonIdentity personIdentity = new PersonIdentity();
 
         personIdentity.setFirstName("FirstName");
@@ -56,11 +68,40 @@ public class TestDataCreator {
         personIdentity.setDateOfBirth(LocalDate.of(1976, 12, 26));
 
         List<Address> addresses = new ArrayList<>();
-        IntStream.range(0, totalAddresses)
+        IntStream.range(0, addressChainLength)
                 .forEach(
                         a -> {
                             addresses.add(createAddress(a));
                         });
+
+        while (additionalCurrentAddresses > 0) {
+
+            Address additionalCurrentAddress = new Address();
+            additionalCurrentAddress.setValidUntil(null);
+            additionalCurrentAddress.setValidFrom(
+                    LocalDate.now().minusYears(additionalCurrentAddresses));
+
+            addresses.add(additionalCurrentAddress);
+
+            additionalCurrentAddresses--;
+        }
+
+        while (additionalPreviousAddresses > 0) {
+
+            Address additionalPreviousAddress = new Address();
+            additionalPreviousAddress.setValidUntil(
+                    LocalDate.now().minusYears(additionalPreviousAddresses));
+            additionalPreviousAddress.setValidFrom(null);
+
+            addresses.add(additionalPreviousAddress);
+
+            additionalPreviousAddresses--;
+        }
+
+        // Randomise list order
+        if (addressShuffle) {
+            Collections.shuffle(addresses);
+        }
 
         personIdentity.setAddresses(addresses);
 

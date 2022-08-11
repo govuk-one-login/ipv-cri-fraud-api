@@ -9,8 +9,10 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JsonValidationUtilityTest {
 
@@ -444,7 +446,8 @@ class JsonValidationUtilityTest {
                         validationErrors);
 
         final String EXPECTED_ERROR =
-                TEST_INTEGER_NAME + JsonValidationUtility.INVALID_VALUE_RANGE_ERROR_MESSAGE_SUFFIX;
+                JsonValidationUtility.createIntegerRangeErrorMessage(
+                        TEST_INT, TEST_INT_RANGE_MIN, TEST_INT_RANGE_MAX, TEST_INTEGER_NAME);
 
         assertEquals(1, validationErrors.size());
         assertEquals(EXPECTED_ERROR, validationErrors.get(0));
@@ -464,7 +467,8 @@ class JsonValidationUtilityTest {
                         validationErrors);
 
         final String EXPECTED_ERROR =
-                TEST_INTEGER_NAME + JsonValidationUtility.INVALID_VALUE_RANGE_ERROR_MESSAGE_SUFFIX;
+                JsonValidationUtility.createIntegerRangeErrorMessage(
+                        TEST_INT, TEST_INT_RANGE_MIN, TEST_INT_RANGE_MAX, TEST_INTEGER_NAME);
 
         assertEquals(1, validationErrors.size());
         assertEquals(EXPECTED_ERROR, validationErrors.get(0));
