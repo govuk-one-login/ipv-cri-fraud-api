@@ -1,17 +1,7 @@
 package uk.gov.di.ipv.cri.fraud.api.gateway;
 
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Address;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Applicant;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Application;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Contact;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Header;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Name;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Options;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Payload;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Person;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PersonDetails;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.*;
 
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
@@ -24,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class IdentityVerificationRequestMapper {
 
-    private final String tenantId;
+    final String tenantId;
 
     public IdentityVerificationRequestMapper(String tenantId) {
         this.tenantId = tenantId;
@@ -57,6 +47,8 @@ public class IdentityVerificationRequestMapper {
         Applicant applicant = createApplicant();
         Application application = new Application();
         application.setApplicants(List.of(applicant));
+        application.setProductDetails(null);
+        // application.setOriginalRequestTime(Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
 
         apiRequestPayload.setApplication(application);
         apiRequestPayload.setSource("WEB");
@@ -69,6 +61,65 @@ public class IdentityVerificationRequestMapper {
         return apiRequest;
     }
 
+    public PEPRequest mapPEPPersonIdentity(PersonIdentity personIdentity) {
+        Objects.requireNonNull(personIdentity, "The personIdentity must not be null");
+
+        Header apiRequestHeader = createPEPApiRequestHeader();
+
+        Payload apiRequestPayload = new Payload();
+        Contact contact = new Contact();
+        contact.setId("MAINCONTACT_1");
+
+        PersonDetails contactPersonDetails = new PersonDetails();
+        contactPersonDetails.setDateOfBirth(
+                DateTimeFormatter.ISO_DATE.format(personIdentity.getDateOfBirth()));
+        contactPersonDetails.setPepsSanctionsFlag("Y");
+        contactPersonDetails.setYearOfBirth(
+                String.valueOf(personIdentity.getDateOfBirth().getYear()));
+
+        Name contactPersonName = mapName(personIdentity);
+        List<Address> personAddresses = mapAddresses(personIdentity.getAddresses());
+
+        Person contactPerson = new Person();
+        contactPerson.setPersonIdentifier(null);
+        contactPerson.setPersonDetails(contactPersonDetails);
+        contactPerson.setNames(List.of(contactPersonName));
+        contactPerson.setTypeOfPerson("APPLICANT");
+        contact.setPerson(contactPerson);
+        contact.setAddresses(personAddresses);
+
+        Applicant applicant = createPEPApplicant();
+        Application application = new Application();
+        application.setType("OTHER");
+        application.setApplicants(List.of(applicant));
+        ProductDetails productDetails = new ProductDetails();
+        productDetails.setProductCode("MS_CON");
+        application.setProductDetails(productDetails);
+        application.setStatus("PENDING");
+        application.setOriginalRequestTime(
+                Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
+
+        apiRequestPayload.setApplication(application);
+        apiRequestPayload.setSource(null);
+        apiRequestPayload.setContacts(List.of(contact));
+
+        PEPRequest apiRequest = new PEPRequest();
+        apiRequest.setHeader(apiRequestHeader);
+        apiRequest.setPayload(apiRequestPayload);
+
+        return apiRequest;
+    }
+
+    private Header createPEPApiRequestHeader() {
+        Header apiRequestHeader = new Header();
+        apiRequestHeader.setTenantId(this.tenantId);
+        apiRequestHeader.setRequestType("PepSanctions01");
+        apiRequestHeader.setClientReferenceId(UUID.randomUUID().toString());
+        apiRequestHeader.setMessageTime(Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
+        apiRequestHeader.setOptions(new Options());
+        return apiRequestHeader;
+    }
+
     private Header createApiRequestHeader() {
         Header apiRequestHeader = new Header();
         apiRequestHeader.setTenantId(this.tenantId);
@@ -79,7 +130,7 @@ public class IdentityVerificationRequestMapper {
         return apiRequestHeader;
     }
 
-    private Name mapName(PersonIdentity personIdentity) {
+    Name mapName(PersonIdentity personIdentity) {
         Name personName = new Name();
         personName.setId("MAINPERSONNAME_1");
         personName.setType("CURRENT");
@@ -89,7 +140,7 @@ public class IdentityVerificationRequestMapper {
         return personName;
     }
 
-    private Applicant createApplicant() {
+    Applicant createApplicant() {
         Applicant applicant = new Applicant();
         applicant.setId("APPLICANT_1");
         applicant.setContactId("MAINCONTACT_1");
@@ -99,7 +150,17 @@ public class IdentityVerificationRequestMapper {
         return applicant;
     }
 
-    private List<Address> mapAddresses(
+    Applicant createPEPApplicant() {
+        Applicant applicant = new Applicant();
+        applicant.setId("APPLICANT_1");
+        applicant.setContactId("MAINCONTACT_1");
+        applicant.setType(null);
+        applicant.setApplicantType("APPLICANT");
+        applicant.setConsent(true);
+        return applicant;
+    }
+
+    List<Address> mapAddresses(
             List<uk.gov.di.ipv.cri.common.library.domain.personidentity.Address> personAddresses) {
         List<Address> addresses = new ArrayList<>();
         AtomicInteger addressId = new AtomicInteger(0);

@@ -16,6 +16,17 @@ public class Person {
     @JsonProperty("personDetails")
     private PersonDetails personDetails;
 
+    @JsonProperty("typeOfPerson")
+    private String typeOfPerson;
+
+    public String getTypeOfPerson() {
+        return typeOfPerson;
+    }
+
+    public void setTypeOfPerson(String typeOfPerson) {
+        this.typeOfPerson = typeOfPerson;
+    }
+
     @JsonProperty("names")
     private List<Name> names = new ArrayList<>();
 

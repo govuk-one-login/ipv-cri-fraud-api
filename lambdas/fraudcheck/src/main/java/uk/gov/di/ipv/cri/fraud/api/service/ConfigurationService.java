@@ -57,8 +57,7 @@ public class ConfigurationService {
             throw new IllegalArgumentException("env must be specified");
         }
 
-        //      *********************************Private
-        // Paramaters***********************************************
+        // ****************************Private Paramaters****************************
 
         this.parameterPrefix = System.getenv("AWS_STACK_NAME");
         this.tenantId = paramProvider.get(String.format(KEY_FORMAT, env, "thirdPartyApiTenantId"));
@@ -71,8 +70,7 @@ public class ConfigurationService {
                 paramProvider.get(getParameterName("contraindicationMappings"));
         this.fraudResultTableName = paramProvider.get(getParameterName("FraudTableName"));
 
-        //      *********************************Feature
-        // toggles***********************************************
+        // *****************************Feature Toggles*******************************
 
         String pepEnabledFlag;
         try {
@@ -83,8 +81,7 @@ public class ConfigurationService {
         }
         this.pepEnabled = pepEnabledFlag;
 
-        //
-        // *********************************Secret***********************************************
+        // *********************************Secrets***********************************
 
         KeyStoreParams keyStoreParams =
                 secretsProvider

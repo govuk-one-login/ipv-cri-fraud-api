@@ -6,10 +6,7 @@ import software.amazon.lambda.powertools.parameters.ParamManager;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.common.library.service.AuditEventFactory;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
-import uk.gov.di.ipv.cri.fraud.api.gateway.HmacGenerator;
-import uk.gov.di.ipv.cri.fraud.api.gateway.IdentityVerificationRequestMapper;
-import uk.gov.di.ipv.cri.fraud.api.gateway.IdentityVerificationResponseMapper;
-import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyFraudGateway;
+import uk.gov.di.ipv.cri.fraud.api.gateway.*;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -28,6 +25,22 @@ public class ServiceFactory {
     private final HttpClient httpClient;
     private final AuditService auditService;
 
+    public ServiceFactory(ObjectMapper objectMapper)
+            throws NoSuchAlgorithmException, InvalidKeyException, IOException {
+        this.objectMapper = objectMapper;
+        this.personIdentityValidator = new PersonIdentityValidator();
+        this.configurationService = createConfigurationService();
+        this.sslContextFactory =
+                new SSLContextFactory(
+                        this.configurationService.getEncodedKeyStore(),
+                        this.configurationService.getKeyStorePassword());
+        this.contraindicationMapper = new ContraIndicatorRemoteMapper(configurationService);
+        this.httpClient = createHttpClient();
+        this.auditService = createAuditService(this.objectMapper);
+        this.identityVerificationService = createIdentityVerificationService(this.auditService);
+    }
+
+    @ExcludeFromGeneratedCoverageReport
     ServiceFactory(
             ObjectMapper objectMapper,
             ConfigurationService configurationService,
@@ -44,22 +57,6 @@ public class ServiceFactory {
         this.personIdentityValidator = personIdentityValidator;
         this.httpClient = httpClient;
         this.auditService = auditService;
-        this.identityVerificationService = createIdentityVerificationService(this.auditService);
-    }
-
-    @ExcludeFromGeneratedCoverageReport
-    public ServiceFactory(ObjectMapper objectMapper)
-            throws NoSuchAlgorithmException, InvalidKeyException, IOException {
-        this.objectMapper = objectMapper;
-        this.personIdentityValidator = new PersonIdentityValidator();
-        this.configurationService = createConfigurationService();
-        this.sslContextFactory =
-                new SSLContextFactory(
-                        this.configurationService.getEncodedKeyStore(),
-                        this.configurationService.getKeyStorePassword());
-        this.contraindicationMapper = new ContraIndicatorRemoteMapper();
-        this.httpClient = createHttpClient();
-        this.auditService = createAuditService(this.objectMapper);
         this.identityVerificationService = createIdentityVerificationService(this.auditService);
     }
 

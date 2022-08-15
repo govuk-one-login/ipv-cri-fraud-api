@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Logger;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PEPRequest;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.IdentityVerificationResponse;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.PEPResponse;
 import uk.gov.di.ipv.cri.fraud.api.util.SleepHelper;
@@ -100,18 +101,16 @@ public class ThirdPartyFraudGateway {
             throws IOException, InterruptedException {
         LOGGER.info("Mapping person to third party verification request");
         if (pepEnabled) {
-            // TODO: Lime-37 change to new mapping method and change apiRequest type to PEPRequest
-            IdentityVerificationRequest apiRequest =
-                    requestMapper.mapPersonIdentity(personIdentity);
+            PEPRequest apiRequest = requestMapper.mapPEPPersonIdentity(personIdentity);
 
             String requestBody = objectMapper.writeValueAsString(apiRequest);
             String requestBodyHmac = hmacGenerator.generateHmac(requestBody);
             HttpRequest request = requestBuilder(requestBody, requestBodyHmac);
 
-            LOGGER.info("Submitting fraud check request to third party...");
+            LOGGER.info("Submitting pep check request to third party...");
             HttpResponse<String> httpResponse = sendHTTPRequestRetryIfAllowed(request);
 
-            FraudCheckResult fraudCheckResult = responseHandler(httpResponse, pepEnabled);
+            FraudCheckResult fraudCheckResult = responseHandler(httpResponse, true);
             return fraudCheckResult;
         } else {
             IdentityVerificationRequest apiRequest =
@@ -124,7 +123,7 @@ public class ThirdPartyFraudGateway {
             LOGGER.info("Submitting fraud check request to third party...");
             HttpResponse<String> httpResponse = sendHTTPRequestRetryIfAllowed(request);
 
-            FraudCheckResult fraudCheckResult = responseHandler(httpResponse, pepEnabled);
+            FraudCheckResult fraudCheckResult = responseHandler(httpResponse, false);
             return fraudCheckResult;
         }
     }

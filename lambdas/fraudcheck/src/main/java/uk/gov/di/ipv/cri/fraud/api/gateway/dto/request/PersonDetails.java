@@ -9,6 +9,28 @@ public class PersonDetails {
     @JsonProperty("dateOfBirth")
     private String dateOfBirth;
 
+    @JsonProperty("pepsSanctionsFlag")
+    private String pepsSanctionsFlag;
+
+    @JsonProperty("yearOfBirth")
+    private String yearOfBirth;
+
+    public String getYearOfBirth() {
+        return yearOfBirth;
+    }
+
+    public void setYearOfBirth(String yearOfBirth) {
+        this.yearOfBirth = yearOfBirth;
+    }
+
+    public String getPepsSanctionsFlag() {
+        return pepsSanctionsFlag;
+    }
+
+    public void setPepsSanctionsFlag(String pepsSanctionsFlag) {
+        this.pepsSanctionsFlag = pepsSanctionsFlag;
+    }
+
     public String getDateOfBirth() {
         return dateOfBirth;
     }

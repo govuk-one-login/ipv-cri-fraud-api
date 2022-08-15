@@ -43,7 +43,7 @@ public class IdentityVerificationResponseMapper {
 
         switch (responseType) {
             case INFO:
-                return mapResponse(response, new IdentityVerificationInfoResponseValidator());
+                return mapPEPResponse(response, new IdentityVerificationInfoResponseValidator());
             case ERROR:
             case WARN:
             case WARNING:
@@ -90,8 +90,7 @@ public class IdentityVerificationResponseMapper {
         return fraudCheckResult;
     }
 
-    // TODO: Will need to be reviewed in LIME-37
-    private FraudCheckResult mapResponse(
+    private FraudCheckResult mapPEPResponse(
             PEPResponse response, IdentityVerificationInfoResponseValidator infoResponseValidator) {
         FraudCheckResult fraudCheckResult = new FraudCheckResult();
 

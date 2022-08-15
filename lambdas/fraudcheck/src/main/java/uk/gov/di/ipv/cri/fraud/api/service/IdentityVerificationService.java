@@ -72,18 +72,21 @@ public class IdentityVerificationService {
 
             FraudCheckResult fraudCheckResult =
                     thirdPartyGateway.performFraudCheck(personIdentity, false);
-            LOGGER.info("Third party response mapped");
+            LOGGER.info("Third party fraud response mapped");
             LOGGER.info(
                     "Third party response {}",
                     new ObjectMapper().writeValueAsString(fraudCheckResult));
 
             if (Objects.nonNull(fraudCheckResult)) {
-                result.setSuccess(fraudCheckResult.isExecutedSuccessfully());
+                result.setSuccess(
+                        fraudCheckResult
+                                .isExecutedSuccessfully()); // for testing error scenario comment
+                // this out and send no postCode in request
                 if (result.isSuccess()) {
-
                     if (configurationService.getPepEnabled()) {
                         fraudCheckResult =
                                 thirdPartyGateway.performFraudCheck(personIdentity, true);
+                        LOGGER.info("Third party pep response mapped");
                     }
 
                     LOGGER.info("Mapping contra indicators from fraud response");
