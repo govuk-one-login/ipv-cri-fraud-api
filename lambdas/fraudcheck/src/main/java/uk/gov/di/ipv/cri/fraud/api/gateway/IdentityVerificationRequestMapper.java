@@ -1,17 +1,7 @@
 package uk.gov.di.ipv.cri.fraud.api.gateway;
 
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Address;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Applicant;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Application;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Contact;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Header;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Name;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Options;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Payload;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Person;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PersonDetails;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.*;
 
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
@@ -24,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class IdentityVerificationRequestMapper {
 
-    private final String tenantId;
+    final String tenantId;
 
     public IdentityVerificationRequestMapper(String tenantId) {
         this.tenantId = tenantId;
@@ -57,6 +47,8 @@ public class IdentityVerificationRequestMapper {
         Applicant applicant = createApplicant();
         Application application = new Application();
         application.setApplicants(List.of(applicant));
+        application.setProductDetails(null);
+        // application.setOriginalRequestTime(Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
 
         apiRequestPayload.setApplication(application);
         apiRequestPayload.setSource("WEB");
@@ -79,7 +71,7 @@ public class IdentityVerificationRequestMapper {
         return apiRequestHeader;
     }
 
-    private Name mapName(PersonIdentity personIdentity) {
+    Name mapName(PersonIdentity personIdentity) {
         Name personName = new Name();
         personName.setId("MAINPERSONNAME_1");
         personName.setType("CURRENT");
@@ -89,7 +81,7 @@ public class IdentityVerificationRequestMapper {
         return personName;
     }
 
-    private Applicant createApplicant() {
+    Applicant createApplicant() {
         Applicant applicant = new Applicant();
         applicant.setId("APPLICANT_1");
         applicant.setContactId("MAINCONTACT_1");
@@ -99,7 +91,7 @@ public class IdentityVerificationRequestMapper {
         return applicant;
     }
 
-    private List<Address> mapAddresses(
+    List<Address> mapAddresses(
             List<uk.gov.di.ipv.cri.common.library.domain.personidentity.Address> personAddresses) {
         List<Address> addresses = new ArrayList<>();
         AtomicInteger addressId = new AtomicInteger(0);

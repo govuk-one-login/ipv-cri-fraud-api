@@ -43,6 +43,8 @@ class ThirdPartyFraudGatewayTest {
         private final HttpClient httpClient;
         private final IdentityVerificationRequestMapper requestMapper;
         private final IdentityVerificationResponseMapper responseMapper;
+        private final PEPRequestMapper pEPRequestMapper;
+        private final PEPResponseMapper pEPResponseMapper;
         private final ObjectMapper objectMapper;
         private final HmacGenerator hmacGenerator;
         private final String experianEndpointUrl;
@@ -51,6 +53,8 @@ class ThirdPartyFraudGatewayTest {
                 HttpClient httpClient,
                 IdentityVerificationRequestMapper requestMapper,
                 IdentityVerificationResponseMapper responseMapper,
+                PEPRequestMapper pepRequestMapper,
+                PEPResponseMapper pepResponseMapper,
                 ObjectMapper objectMapper,
                 HmacGenerator hmacGenerator,
                 String experianEndpointUrl) {
@@ -58,6 +62,8 @@ class ThirdPartyFraudGatewayTest {
             this.httpClient = httpClient;
             this.requestMapper = requestMapper;
             this.responseMapper = responseMapper;
+            this.pEPRequestMapper = pepRequestMapper;
+            this.pEPResponseMapper = pepResponseMapper;
             this.objectMapper = objectMapper;
             this.hmacGenerator = hmacGenerator;
             this.experianEndpointUrl = experianEndpointUrl;
@@ -70,6 +76,8 @@ class ThirdPartyFraudGatewayTest {
     @Mock private HttpClient mockHttpClient;
     @Mock private IdentityVerificationRequestMapper mockRequestMapper;
     @Mock private IdentityVerificationResponseMapper mockResponseMapper;
+    @Mock private PEPRequestMapper mockPEPMapper;
+    @Mock private PEPResponseMapper mockPEPResponseMapper;
     @Mock private ObjectMapper mockObjectMapper;
     @Mock private HmacGenerator mockHmacGenerator;
     @Mock private SleepHelper sleepHelper;
@@ -81,6 +89,8 @@ class ThirdPartyFraudGatewayTest {
                         mockHttpClient,
                         mockRequestMapper,
                         mockResponseMapper,
+                        mockPEPMapper,
+                        mockPEPResponseMapper,
                         mockObjectMapper,
                         mockHmacGenerator,
                         TEST_ENDPOINT_URL,
@@ -470,14 +480,24 @@ class ThirdPartyFraudGatewayTest {
         Map<String, ExperianGatewayConstructorArgs> testCases =
                 Map.of(
                         "httpClient must not be null",
-                        new ExperianGatewayConstructorArgs(null, null, null, null, null, null),
+                        new ExperianGatewayConstructorArgs(
+                                null, null, null, null, null, null, null, null),
                         "requestMapper must not be null",
                         new ExperianGatewayConstructorArgs(
-                                Mockito.mock(HttpClient.class), null, null, null, null, null),
+                                Mockito.mock(HttpClient.class),
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null),
                         "responseMapper must not be null",
                         new ExperianGatewayConstructorArgs(
                                 Mockito.mock(HttpClient.class),
                                 Mockito.mock(IdentityVerificationRequestMapper.class),
+                                null,
+                                Mockito.mock(PEPRequestMapper.class),
                                 null,
                                 null,
                                 null,
@@ -487,6 +507,8 @@ class ThirdPartyFraudGatewayTest {
                                 Mockito.mock(HttpClient.class),
                                 Mockito.mock(IdentityVerificationRequestMapper.class),
                                 Mockito.mock(IdentityVerificationResponseMapper.class),
+                                Mockito.mock(PEPRequestMapper.class),
+                                Mockito.mock(PEPResponseMapper.class),
                                 null,
                                 null,
                                 null),
@@ -495,6 +517,8 @@ class ThirdPartyFraudGatewayTest {
                                 Mockito.mock(HttpClient.class),
                                 Mockito.mock(IdentityVerificationRequestMapper.class),
                                 Mockito.mock(IdentityVerificationResponseMapper.class),
+                                Mockito.mock(PEPRequestMapper.class),
+                                Mockito.mock(PEPResponseMapper.class),
                                 Mockito.mock(ObjectMapper.class),
                                 null,
                                 null),
@@ -503,6 +527,8 @@ class ThirdPartyFraudGatewayTest {
                                 Mockito.mock(HttpClient.class),
                                 Mockito.mock(IdentityVerificationRequestMapper.class),
                                 Mockito.mock(IdentityVerificationResponseMapper.class),
+                                Mockito.mock(PEPRequestMapper.class),
+                                Mockito.mock(PEPResponseMapper.class),
                                 Mockito.mock(ObjectMapper.class),
                                 Mockito.mock(HmacGenerator.class),
                                 null));
@@ -516,6 +542,8 @@ class ThirdPartyFraudGatewayTest {
                                                 constructorArgs.httpClient,
                                                 constructorArgs.requestMapper,
                                                 constructorArgs.responseMapper,
+                                                constructorArgs.pEPRequestMapper,
+                                                constructorArgs.pEPResponseMapper,
                                                 constructorArgs.objectMapper,
                                                 constructorArgs.hmacGenerator,
                                                 constructorArgs.experianEndpointUrl),
