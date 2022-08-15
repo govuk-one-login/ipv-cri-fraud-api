@@ -112,7 +112,7 @@ class ThirdPartyFraudGatewayTest {
                 .thenReturn(testFraudCheckResult);
 
         FraudCheckResult actualFraudCheckResult =
-                thirdPartyFraudGateway.performFraudCheck(personIdentity);
+                thirdPartyFraudGateway.performFraudCheck(personIdentity, false);
 
         verify(mockRequestMapper).mapPersonIdentity(personIdentity);
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
@@ -152,7 +152,7 @@ class ThirdPartyFraudGatewayTest {
                 .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE));
 
         FraudCheckResult actualFraudCheckResult =
-                thirdPartyFraudGateway.performFraudCheck(personIdentity);
+                thirdPartyFraudGateway.performFraudCheck(personIdentity, false);
 
         final String EXPECTED_ERROR =
                 ThirdPartyFraudGateway.HTTP_300_REDIRECT_MESSAGE + MOCK_HTTP_STATUS_CODE;
@@ -197,7 +197,7 @@ class ThirdPartyFraudGatewayTest {
                 .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE));
 
         FraudCheckResult actualFraudCheckResult =
-                thirdPartyFraudGateway.performFraudCheck(personIdentity);
+                thirdPartyFraudGateway.performFraudCheck(personIdentity, false);
 
         final String EXPECTED_ERROR =
                 ThirdPartyFraudGateway.HTTP_400_CLIENT_REQUEST_ERROR + MOCK_HTTP_STATUS_CODE;
@@ -242,7 +242,7 @@ class ThirdPartyFraudGatewayTest {
                 .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE));
 
         FraudCheckResult actualFraudCheckResult =
-                thirdPartyFraudGateway.performFraudCheck(personIdentity);
+                thirdPartyFraudGateway.performFraudCheck(personIdentity, false);
 
         final String EXPECTED_ERROR =
                 ThirdPartyFraudGateway.HTTP_500_SERVER_ERROR + MOCK_HTTP_STATUS_CODE;
@@ -289,7 +289,7 @@ class ThirdPartyFraudGatewayTest {
                 .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE));
 
         FraudCheckResult actualFraudCheckResult =
-                thirdPartyFraudGateway.performFraudCheck(personIdentity);
+                thirdPartyFraudGateway.performFraudCheck(personIdentity, false);
 
         final String EXPECTED_ERROR =
                 ThirdPartyFraudGateway.HTTP_UNHANDLED_ERROR + MOCK_HTTP_STATUS_CODE;
@@ -341,7 +341,7 @@ class ThirdPartyFraudGatewayTest {
                 .thenReturn(testFraudCheckResult);
 
         FraudCheckResult actualFraudCheckResult =
-                thirdPartyFraudGateway.performFraudCheck(personIdentity);
+                thirdPartyFraudGateway.performFraudCheck(personIdentity, false);
 
         verify(mockRequestMapper).mapPersonIdentity(personIdentity);
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
@@ -392,7 +392,7 @@ class ThirdPartyFraudGatewayTest {
                 .thenReturn(testFraudCheckResult);
 
         FraudCheckResult actualFraudCheckResult =
-                thirdPartyFraudGateway.performFraudCheck(personIdentity);
+                thirdPartyFraudGateway.performFraudCheck(personIdentity, false);
 
         verify(mockRequestMapper).mapPersonIdentity(personIdentity);
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
@@ -441,7 +441,7 @@ class ThirdPartyFraudGatewayTest {
                 .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE)); // Retry 7 Fail
 
         FraudCheckResult actualFraudCheckResult =
-                thirdPartyFraudGateway.performFraudCheck(personIdentity);
+                thirdPartyFraudGateway.performFraudCheck(personIdentity, false);
 
         final String EXPECTED_ERROR =
                 ThirdPartyFraudGateway.HTTP_500_SERVER_ERROR + MOCK_HTTP_STATUS_CODE;

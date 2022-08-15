@@ -34,6 +34,7 @@ class IdentityVerificationServiceTest {
     @Mock private AuditService mockAuditService;
     @Mock private SessionItem sessionItem;
     @Mock private Map<String, String> requestHeaders;
+    @Mock private ConfigurationService configurationService;
 
     private IdentityVerificationService identityVerificationService;
 
@@ -45,7 +46,8 @@ class IdentityVerificationServiceTest {
                         personIdentityValidator,
                         mockContraindicationMapper,
                         identityScoreCalaculator,
-                        mockAuditService);
+                        mockAuditService,
+                        configurationService);
     }
 
     @Test
@@ -59,7 +61,7 @@ class IdentityVerificationServiceTest {
         testFraudCheckResult.setThirdPartyFraudCodes(thirdPartyFraudCodes);
         when(personIdentityValidator.validate(testPersonIdentity))
                 .thenReturn(ValidationResult.createValidResult());
-        when(mockThirdPartyGateway.performFraudCheck(testPersonIdentity))
+        when(mockThirdPartyGateway.performFraudCheck(testPersonIdentity, false))
                 .thenReturn(testFraudCheckResult);
         when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyFraudCodes))
                 .thenReturn(mappedFraudCodes);
@@ -71,7 +73,7 @@ class IdentityVerificationServiceTest {
         assertNotNull(result);
         assertEquals(mappedFraudCodes[0], result.getContraIndicators()[0]);
         verify(personIdentityValidator).validate(testPersonIdentity);
-        verify(mockThirdPartyGateway).performFraudCheck(testPersonIdentity);
+        verify(mockThirdPartyGateway).performFraudCheck(testPersonIdentity, false);
         verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyFraudCodes);
     }
 
@@ -98,7 +100,7 @@ class IdentityVerificationServiceTest {
         PersonIdentity testPersonIdentity = TestDataCreator.createTestPersonIdentity();
         when(personIdentityValidator.validate(testPersonIdentity))
                 .thenReturn(ValidationResult.createValidResult());
-        when(mockThirdPartyGateway.performFraudCheck(testPersonIdentity)).thenReturn(null);
+        when(mockThirdPartyGateway.performFraudCheck(testPersonIdentity, false)).thenReturn(null);
 
         IdentityVerificationResult result =
                 this.identityVerificationService.verifyIdentity(
