@@ -1,5 +1,6 @@
 package uk.gov.di.ipv.cri.fraud.api.gateway;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.oauth2.sdk.util.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -8,6 +9,7 @@ import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.IdentityVerificationResponse;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.PEPResponse;
 import uk.gov.di.ipv.cri.fraud.api.util.SleepHelper;
 
 import java.io.IOException;
@@ -94,33 +96,54 @@ public class ThirdPartyFraudGateway {
         this.sleepHelper = sleepHelper;
     }
 
-    public FraudCheckResult performFraudCheck(PersonIdentity personIdentity)
+    public FraudCheckResult performFraudCheck(PersonIdentity personIdentity, boolean pepEnabled)
             throws IOException, InterruptedException {
         LOGGER.info("Mapping person to third party verification request");
-        IdentityVerificationRequest apiRequest = requestMapper.mapPersonIdentity(personIdentity);
-        String requestBody = objectMapper.writeValueAsString(apiRequest);
+        if (pepEnabled) {
+            // TODO: Lime-37 change to new mapping method and change apiRequest type to PEPRequest
+            IdentityVerificationRequest apiRequest =
+                    requestMapper.mapPersonIdentity(personIdentity);
 
-        String requestBodyHmac = hmacGenerator.generateHmac(requestBody);
-        HttpRequest request =
-                HttpRequest.newBuilder()
-                        .uri(endpointUri)
-                        .setHeader("Accept", "application/json")
-                        .setHeader("Content-Type", "application/json")
-                        .setHeader("hmac-signature", requestBodyHmac)
-                        .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                        .build();
+            String requestBody = objectMapper.writeValueAsString(apiRequest);
+            String requestBodyHmac = hmacGenerator.generateHmac(requestBody);
+            HttpRequest request = requestBuilder(requestBody, requestBodyHmac);
 
-        LOGGER.info("Submitting fraud check request to third party...");
-        HttpResponse<String> httpResponse = sendHTTPRequestRetryIfAllowed(request);
+            LOGGER.info("Submitting fraud check request to third party...");
+            HttpResponse<String> httpResponse = sendHTTPRequestRetryIfAllowed(request);
 
+            FraudCheckResult fraudCheckResult = responseHandler(httpResponse, pepEnabled);
+            return fraudCheckResult;
+        } else {
+            IdentityVerificationRequest apiRequest =
+                    requestMapper.mapPersonIdentity(personIdentity);
+
+            String requestBody = objectMapper.writeValueAsString(apiRequest);
+            String requestBodyHmac = hmacGenerator.generateHmac(requestBody);
+            HttpRequest request = requestBuilder(requestBody, requestBodyHmac);
+
+            LOGGER.info("Submitting fraud check request to third party...");
+            HttpResponse<String> httpResponse = sendHTTPRequestRetryIfAllowed(request);
+
+            FraudCheckResult fraudCheckResult = responseHandler(httpResponse, pepEnabled);
+            return fraudCheckResult;
+        }
+    }
+
+    private FraudCheckResult responseHandler(HttpResponse<String> httpResponse, boolean pepEnabled)
+            throws JsonProcessingException {
         int statusCode = httpResponse.statusCode();
         LOGGER.info("Third party response code {}", statusCode);
 
         if (statusCode == 200) {
             String responseBody = httpResponse.body();
-            IdentityVerificationResponse response =
-                    objectMapper.readValue(responseBody, IdentityVerificationResponse.class);
-            return responseMapper.mapIdentityVerificationResponse(response);
+            if (pepEnabled) {
+                PEPResponse response = objectMapper.readValue(responseBody, PEPResponse.class);
+                return responseMapper.mapPEPResponse(response);
+            } else {
+                IdentityVerificationResponse response =
+                        objectMapper.readValue(responseBody, IdentityVerificationResponse.class);
+                return responseMapper.mapIdentityVerificationResponse(response);
+            }
         } else {
             FraudCheckResult fraudCheckResult = new FraudCheckResult();
             fraudCheckResult.setExecutedSuccessfully(false);
@@ -137,6 +160,18 @@ public class ThirdPartyFraudGateway {
 
             return fraudCheckResult;
         }
+    }
+
+    private HttpRequest requestBuilder(String requestBody, String requestBodyHmac) {
+        HttpRequest request =
+                HttpRequest.newBuilder()
+                        .uri(endpointUri)
+                        .setHeader("Accept", "application/json")
+                        .setHeader("Content-Type", "application/json")
+                        .setHeader("hmac-signature", requestBodyHmac)
+                        .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                        .build();
+        return request;
     }
 
     private HttpResponse<String> sendHTTPRequestRetryIfAllowed(HttpRequest request)

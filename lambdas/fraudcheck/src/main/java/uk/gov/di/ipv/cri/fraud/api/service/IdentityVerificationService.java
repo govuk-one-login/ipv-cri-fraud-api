@@ -32,6 +32,7 @@ public class IdentityVerificationService {
     private final PersonIdentityValidator personIdentityValidator;
     private final ContraindicationMapper contraindicationMapper;
     private final IdentityScoreCalaculator identityScoreCalaculator;
+    private final ConfigurationService configurationService;
 
     private final AuditService auditService;
 
@@ -40,12 +41,14 @@ public class IdentityVerificationService {
             PersonIdentityValidator personIdentityValidator,
             ContraindicationMapper contraindicationMapper,
             IdentityScoreCalaculator identityScoreCalaculator,
-            AuditService auditService) {
+            AuditService auditService,
+            ConfigurationService configurationService) {
         this.thirdPartyGateway = thirdPartyGateway;
         this.personIdentityValidator = personIdentityValidator;
         this.contraindicationMapper = contraindicationMapper;
         this.identityScoreCalaculator = identityScoreCalaculator;
         this.auditService = auditService;
+        this.configurationService = configurationService;
     }
 
     public IdentityVerificationResult verifyIdentity(
@@ -67,7 +70,8 @@ public class IdentityVerificationService {
             }
             LOGGER.info("Identity info validated");
 
-            FraudCheckResult fraudCheckResult = thirdPartyGateway.performFraudCheck(personIdentity);
+            FraudCheckResult fraudCheckResult =
+                    thirdPartyGateway.performFraudCheck(personIdentity, false);
             LOGGER.info("Third party response mapped");
             LOGGER.info(
                     "Third party response {}",
@@ -76,6 +80,12 @@ public class IdentityVerificationService {
             if (Objects.nonNull(fraudCheckResult)) {
                 result.setSuccess(fraudCheckResult.isExecutedSuccessfully());
                 if (result.isSuccess()) {
+
+                    if (configurationService.getPepEnabled()) {
+                        fraudCheckResult =
+                                thirdPartyGateway.performFraudCheck(personIdentity, true);
+                    }
+
                     LOGGER.info("Mapping contra indicators from fraud response");
 
                     String[] contraindications =
