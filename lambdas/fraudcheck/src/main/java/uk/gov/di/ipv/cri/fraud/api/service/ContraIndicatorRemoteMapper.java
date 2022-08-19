@@ -2,7 +2,6 @@ package uk.gov.di.ipv.cri.fraud.api.service;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import software.amazon.lambda.powertools.parameters.ParamManager;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -15,12 +14,8 @@ public class ContraIndicatorRemoteMapper implements ContraindicationMapper {
     private final Map<String, String> uCodeCIMap;
     private ConfigurationService configurationService;
 
-    public ContraIndicatorRemoteMapper() {
-        this.configurationService =
-                new ConfigurationService(
-                        ParamManager.getSecretsProvider(),
-                        ParamManager.getSsmProvider(),
-                        System.getenv("ENVIRONMENT"));
+    public ContraIndicatorRemoteMapper(ConfigurationService configurationService) {
+        this.configurationService = configurationService;
 
         final String contraindicatorMappingString =
                 System.getenv().get(CIMAP) == null

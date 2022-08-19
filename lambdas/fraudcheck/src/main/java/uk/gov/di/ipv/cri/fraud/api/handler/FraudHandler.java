@@ -54,6 +54,23 @@ public class FraudHandler
     private final ConfigurationService configurationService;
     private final AuditService auditService;
 
+    public FraudHandler() throws NoSuchAlgorithmException, IOException, InvalidKeyException {
+        this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        ServiceFactory serviceFactory = new ServiceFactory(objectMapper);
+        this.eventProbe = new EventProbe();
+        this.identityVerificationService = serviceFactory.getIdentityVerificationService();
+        this.personIdentityService = new PersonIdentityService();
+        this.sessionService = new SessionService();
+        this.configurationService = serviceFactory.getConfigurationService();
+        this.dataStore =
+                new DataStore<>(
+                        configurationService.getFraudResultTableName(),
+                        FraudResultItem.class,
+                        DataStore.getClient());
+        this.auditService = serviceFactory.getAuditService();
+    }
+
+    @ExcludeFromGeneratedCoverageReport
     public FraudHandler(
             ServiceFactory serviceFactory,
             ObjectMapper objectMapper,
@@ -71,23 +88,6 @@ public class FraudHandler
         this.configurationService = configurationService;
         this.dataStore = dataStore;
         this.auditService = auditService;
-    }
-
-    @ExcludeFromGeneratedCoverageReport
-    public FraudHandler() throws NoSuchAlgorithmException, IOException, InvalidKeyException {
-        this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        ServiceFactory serviceFactory = new ServiceFactory(objectMapper);
-        this.eventProbe = new EventProbe();
-        this.identityVerificationService = serviceFactory.getIdentityVerificationService();
-        this.personIdentityService = new PersonIdentityService();
-        this.sessionService = new SessionService();
-        this.configurationService = serviceFactory.getConfigurationService();
-        this.dataStore =
-                new DataStore<>(
-                        configurationService.getFraudResultTableName(),
-                        FraudResultItem.class,
-                        DataStore.getClient());
-        this.auditService = serviceFactory.getAuditService();
     }
 
     @Override
