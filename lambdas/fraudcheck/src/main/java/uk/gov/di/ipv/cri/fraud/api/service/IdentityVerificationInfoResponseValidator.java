@@ -176,9 +176,7 @@ public class IdentityVerificationInfoResponseValidator {
                     subObjectName + DECISION_TEXT_FIELD_NAME,
                     validationErrors);
 
-            if (pepEnabled) {
-
-            } else {
+            if (!pepEnabled) {
                 if (JsonValidationUtility.validateListDataEmptyIsFail(
                         overallResponse.getDecisionReasons(),
                         subObjectName + "DecisionReasons",
@@ -331,15 +329,32 @@ public class IdentityVerificationInfoResponseValidator {
         }
 
         String subObjectName = "DecisionElement:";
-
-        if (pepEnabled) {
-
-        } else {
+        if (!pepEnabled) {
             JsonValidationUtility.validateStringDataEmptyIsFail(
                     decisionElement.getApplicantId(),
                     DECISION_ELEMENTS_APP_ID_MAX_LEN,
                     subObjectName + "ApplicantId",
                     validationErrors);
+
+            JsonValidationUtility.validateStringDataEmptyIsFail(
+                    decisionElement.getDecision(),
+                    DECISION_ELEMENTS_DECISION_MAX_LEN,
+                    subObjectName + DECISION_FIELD_NAME,
+                    validationErrors);
+
+            JsonValidationUtility.validateStringDataEmptyIsFail(
+                    decisionElement.getDecisionReason(),
+                    DECISION_ELEMENTS_DECISION_REASON_MAX_LEN,
+                    subObjectName + "DecisionReason",
+                    validationErrors);
+
+            List<Rule> rules = decisionElement.getRules();
+            if (JsonValidationUtility.validateListDataEmptyIsFail(
+                    rules, subObjectName + "Rules", validationErrors)) {
+                for (Rule rule : rules) {
+                    placeholderValidateDecisionElementRule(rule, validationErrors);
+                }
+            }
         }
 
         JsonValidationUtility.validateStringDataEmptyIsFail(
@@ -348,15 +363,6 @@ public class IdentityVerificationInfoResponseValidator {
                 subObjectName + "ServiceName",
                 validationErrors);
 
-        if (pepEnabled) {
-
-        } else {
-            JsonValidationUtility.validateStringDataEmptyIsFail(
-                    decisionElement.getDecision(),
-                    DECISION_ELEMENTS_DECISION_MAX_LEN,
-                    subObjectName + DECISION_FIELD_NAME,
-                    validationErrors);
-        }
         JsonValidationUtility.validateIntegerRangeData(
                 decisionElement.getScore(),
                 DECISION_ELEMENTS_SCORE_MIN_VALUE,
@@ -370,33 +376,11 @@ public class IdentityVerificationInfoResponseValidator {
                 subObjectName + DECISION_TEXT_FIELD_NAME,
                 validationErrors);
 
-        if (pepEnabled) {
-
-        } else {
-            JsonValidationUtility.validateStringDataEmptyIsFail(
-                    decisionElement.getDecisionReason(),
-                    DECISION_ELEMENTS_DECISION_REASON_MAX_LEN,
-                    subObjectName + "DecisionReason",
-                    validationErrors);
-        }
-
         JsonValidationUtility.validateStringDataEmptyIsFail(
                 decisionElement.getAppReference(),
                 DECISION_ELEMENTS_APP_REF_MAX_LEN,
                 subObjectName + "AppReference",
                 validationErrors);
-
-        if (pepEnabled) {
-
-        } else {
-            List<Rule> rules = decisionElement.getRules();
-            if (JsonValidationUtility.validateListDataEmptyIsFail(
-                    rules, subObjectName + "Rules", validationErrors)) {
-                for (Rule rule : rules) {
-                    placeholderValidateDecisionElementRule(rule, validationErrors);
-                }
-            }
-        }
 
         validateIdentityVerificationResponseClientResponsePayloadDecisionElementWarningsErrors(
                 decisionElement.getWarningsErrors(), validationErrors);

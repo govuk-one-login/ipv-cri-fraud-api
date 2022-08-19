@@ -61,6 +61,65 @@ public class IdentityVerificationRequestMapper {
         return apiRequest;
     }
 
+    public PEPRequest mapPEPPersonIdentity(PersonIdentity personIdentity) {
+        Objects.requireNonNull(personIdentity, "The personIdentity must not be null");
+
+        Header apiRequestHeader = createPEPApiRequestHeader();
+
+        Payload apiRequestPayload = new Payload();
+        Contact contact = new Contact();
+        contact.setId("MAINCONTACT_1");
+
+        PersonDetails contactPersonDetails = new PersonDetails();
+        contactPersonDetails.setDateOfBirth(
+                DateTimeFormatter.ISO_DATE.format(personIdentity.getDateOfBirth()));
+        contactPersonDetails.setPepsSanctionsFlag("Y");
+        contactPersonDetails.setYearOfBirth(
+                String.valueOf(personIdentity.getDateOfBirth().getYear()));
+
+        Name contactPersonName = mapName(personIdentity);
+        List<Address> personAddresses = mapAddresses(personIdentity.getAddresses());
+
+        Person contactPerson = new Person();
+        contactPerson.setPersonIdentifier(null);
+        contactPerson.setPersonDetails(contactPersonDetails);
+        contactPerson.setNames(List.of(contactPersonName));
+        contactPerson.setTypeOfPerson("APPLICANT");
+        contact.setPerson(contactPerson);
+        contact.setAddresses(personAddresses);
+
+        Applicant applicant = createPEPApplicant();
+        Application application = new Application();
+        application.setType("OTHER");
+        application.setApplicants(List.of(applicant));
+        ProductDetails productDetails = new ProductDetails();
+        productDetails.setProductCode("MS_CON");
+        application.setProductDetails(productDetails);
+        application.setStatus("PENDING");
+        application.setOriginalRequestTime(
+                Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
+
+        apiRequestPayload.setApplication(application);
+        apiRequestPayload.setSource(null);
+        apiRequestPayload.setContacts(List.of(contact));
+
+        PEPRequest apiRequest = new PEPRequest();
+        apiRequest.setHeader(apiRequestHeader);
+        apiRequest.setPayload(apiRequestPayload);
+
+        return apiRequest;
+    }
+
+    private Header createPEPApiRequestHeader() {
+        Header apiRequestHeader = new Header();
+        apiRequestHeader.setTenantId(this.tenantId);
+        apiRequestHeader.setRequestType("PepSanctions01");
+        apiRequestHeader.setClientReferenceId(UUID.randomUUID().toString());
+        apiRequestHeader.setMessageTime(Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
+        apiRequestHeader.setOptions(new Options());
+        return apiRequestHeader;
+    }
+
     private Header createApiRequestHeader() {
         Header apiRequestHeader = new Header();
         apiRequestHeader.setTenantId(this.tenantId);
@@ -87,6 +146,16 @@ public class IdentityVerificationRequestMapper {
         applicant.setContactId("MAINCONTACT_1");
         applicant.setType("INDIVIDUAL");
         applicant.setApplicantType("MAIN_APPLICANT");
+        applicant.setConsent(true);
+        return applicant;
+    }
+
+    Applicant createPEPApplicant() {
+        Applicant applicant = new Applicant();
+        applicant.setId("APPLICANT_1");
+        applicant.setContactId("MAINCONTACT_1");
+        applicant.setType(null);
+        applicant.setApplicantType("APPLICANT");
         applicant.setConsent(true);
         return applicant;
     }

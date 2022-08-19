@@ -28,8 +28,6 @@ public class ThirdPartyFraudGateway {
     private final HttpClient httpClient;
     private final IdentityVerificationRequestMapper requestMapper;
     private final IdentityVerificationResponseMapper responseMapper;
-    private final PEPRequestMapper pepRequestMapper;
-    private final PEPResponseMapper pepResponseMapper;
     private final ObjectMapper objectMapper;
     private final HmacGenerator hmacGenerator;
     private final URI endpointUri;
@@ -51,8 +49,6 @@ public class ThirdPartyFraudGateway {
             HttpClient httpClient,
             IdentityVerificationRequestMapper requestMapper,
             IdentityVerificationResponseMapper responseMapper,
-            PEPRequestMapper pepRequestMapper,
-            PEPResponseMapper pepResponseMapper,
             ObjectMapper objectMapper,
             HmacGenerator hmacGenerator,
             String endpointUrl) {
@@ -68,8 +64,6 @@ public class ThirdPartyFraudGateway {
         this.httpClient = httpClient;
         this.requestMapper = requestMapper;
         this.responseMapper = responseMapper;
-        this.pepRequestMapper = pepRequestMapper;
-        this.pepResponseMapper = pepResponseMapper;
         this.objectMapper = objectMapper;
         this.hmacGenerator = hmacGenerator;
         this.endpointUri = URI.create(endpointUrl);
@@ -80,8 +74,6 @@ public class ThirdPartyFraudGateway {
             HttpClient httpClient,
             IdentityVerificationRequestMapper requestMapper,
             IdentityVerificationResponseMapper responseMapper,
-            PEPRequestMapper pepRequestMapper,
-            PEPResponseMapper pepResponseMapper,
             ObjectMapper objectMapper,
             HmacGenerator hmacGenerator,
             String endpointUrl,
@@ -99,8 +91,6 @@ public class ThirdPartyFraudGateway {
         this.httpClient = httpClient;
         this.requestMapper = requestMapper;
         this.responseMapper = responseMapper;
-        this.pepRequestMapper = pepRequestMapper;
-        this.pepResponseMapper = pepResponseMapper;
         this.objectMapper = objectMapper;
         this.hmacGenerator = hmacGenerator;
         this.endpointUri = URI.create(endpointUrl);
@@ -111,13 +101,11 @@ public class ThirdPartyFraudGateway {
             throws IOException, InterruptedException {
         LOGGER.info("Mapping person to third party verification request");
         if (pepEnabled) {
-            PEPRequest apiRequest = pepRequestMapper.mapPersonIdentity(personIdentity);
+            PEPRequest apiRequest = requestMapper.mapPEPPersonIdentity(personIdentity);
 
             String requestBody = objectMapper.writeValueAsString(apiRequest);
             String requestBodyHmac = hmacGenerator.generateHmac(requestBody);
             HttpRequest request = requestBuilder(requestBody, requestBodyHmac);
-
-            LOGGER.info("ThirdParty PEP request: {}", objectMapper.writeValueAsString(requestBody));
 
             LOGGER.info("Submitting pep check request to third party...");
             HttpResponse<String> httpResponse = sendHTTPRequestRetryIfAllowed(request);
@@ -131,8 +119,6 @@ public class ThirdPartyFraudGateway {
             String requestBody = objectMapper.writeValueAsString(apiRequest);
             String requestBodyHmac = hmacGenerator.generateHmac(requestBody);
             HttpRequest request = requestBuilder(requestBody, requestBodyHmac);
-
-            LOGGER.info("ThirdParty requestBody: {}", objectMapper.writeValueAsString(requestBody));
 
             LOGGER.info("Submitting fraud check request to third party...");
             HttpResponse<String> httpResponse = sendHTTPRequestRetryIfAllowed(request);
@@ -151,13 +137,10 @@ public class ThirdPartyFraudGateway {
             String responseBody = httpResponse.body();
             if (pepEnabled) {
                 PEPResponse response = objectMapper.readValue(responseBody, PEPResponse.class);
-                LOGGER.info(
-                        "ThirdParty PEP response: {}", objectMapper.writeValueAsString(response));
-                return pepResponseMapper.mapPEPResponse(response);
+                return responseMapper.mapPEPResponse(response);
             } else {
                 IdentityVerificationResponse response =
                         objectMapper.readValue(responseBody, IdentityVerificationResponse.class);
-                LOGGER.info("ThirdParty response: {}", objectMapper.writeValueAsString(response));
                 return responseMapper.mapIdentityVerificationResponse(response);
             }
         } else {
@@ -205,9 +188,6 @@ public class ThirdPartyFraudGateway {
 
             try {
                 httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                LOGGER.info(
-                        "httpResponse body dsfa: {}",
-                        objectMapper.writeValueAsString(httpResponse.body()));
 
                 retry = shouldHttpClientRetry(httpResponse.statusCode());
 

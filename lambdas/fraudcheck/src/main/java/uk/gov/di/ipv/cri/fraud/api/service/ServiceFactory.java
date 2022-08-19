@@ -84,8 +84,6 @@ public class ServiceFactory {
                         new IdentityVerificationRequestMapper(
                                 this.configurationService.getTenantId()),
                         new IdentityVerificationResponseMapper(),
-                        new PEPRequestMapper(this.configurationService.getTenantId()),
-                        new PEPResponseMapper(),
                         this.objectMapper,
                         new HmacGenerator(this.configurationService.getHmacKey()),
                         this.configurationService.getEndpointUrl());

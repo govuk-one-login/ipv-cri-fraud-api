@@ -10,8 +10,8 @@ public final class JsonValidationUtility {
     public static final String IS_NULL_ERROR_MESSAGE_SUFFIX = " not found.";
     public static final String IS_EMPTY_ERROR_MESSAGE_SUFFIX = " is empty.";
     public static final String IS_TOO_LONG_ERROR_MESSAGE_SUFFIX = " is too long.";
-    public static final String INVALID_VALUE_RANGE_ERROR_MESSAGE_SUFFIX =
-            " is outside the valid range.";
+    public static final String INVALID_VALUE_RANGE_ERROR_MESSAGE_FORMAT =
+            "%s (%d) is outside the valid range (%d-%d).";
     public static final String FAIL_PARSING_TIMESTAMP_ERROR_MESSAGE_SUFFIX =
             " failed timestamp parsing.";
 
@@ -169,10 +169,20 @@ public final class JsonValidationUtility {
     public static boolean validateIntegerRangeData(
             int variable, int min, int max, String name, final List<String> validationErrors) {
         if (variable < min || variable > max) {
-            validationErrors.add(name + INVALID_VALUE_RANGE_ERROR_MESSAGE_SUFFIX);
+            validationErrors.add(createIntegerRangeErrorMessage(variable, min, max, name));
             return false;
         }
 
         return true;
+    }
+
+    public static String createIntegerRangeErrorMessage(
+            int variable, int min, int max, String name) {
+        return String.format(
+                JsonValidationUtility.INVALID_VALUE_RANGE_ERROR_MESSAGE_FORMAT,
+                name,
+                variable,
+                min,
+                max);
     }
 }

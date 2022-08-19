@@ -38,6 +38,22 @@ public class IdentityVerificationResponseMapper {
         }
     }
 
+    FraudCheckResult mapPEPResponse(PEPResponse response) {
+        ResponseType responseType = response.getResponseHeader().getResponseType();
+
+        switch (responseType) {
+            case INFO:
+                return mapPEPResponse(response, new IdentityVerificationInfoResponseValidator());
+            case ERROR:
+            case WARN:
+            case WARNING:
+                return mapErrorResponse(response.getResponseHeader());
+            default:
+                throw new IllegalArgumentException(
+                        "Unmapped response type encountered: " + responseType);
+        }
+    }
+
     private FraudCheckResult mapResponse(
             IdentityVerificationResponse response,
             IdentityVerificationInfoResponseValidator infoResponseValidator) {
@@ -74,7 +90,43 @@ public class IdentityVerificationResponseMapper {
         return fraudCheckResult;
     }
 
-    FraudCheckResult mapErrorResponse(ResponseHeader responseHeader) {
+    private FraudCheckResult mapPEPResponse(
+            PEPResponse response, IdentityVerificationInfoResponseValidator infoResponseValidator) {
+        FraudCheckResult fraudCheckResult = new FraudCheckResult();
+
+        ValidationResult<List<String>> validationResult =
+                infoResponseValidator.validatePEP(response);
+
+        if (validationResult.isValid()) {
+            fraudCheckResult.setExecutedSuccessfully(true);
+
+            List<DecisionElement> decisionElements =
+                    response.getClientResponsePayload().getDecisionElements();
+
+            List<String> fraudCodes = new ArrayList<>();
+
+            for (DecisionElement decisionElement : decisionElements) {
+                decisionElement.getRules().stream()
+                        .map(Rule::getRuleId)
+                        .filter(StringUtils::isNotBlank)
+                        .sequential()
+                        .collect(Collectors.toCollection(() -> fraudCodes));
+            }
+
+            fraudCheckResult.setThirdPartyFraudCodes(
+                    fraudCodes.toArray(fraudCodes.toArray(String[]::new)));
+        } else {
+            fraudCheckResult.setExecutedSuccessfully(false);
+            fraudCheckResult.setErrorMessage(IV_INFO_RESPONSE_VALIDATION_FAILED_MSG);
+
+            LOGGER.error(
+                    () -> (IV_INFO_RESPONSE_VALIDATION_FAILED_MSG + validationResult.getError()));
+        }
+        fraudCheckResult.setTransactionId(response.getResponseHeader().getExpRequestId());
+        return fraudCheckResult;
+    }
+
+    private FraudCheckResult mapErrorResponse(ResponseHeader responseHeader) {
         FraudCheckResult fraudCheckResult = new FraudCheckResult();
         fraudCheckResult.setExecutedSuccessfully(false);
         fraudCheckResult.setErrorMessage(

@@ -44,7 +44,7 @@ class ServiceFactoryTest {
                 serviceFactory.getIdentityVerificationService();
 
         assertNotNull(identityVerificationService);
-        // verify(mockConfigurationService).getTenantId();
+        verify(mockConfigurationService).getTenantId();
         verify(mockConfigurationService).getHmacKey();
         verify(mockConfigurationService).getEndpointUrl();
     }
