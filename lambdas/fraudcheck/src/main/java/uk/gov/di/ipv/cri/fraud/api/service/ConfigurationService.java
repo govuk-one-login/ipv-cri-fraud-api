@@ -46,6 +46,7 @@ public class ConfigurationService {
     private final String fraudResultTableName;
     private final String contraindicationMappings;
     private final String parameterPrefix;
+    private final String pepEnabled;
 
     public ConfigurationService(
             SecretsProvider secretsProvider, ParamProvider paramProvider, String env) {
@@ -56,16 +57,34 @@ public class ConfigurationService {
             throw new IllegalArgumentException("env must be specified");
         }
 
+        //      *********************************Private
+        // Paramaters***********************************************
+
+        this.parameterPrefix = System.getenv("AWS_STACK_NAME");
         this.tenantId = paramProvider.get(String.format(KEY_FORMAT, env, "thirdPartyApiTenantId"));
         this.endpointUrl =
                 paramProvider.get(String.format(KEY_FORMAT, env, "thirdPartyApiEndpointUrl"));
         this.hmacKey = secretsProvider.get(String.format(KEY_FORMAT, env, "thirdPartyApiHmacKey"));
         this.thirdPartyId = paramProvider.get(String.format(KEY_FORMAT, env, "thirdPartyId"));
 
-        this.parameterPrefix = System.getenv("AWS_STACK_NAME");
         this.contraindicationMappings =
                 paramProvider.get(getParameterName("contraindicationMappings"));
         this.fraudResultTableName = paramProvider.get(getParameterName("FraudTableName"));
+
+        //      *********************************Feature
+        // toggles***********************************************
+
+        String pepEnabledFlag;
+        try {
+            // pepEnabled flag will need to be manually added as a parameter in AWS
+            pepEnabledFlag = paramProvider.get(getParameterName("pepEnabled"));
+        } catch (Exception e) {
+            pepEnabledFlag = "false";
+        }
+        this.pepEnabled = pepEnabledFlag;
+
+        //
+        // *********************************Secret***********************************************
 
         KeyStoreParams keyStoreParams =
                 secretsProvider
@@ -108,6 +127,10 @@ public class ConfigurationService {
 
     public String getContraindicationMappings() {
         return contraindicationMappings;
+    }
+
+    public Boolean getPepEnabled() {
+        return Boolean.valueOf(pepEnabled);
     }
 
     public String getParameterName(String parameterName) {

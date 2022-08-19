@@ -97,7 +97,8 @@ public class ServiceFactory {
                 this.personIdentityValidator,
                 this.contraindicationMapper,
                 identityScoreCalaculator,
-                auditService);
+                auditService,
+                configurationService);
     }
 
     public AuditService getAuditService() {

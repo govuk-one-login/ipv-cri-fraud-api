@@ -80,6 +80,25 @@ public class IdentityVerificationInfoResponseValidator {
         return new ValidationResult<>(validationErrors.isEmpty(), validationErrors);
     }
 
+    // TODO: will need to be reviewed in LIME-37
+
+    public ValidationResult<List<String>> validatePEP(PEPResponse response) {
+
+        final List<String> validationErrors = new ArrayList<>();
+
+        if (response != null) {
+            validateIdentityVerificationResponseHeader(
+                    response.getResponseHeader(), validationErrors);
+
+            validateIdentityVerificationResponseClientResponsePayload(
+                    response.getClientResponsePayload(), validationErrors);
+        } else {
+            validationErrors.add(NULL_RESPONSE_ERROR_MESSAGE);
+        }
+
+        return new ValidationResult<>(validationErrors.isEmpty(), validationErrors);
+    }
+
     private void validateIdentityVerificationResponseHeader(
             ResponseHeader header, final List<String> validationErrors) {
         if (header == null) {
