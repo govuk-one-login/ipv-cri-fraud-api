@@ -12,7 +12,9 @@ import uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PEPRequest;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.IdentityVerificationResponse;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.PEPResponse;
 import uk.gov.di.ipv.cri.fraud.api.util.SleepHelper;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 
@@ -520,6 +522,381 @@ class ThirdPartyFraudGatewayTest {
                                                 constructorArgs.hmacGenerator,
                                                 constructorArgs.experianEndpointUrl),
                                 errorMessage));
+    }
+
+    @Test
+    void shouldInvokeExperianApiForPep() throws IOException, InterruptedException {
+        final String testRequestBody = "serialisedCrossCoreApiRequest";
+        final PEPRequest testApiRequest = new PEPRequest();
+
+        final String hmacOfRequestBody = "hmac-of-request-body";
+        PersonIdentity personIdentity =
+                TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
+        PEPResponse testResponse = new PEPResponse();
+        FraudCheckResult testFraudCheckResult = new FraudCheckResult();
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+
+        when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
+        when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(hmacOfRequestBody);
+        ArgumentCaptor<HttpRequest> httpRequestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+        when(this.mockHttpClient.send(
+                        httpRequestCaptor.capture(), eq(HttpResponse.BodyHandlers.ofString())))
+                .thenReturn(createMockApiResponse(200));
+        when(this.mockObjectMapper.readValue(TEST_API_RESPONSE_BODY, PEPResponse.class))
+                .thenReturn(testResponse);
+        when(this.mockResponseMapper.mapPEPResponse(testResponse)).thenReturn(testFraudCheckResult);
+
+        FraudCheckResult actualFraudCheckResult =
+                thirdPartyFraudGateway.performFraudCheck(personIdentity, true);
+
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
+        verify(mockObjectMapper).writeValueAsString(testApiRequest);
+        verify(mockHmacGenerator).generateHmac(testRequestBody);
+        verify(mockHttpClient)
+                .send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString()));
+        verify(mockResponseMapper).mapPEPResponse(testResponse);
+        assertNotNull(actualFraudCheckResult);
+        assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().uri().toString());
+        assertEquals("POST", httpRequestCaptor.getValue().method());
+        HttpHeaders capturedHttpRequestHeaders = httpRequestCaptor.getValue().headers();
+        assertEquals("application/json", capturedHttpRequestHeaders.firstValue("Accept").get());
+        assertEquals(
+                "application/json", capturedHttpRequestHeaders.firstValue("Content-Type").get());
+        assertEquals(
+                hmacOfRequestBody, capturedHttpRequestHeaders.firstValue("hmac-signature").get());
+    }
+
+    @Test
+    void thirdPartyApiForPepReturnsErrorOnHTTP300Response()
+            throws IOException, InterruptedException {
+        final String testRequestBody = "serialisedCrossCoreApiRequest";
+        final PEPRequest testApiRequest = new PEPRequest();
+
+        final String hmacOfRequestBody = "hmac-of-request-body";
+        PersonIdentity personIdentity =
+                TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+
+        when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
+        when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(hmacOfRequestBody);
+        ArgumentCaptor<HttpRequest> httpRequestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+
+        final int MOCK_HTTP_STATUS_CODE = 300;
+
+        when(this.mockHttpClient.send(
+                        httpRequestCaptor.capture(), eq(HttpResponse.BodyHandlers.ofString())))
+                .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE));
+
+        FraudCheckResult actualFraudCheckResult =
+                thirdPartyFraudGateway.performFraudCheck(personIdentity, true);
+
+        final String EXPECTED_ERROR =
+                ThirdPartyFraudGateway.HTTP_300_REDIRECT_MESSAGE + MOCK_HTTP_STATUS_CODE;
+
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
+        verify(mockObjectMapper).writeValueAsString(testApiRequest);
+        verify(mockHmacGenerator).generateHmac(testRequestBody);
+
+        verify(mockHttpClient, times(1))
+                .send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString()));
+        assertNotNull(actualFraudCheckResult);
+        assertEquals(EXPECTED_ERROR, actualFraudCheckResult.getErrorMessage());
+
+        assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().uri().toString());
+        assertEquals("POST", httpRequestCaptor.getValue().method());
+        HttpHeaders capturedHttpRequestHeaders = httpRequestCaptor.getValue().headers();
+        assertEquals("application/json", capturedHttpRequestHeaders.firstValue("Accept").get());
+        assertEquals(
+                "application/json", capturedHttpRequestHeaders.firstValue("Content-Type").get());
+        assertEquals(
+                hmacOfRequestBody, capturedHttpRequestHeaders.firstValue("hmac-signature").get());
+    }
+
+    @Test
+    void thirdPartyApiForPepReturnsErrorOnHTTP400Response()
+            throws IOException, InterruptedException {
+        final String testRequestBody = "serialisedCrossCoreApiRequest";
+        final PEPRequest testApiRequest = new PEPRequest();
+
+        final String hmacOfRequestBody = "hmac-of-request-body";
+        PersonIdentity personIdentity =
+                TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+
+        when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
+        when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(hmacOfRequestBody);
+        ArgumentCaptor<HttpRequest> httpRequestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+
+        final int MOCK_HTTP_STATUS_CODE = 400;
+
+        when(this.mockHttpClient.send(
+                        httpRequestCaptor.capture(), eq(HttpResponse.BodyHandlers.ofString())))
+                .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE));
+
+        FraudCheckResult actualFraudCheckResult =
+                thirdPartyFraudGateway.performFraudCheck(personIdentity, true);
+
+        final String EXPECTED_ERROR =
+                ThirdPartyFraudGateway.HTTP_400_CLIENT_REQUEST_ERROR + MOCK_HTTP_STATUS_CODE;
+
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
+        verify(mockObjectMapper).writeValueAsString(testApiRequest);
+        verify(mockHmacGenerator).generateHmac(testRequestBody);
+
+        verify(mockHttpClient, times(1))
+                .send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString()));
+        assertNotNull(actualFraudCheckResult);
+        assertEquals(EXPECTED_ERROR, actualFraudCheckResult.getErrorMessage());
+
+        assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().uri().toString());
+        assertEquals("POST", httpRequestCaptor.getValue().method());
+        HttpHeaders capturedHttpRequestHeaders = httpRequestCaptor.getValue().headers();
+        assertEquals("application/json", capturedHttpRequestHeaders.firstValue("Accept").get());
+        assertEquals(
+                "application/json", capturedHttpRequestHeaders.firstValue("Content-Type").get());
+        assertEquals(
+                hmacOfRequestBody, capturedHttpRequestHeaders.firstValue("hmac-signature").get());
+    }
+
+    @Test
+    void thirdPartyApiForPepReturnsErrorOnHTTP500Response()
+            throws IOException, InterruptedException {
+        final String testRequestBody = "serialisedCrossCoreApiRequest";
+        final PEPRequest testApiRequest = new PEPRequest();
+
+        final String hmacOfRequestBody = "hmac-of-request-body";
+        PersonIdentity personIdentity =
+                TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+
+        when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
+        when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(hmacOfRequestBody);
+        ArgumentCaptor<HttpRequest> httpRequestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+
+        final int MOCK_HTTP_STATUS_CODE = 500;
+
+        when(this.mockHttpClient.send(
+                        httpRequestCaptor.capture(), eq(HttpResponse.BodyHandlers.ofString())))
+                .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE));
+
+        FraudCheckResult actualFraudCheckResult =
+                thirdPartyFraudGateway.performFraudCheck(personIdentity, true);
+
+        final String EXPECTED_ERROR =
+                ThirdPartyFraudGateway.HTTP_500_SERVER_ERROR + MOCK_HTTP_STATUS_CODE;
+
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
+        verify(mockObjectMapper).writeValueAsString(testApiRequest);
+        verify(mockHmacGenerator).generateHmac(testRequestBody);
+
+        // +1 for Initial send
+        verify(mockHttpClient, times(ThirdPartyFraudGateway.MAX_HTTP_RETRIES + 1))
+                .send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString()));
+        assertNotNull(actualFraudCheckResult);
+        assertEquals(EXPECTED_ERROR, actualFraudCheckResult.getErrorMessage());
+
+        assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().uri().toString());
+        assertEquals("POST", httpRequestCaptor.getValue().method());
+        HttpHeaders capturedHttpRequestHeaders = httpRequestCaptor.getValue().headers();
+        assertEquals("application/json", capturedHttpRequestHeaders.firstValue("Accept").get());
+        assertEquals(
+                "application/json", capturedHttpRequestHeaders.firstValue("Content-Type").get());
+        assertEquals(
+                hmacOfRequestBody, capturedHttpRequestHeaders.firstValue("hmac-signature").get());
+    }
+
+    @Test
+    void thirdPartyApiForPepReturnsErrorOnUnhandledHTTPResponse()
+            throws IOException, InterruptedException {
+        final String testRequestBody = "serialisedCrossCoreApiRequest";
+        final PEPRequest testApiRequest = new PEPRequest();
+
+        final String hmacOfRequestBody = "hmac-of-request-body";
+        PersonIdentity personIdentity =
+                TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+
+        when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
+        when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(hmacOfRequestBody);
+        ArgumentCaptor<HttpRequest> httpRequestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+
+        final int MOCK_HTTP_STATUS_CODE = -1;
+
+        when(this.mockHttpClient.send(
+                        httpRequestCaptor.capture(), eq(HttpResponse.BodyHandlers.ofString())))
+                .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE));
+
+        FraudCheckResult actualFraudCheckResult =
+                thirdPartyFraudGateway.performFraudCheck(personIdentity, true);
+
+        final String EXPECTED_ERROR =
+                ThirdPartyFraudGateway.HTTP_UNHANDLED_ERROR + MOCK_HTTP_STATUS_CODE;
+
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
+        verify(mockObjectMapper).writeValueAsString(testApiRequest);
+        verify(mockHmacGenerator).generateHmac(testRequestBody);
+
+        verify(mockHttpClient, times(1))
+                .send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString()));
+        assertNotNull(actualFraudCheckResult);
+        assertEquals(EXPECTED_ERROR, actualFraudCheckResult.getErrorMessage());
+
+        assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().uri().toString());
+        assertEquals("POST", httpRequestCaptor.getValue().method());
+        HttpHeaders capturedHttpRequestHeaders = httpRequestCaptor.getValue().headers();
+        assertEquals("application/json", capturedHttpRequestHeaders.firstValue("Accept").get());
+        assertEquals(
+                "application/json", capturedHttpRequestHeaders.firstValue("Content-Type").get());
+        assertEquals(
+                hmacOfRequestBody, capturedHttpRequestHeaders.firstValue("hmac-signature").get());
+    }
+
+    @ParameterizedTest
+    @MethodSource("getRetryStatusCodes") // Retry status codes
+    void retrythirdPartyApiForPepHTTPResponseForStatusCode(int initialStatusCodeResponse)
+            throws IOException, InterruptedException {
+        final String testRequestBody = "serialisedCrossCoreApiRequest";
+        final PEPRequest testApiRequest = new PEPRequest();
+
+        final String hmacOfRequestBody = "hmac-of-request-body";
+        PersonIdentity personIdentity =
+                TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
+        PEPResponse testResponse = new PEPResponse();
+        FraudCheckResult testFraudCheckResult = new FraudCheckResult();
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+
+        when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
+        when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(hmacOfRequestBody);
+        ArgumentCaptor<HttpRequest> httpRequestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+        when(this.mockHttpClient.send(
+                        httpRequestCaptor.capture(), eq(HttpResponse.BodyHandlers.ofString())))
+                .thenReturn(createMockApiResponse(initialStatusCodeResponse))
+                .thenReturn(createMockApiResponse(200));
+        when(this.mockObjectMapper.readValue(TEST_API_RESPONSE_BODY, PEPResponse.class))
+                .thenReturn(testResponse);
+        when(this.mockResponseMapper.mapPEPResponse(testResponse)).thenReturn(testFraudCheckResult);
+
+        FraudCheckResult actualFraudCheckResult =
+                thirdPartyFraudGateway.performFraudCheck(personIdentity, true);
+
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
+        verify(mockObjectMapper).writeValueAsString(testApiRequest);
+        verify(mockHmacGenerator).generateHmac(testRequestBody);
+        verify(mockHttpClient, times(2))
+                .send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString()));
+        verify(mockResponseMapper).mapPEPResponse(testResponse);
+        assertNotNull(actualFraudCheckResult);
+        assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().uri().toString());
+        assertEquals("POST", httpRequestCaptor.getValue().method());
+        HttpHeaders capturedHttpRequestHeaders = httpRequestCaptor.getValue().headers();
+        assertEquals("application/json", capturedHttpRequestHeaders.firstValue("Accept").get());
+        assertEquals(
+                "application/json", capturedHttpRequestHeaders.firstValue("Content-Type").get());
+        assertEquals(
+                hmacOfRequestBody, capturedHttpRequestHeaders.firstValue("hmac-signature").get());
+    }
+
+    @Test
+    void retrythirdPartyApiForPepUpNTimesAndPass() throws IOException, InterruptedException {
+        final String testRequestBody = "serialisedCrossCoreApiRequest";
+        final PEPRequest testApiRequest = new PEPRequest();
+
+        final String hmacOfRequestBody = "hmac-of-request-body";
+        PersonIdentity personIdentity =
+                TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
+        PEPResponse testResponse = new PEPResponse();
+        FraudCheckResult testFraudCheckResult = new FraudCheckResult();
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+
+        when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
+        when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(hmacOfRequestBody);
+        ArgumentCaptor<HttpRequest> httpRequestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+        when(this.mockHttpClient.send(
+                        httpRequestCaptor.capture(), eq(HttpResponse.BodyHandlers.ofString())))
+                .thenReturn(createMockApiResponse(501)) // Initial
+                .thenReturn(createMockApiResponse(501)) // Retry 1
+                .thenReturn(createMockApiResponse(501))
+                .thenReturn(createMockApiResponse(501))
+                .thenReturn(createMockApiResponse(501))
+                .thenReturn(createMockApiResponse(501))
+                .thenReturn(createMockApiResponse(501))
+                .thenReturn(createMockApiResponse(200)); // Retry 7 Ok
+        when(this.mockObjectMapper.readValue(TEST_API_RESPONSE_BODY, PEPResponse.class))
+                .thenReturn(testResponse);
+        when(this.mockResponseMapper.mapPEPResponse(testResponse)).thenReturn(testFraudCheckResult);
+
+        FraudCheckResult actualFraudCheckResult =
+                thirdPartyFraudGateway.performFraudCheck(personIdentity, true);
+
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
+        verify(mockObjectMapper).writeValueAsString(testApiRequest);
+        verify(mockHmacGenerator).generateHmac(testRequestBody);
+        verify(mockHttpClient, times(ThirdPartyFraudGateway.MAX_HTTP_RETRIES + 1))
+                .send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString()));
+        verify(mockResponseMapper).mapPEPResponse(testResponse);
+        assertNotNull(actualFraudCheckResult);
+        assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().uri().toString());
+        assertEquals("POST", httpRequestCaptor.getValue().method());
+        HttpHeaders capturedHttpRequestHeaders = httpRequestCaptor.getValue().headers();
+        assertEquals("application/json", capturedHttpRequestHeaders.firstValue("Accept").get());
+        assertEquals(
+                "application/json", capturedHttpRequestHeaders.firstValue("Content-Type").get());
+        assertEquals(
+                hmacOfRequestBody, capturedHttpRequestHeaders.firstValue("hmac-signature").get());
+    }
+
+    @Test
+    void retrythirdPartyApiForPepUpNTimesAndFail() throws IOException, InterruptedException {
+        final String testRequestBody = "serialisedCrossCoreApiRequest";
+        final PEPRequest testApiRequest = new PEPRequest();
+
+        final String hmacOfRequestBody = "hmac-of-request-body";
+        PersonIdentity personIdentity =
+                TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
+        PEPResponse testResponse = new PEPResponse();
+        FraudCheckResult testFraudCheckResult = new FraudCheckResult();
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+
+        when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
+        when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(hmacOfRequestBody);
+        ArgumentCaptor<HttpRequest> httpRequestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+
+        final int MOCK_HTTP_STATUS_CODE = 501;
+
+        when(this.mockHttpClient.send(
+                        httpRequestCaptor.capture(), eq(HttpResponse.BodyHandlers.ofString())))
+                .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE)) // Initial
+                .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE)) // Retry 1
+                .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE))
+                .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE))
+                .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE))
+                .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE))
+                .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE))
+                .thenReturn(createMockApiResponse(MOCK_HTTP_STATUS_CODE)); // Retry 7 Fail
+
+        FraudCheckResult actualFraudCheckResult =
+                thirdPartyFraudGateway.performFraudCheck(personIdentity, true);
+
+        final String EXPECTED_ERROR =
+                ThirdPartyFraudGateway.HTTP_500_SERVER_ERROR + MOCK_HTTP_STATUS_CODE;
+
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
+        verify(mockObjectMapper).writeValueAsString(testApiRequest);
+        verify(mockHmacGenerator).generateHmac(testRequestBody);
+
+        verify(mockHttpClient, times(ThirdPartyFraudGateway.MAX_HTTP_RETRIES + 1))
+                .send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString()));
+        assertNotNull(actualFraudCheckResult);
+        assertEquals(EXPECTED_ERROR, actualFraudCheckResult.getErrorMessage());
+
+        assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().uri().toString());
+        assertEquals("POST", httpRequestCaptor.getValue().method());
+        HttpHeaders capturedHttpRequestHeaders = httpRequestCaptor.getValue().headers();
+        assertEquals("application/json", capturedHttpRequestHeaders.firstValue("Accept").get());
+        assertEquals(
+                "application/json", capturedHttpRequestHeaders.firstValue("Content-Type").get());
+        assertEquals(
+                hmacOfRequestBody, capturedHttpRequestHeaders.firstValue("hmac-signature").get());
     }
 
     private HttpResponse<String> createMockApiResponse(int statusCode) {
