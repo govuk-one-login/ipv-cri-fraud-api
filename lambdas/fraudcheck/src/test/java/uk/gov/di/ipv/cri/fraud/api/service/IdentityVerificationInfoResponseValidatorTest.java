@@ -2248,7 +2248,7 @@ public class IdentityVerificationInfoResponseValidatorTest {
 
     @Test
     void clientPayloadDecisionElementsDecisionElementScoreOverMaxFails() {
-        final int TEST_VALUE = 91;
+        final int TEST_VALUE = 261;
         testIVResponse.getClientResponsePayload().getDecisionElements().get(0).setScore(TEST_VALUE);
 
         ValidationResult<List<String>> validationResult =
@@ -2667,7 +2667,7 @@ public class IdentityVerificationInfoResponseValidatorTest {
 
     @Test
     void clientPayloadDecisionElementsDecisionElementRuleScoreOverMaxFails() {
-        final int TEST_VALUE = 91;
+        final int TEST_VALUE = 261;
         final Rule testRule = new Rule();
         testRule.setRuleName("ScoreUnderMinFail");
         testRule.setRuleId("");
@@ -2718,7 +2718,7 @@ public class IdentityVerificationInfoResponseValidatorTest {
 
     @Test
     void clientPayloadDecisionElementsDecisionElementRuleScoreMaxOK() {
-        final int TEST_VALUE = 90;
+        final int TEST_VALUE = 260;
         final Rule testRule = new Rule();
         testRule.setRuleName("RuleScoreMaxOK");
         testRule.setRuleId("");

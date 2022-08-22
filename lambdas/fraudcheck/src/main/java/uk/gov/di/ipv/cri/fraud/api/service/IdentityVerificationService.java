@@ -14,7 +14,7 @@ import uk.gov.di.ipv.cri.fraud.api.domain.ValidationResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.audit.TPREFraudAuditExtension;
 import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyFraudGateway;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,7 +23,6 @@ public class IdentityVerificationService {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final String ERROR_MSG_CONTEXT =
             "Error occurred when attempting to invoke the third party api";
-
     private static final String ERROR_FRAUD_CHECK_RESULT_RETURN_NULL =
             "Null FraudCheckResult returned when invoking third party API.";
     private static final String ERROR_FRAUD_CHECK_RESULT_NO_ERR_MSG =
@@ -31,22 +30,21 @@ public class IdentityVerificationService {
     private final ThirdPartyFraudGateway thirdPartyGateway;
     private final PersonIdentityValidator personIdentityValidator;
     private final ContraindicationMapper contraindicationMapper;
-    private final IdentityScoreCalaculator identityScoreCalaculator;
+    private final IdentityScoreCalculator identityScoreCalculator;
     private final ConfigurationService configurationService;
-
     private final AuditService auditService;
 
     IdentityVerificationService(
             ThirdPartyFraudGateway thirdPartyGateway,
             PersonIdentityValidator personIdentityValidator,
             ContraindicationMapper contraindicationMapper,
-            IdentityScoreCalaculator identityScoreCalaculator,
+            IdentityScoreCalculator identityScoreCalculator,
             AuditService auditService,
             ConfigurationService configurationService) {
         this.thirdPartyGateway = thirdPartyGateway;
         this.personIdentityValidator = personIdentityValidator;
         this.contraindicationMapper = contraindicationMapper;
-        this.identityScoreCalaculator = identityScoreCalaculator;
+        this.identityScoreCalculator = identityScoreCalculator;
         this.auditService = auditService;
         this.configurationService = configurationService;
     }
@@ -58,10 +56,8 @@ public class IdentityVerificationService {
         IdentityVerificationResult result = new IdentityVerificationResult();
         try {
             LOGGER.info("Validating identity...");
-
             ValidationResult<List<String>> validationResult =
                     this.personIdentityValidator.validate(personIdentity);
-
             if (!validationResult.isValid()) {
                 result.setSuccess(false);
                 result.setValidationErrors(validationResult.getError());
@@ -69,42 +65,69 @@ public class IdentityVerificationService {
                 return result;
             }
             LOGGER.info("Identity info validated");
-
             FraudCheckResult fraudCheckResult =
                     thirdPartyGateway.performFraudCheck(personIdentity, false);
-            LOGGER.info("Third party fraud response mapped");
+            LOGGER.info("Third party response mapped");
             LOGGER.info(
                     "Third party response {}",
                     new ObjectMapper().writeValueAsString(fraudCheckResult));
-
             if (Objects.nonNull(fraudCheckResult)) {
                 result.setSuccess(
                         fraudCheckResult
                                 .isExecutedSuccessfully()); // for testing error scenario comment
-                // this out and send no postCode in request
+                // this out + send no postCode in request
                 if (result.isSuccess()) {
-                    if (configurationService.getPepEnabled()) {
-                        fraudCheckResult =
-                                thirdPartyGateway.performFraudCheck(personIdentity, true);
-                        LOGGER.info("Third party pep response mapped");
-                    }
-
+                    Integer pepIdentityCheckScore = null;
+                    List<String> pepContraindications = new ArrayList<>();
+                    String pepTransactionId = null;
                     LOGGER.info("Mapping contra indicators from fraud response");
-
-                    String[] contraindications =
-                            this.contraindicationMapper.mapThirdPartyFraudCodes(
-                                    fraudCheckResult.getThirdPartyFraudCodes());
-                    int identityCheckScore =
-                            identityScoreCalaculator.calculateIdentityScore(
-                                    fraudCheckResult.isExecutedSuccessfully(), contraindications);
-                    result.setContraIndicators(contraindications);
-                    result.setIdentityCheckScore(identityCheckScore);
-                    result.setTransactionId(fraudCheckResult.getTransactionId());
-
+                    List<String> fraudContraindications =
+                            List.of(
+                                    this.contraindicationMapper.mapThirdPartyFraudCodes(
+                                            fraudCheckResult.getThirdPartyFraudCodes()));
+                    int fraudIdentityCheckScore =
+                            identityScoreCalculator.calculateIdentityScore(
+                                    fraudCheckResult.isExecutedSuccessfully(), false);
                     LOGGER.info(
                             "Fraud check passed successfully. Indicators {}, Score {}",
-                            Arrays.toString(contraindications),
-                            identityCheckScore);
+                            String.join(", ", fraudContraindications),
+                            fraudIdentityCheckScore);
+                    if (configurationService.getPepEnabled()) {
+                        FraudCheckResult pepCheckResult =
+                                thirdPartyGateway.performFraudCheck(personIdentity, true);
+                        pepContraindications =
+                                List.of(
+                                        this.contraindicationMapper.mapThirdPartyFraudCodes(
+                                                pepCheckResult.getThirdPartyFraudCodes()));
+                        pepIdentityCheckScore =
+                                identityScoreCalculator.calculateIdentityScore(
+                                        fraudCheckResult.isExecutedSuccessfully(),
+                                        pepCheckResult.isExecutedSuccessfully());
+                        pepTransactionId = pepCheckResult.getTransactionId();
+                        LOGGER.info(
+                                "Third party pep response {}",
+                                new ObjectMapper().writeValueAsString(pepCheckResult));
+                        LOGGER.info(
+                                "Pep check passed successfully. Indicators {}, Score {}",
+                                String.join(", ", pepContraindications),
+                                pepIdentityCheckScore);
+                    }
+                    List<String> combinedContraIndicators = new ArrayList<>();
+                    combinedContraIndicators.addAll(pepContraindications);
+                    combinedContraIndicators.addAll(fraudContraindications);
+                    String fraudTransactionId = fraudCheckResult.getTransactionId();
+                    int identityCheckScore =
+                            pepIdentityCheckScore != null
+                                    ? pepIdentityCheckScore
+                                    : fraudIdentityCheckScore;
+                    String transactionId =
+                            pepTransactionId != null
+                                    ? fraudTransactionId + "|" + pepTransactionId
+                                    : fraudTransactionId;
+                    result.setContraIndicators(combinedContraIndicators.toArray(new String[] {}));
+                    result.setIdentityCheckScore(identityCheckScore);
+                    result.setTransactionId(transactionId);
+                    result.setSuccess(fraudCheckResult.isExecutedSuccessfully());
                     auditService.sendAuditEvent(
                             AuditEventType.THIRD_PARTY_REQUEST_ENDED,
                             new AuditEventContext(requestHeaders, sessionItem),
@@ -121,7 +144,6 @@ public class IdentityVerificationService {
                 }
                 return result;
             }
-
             LOGGER.error(ERROR_FRAUD_CHECK_RESULT_RETURN_NULL);
             result.setError(ERROR_MSG_CONTEXT);
             result.setSuccess(false);
