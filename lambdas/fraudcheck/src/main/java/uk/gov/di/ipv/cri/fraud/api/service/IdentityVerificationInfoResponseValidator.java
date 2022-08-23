@@ -34,7 +34,7 @@ public class IdentityVerificationInfoResponseValidator {
     public static final int DECISION_ELEMENTS_SERVICE_NAME_MAX_LEN = 40;
     public static final int DECISION_ELEMENTS_DECISION_MAX_LEN = 20;
     public static final int DECISION_ELEMENTS_SCORE_MIN_VALUE = 0;
-    public static final int DECISION_ELEMENTS_SCORE_MAX_VALUE = 260;
+    public static final int DECISION_ELEMENTS_SCORE_MAX_VALUE = 99999;
     public static final int DECISION_ELEMENTS_DECISION_TEXT_MAX_LEN = 20;
     public static final int DECISION_ELEMENTS_DECISION_REASON_MAX_LEN = 100;
     public static final int DECISION_ELEMENTS_APP_REF_MAX_LEN = 100;
