@@ -5,14 +5,7 @@ import org.apache.logging.log4j.Logger;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.Address;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.ClientResponsePayload;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.DecisionElement;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.IdentityVerificationResponse;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.OrchestrationDecision;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.OverallResponse;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.ResponseHeader;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.ResponseType;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.Rule;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.*;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -68,11 +61,7 @@ public class TestDataCreator {
         personIdentity.setDateOfBirth(LocalDate.of(1976, 12, 26));
 
         List<Address> addresses = new ArrayList<>();
-        IntStream.range(0, addressChainLength)
-                .forEach(
-                        a -> {
-                            addresses.add(createAddress(a));
-                        });
+        IntStream.range(0, addressChainLength).forEach(a -> addresses.add(createAddress(a)));
 
         while (additionalCurrentAddresses > 0) {
 
@@ -116,6 +105,19 @@ public class TestDataCreator {
             case WARN:
             case WARNING:
                 return createTestVerificationErrorResponse(type);
+            default:
+                throw new IllegalArgumentException("Unexpected response type encountered: " + type);
+        }
+    }
+
+    public static PEPResponse createTestPEPResponse(ResponseType type) {
+        switch (type) {
+            case INFO:
+                return createTestPEPInfoResponse();
+            case ERROR:
+            case WARN:
+            case WARNING:
+                return createTestPEPErrorResponse(type);
             default:
                 throw new IllegalArgumentException("Unexpected response type encountered: " + type);
         }
@@ -222,6 +224,76 @@ public class TestDataCreator {
         return testIVR;
     }
 
+    private static PEPResponse createTestPEPInfoResponse() {
+        PEPResponse testPEP = new PEPResponse();
+
+        ResponseHeader header = new ResponseHeader();
+        header.setRequestType("TEST_INFO_RESPONSE");
+        header.setClientReferenceId("1234567890abcdefghijklmnopqrstuvwxyz");
+        header.setExpRequestId("1234");
+        header.setMessageTime("2022-01-01T00:00:01Z");
+
+        OverallResponse overallResponse = new OverallResponse();
+        overallResponse.setDecision("OK");
+        overallResponse.setDecisionText("OK");
+        overallResponse.setDecisionReasons(List.of("NoReason"));
+        overallResponse.setRecommendedNextActions(List.of(""));
+        overallResponse.setSpareObjects(List.of(""));
+        header.setOverallResponse(overallResponse);
+
+        header.setResponseCode("1234");
+        header.setResponseType(ResponseType.INFO);
+        header.setResponseMessage("Text");
+        header.setTenantID("1234");
+
+        testPEP.setResponseHeader(header);
+
+        ClientResponsePayload payload = new ClientResponsePayload();
+
+        List<OrchestrationDecision> orchestrationDecisions = new ArrayList<>();
+        OrchestrationDecision orchestrationDecision1 = new OrchestrationDecision();
+        orchestrationDecision1.setSequenceId("1");
+        orchestrationDecision1.setDecisionSource("Test");
+        orchestrationDecision1.setDecision("OK");
+        orchestrationDecision1.setDecisionReasons(List.of("Test"));
+        orchestrationDecision1.setScore(0);
+        orchestrationDecision1.setDecisionText("Test");
+        orchestrationDecision1.setDecisionTime("2022-01-01T00:00:02Z");
+        orchestrationDecision1.setNextAction("Continue");
+        orchestrationDecision1.setAppReference("UNIT_TEST");
+        orchestrationDecision1.setDecisionReasons(List.of("Test"));
+
+        orchestrationDecisions.add(orchestrationDecision1);
+        payload.setOrchestrationDecisions(orchestrationDecisions);
+
+        List<DecisionElement> decisionElements = new ArrayList<>();
+        DecisionElement decisionElement1 = new DecisionElement();
+        decisionElement1.setApplicantId("APPLICANT_1");
+        decisionElement1.setServiceName("PepSanctions01");
+        decisionElement1.setDecision("AU01");
+        decisionElement1.setScore(90);
+        decisionElement1.setDecisionText("OK");
+        decisionElement1.setDecisionReason("TEST");
+        decisionElement1.setAppReference("UNIT_TEST");
+
+        List<Rule> rules = new ArrayList<>();
+        Rule rule1 = new Rule();
+        rule1.setRuleName("AUTP_IDCONFLEVEL");
+        rule1.setRuleId("");
+        rule1.setRuleScore(1);
+        rule1.setRuleText("Conf Level 1");
+
+        rules.add(rule1);
+        decisionElement1.setRules(rules);
+
+        decisionElements.add(decisionElement1);
+        payload.setDecisionElements(decisionElements);
+
+        testPEP.setClientResponsePayload(payload);
+
+        return testPEP;
+    }
+
     private static IdentityVerificationResponse createTestVerificationErrorResponse(
             ResponseType type) {
         if (type == ResponseType.INFO) {
@@ -231,6 +303,30 @@ public class TestDataCreator {
         }
 
         IdentityVerificationResponse testErrorResponse = new IdentityVerificationResponse();
+
+        ResponseHeader header = new ResponseHeader();
+        header.setRequestType("TEST_ERROR_RESPONSE");
+        header.setClientReferenceId("1234567890abcdefghijklmnopqrstuvwxyz");
+        header.setExpRequestId("1234");
+        header.setMessageTime("2022-01-01T00:00:01Z");
+
+        header.setResponseType(type);
+        header.setResponseCode("E101");
+        header.setResponseMessage("AnErrorOccured");
+
+        testErrorResponse.setResponseHeader(header);
+
+        return testErrorResponse;
+    }
+
+    private static PEPResponse createTestPEPErrorResponse(ResponseType type) {
+        if (type == ResponseType.INFO) {
+            String errorMessage = "Info is not an Error response Type.";
+            LOGGER.error(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
+        }
+
+        PEPResponse testErrorResponse = new PEPResponse();
 
         ResponseHeader header = new ResponseHeader();
         header.setRequestType("TEST_ERROR_RESPONSE");

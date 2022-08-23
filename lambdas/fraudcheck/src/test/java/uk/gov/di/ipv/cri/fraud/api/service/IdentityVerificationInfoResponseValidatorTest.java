@@ -2249,6 +2249,7 @@ public class IdentityVerificationInfoResponseValidatorTest {
     @Test
     void clientPayloadDecisionElementsDecisionElementScoreOverMaxFails() {
         final int TEST_VALUE = 100000;
+
         testIVResponse.getClientResponsePayload().getDecisionElements().get(0).setScore(TEST_VALUE);
 
         ValidationResult<List<String>> validationResult =
