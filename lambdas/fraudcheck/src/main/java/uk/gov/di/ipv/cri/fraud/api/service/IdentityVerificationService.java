@@ -67,6 +67,7 @@ public class IdentityVerificationService {
             LOGGER.info("Identity info validated");
             FraudCheckResult fraudCheckResult =
                     thirdPartyGateway.performFraudCheck(personIdentity, false);
+
             LOGGER.info("Third party response mapped");
             LOGGER.info(
                     "Third party response {}",
@@ -80,6 +81,7 @@ public class IdentityVerificationService {
                     Integer pepIdentityCheckScore = null;
                     List<String> pepContraindications = new ArrayList<>();
                     String pepTransactionId = null;
+
                     LOGGER.info("Mapping contra indicators from fraud response");
                     List<String> fraudContraindications =
                             List.of(
@@ -92,6 +94,7 @@ public class IdentityVerificationService {
                             "Fraud check passed successfully. Indicators {}, Score {}",
                             String.join(", ", fraudContraindications),
                             fraudIdentityCheckScore);
+
                     if (configurationService.getPepEnabled()) {
                         FraudCheckResult pepCheckResult =
                                 thirdPartyGateway.performFraudCheck(personIdentity, true);
@@ -112,6 +115,8 @@ public class IdentityVerificationService {
                                 String.join(", ", pepContraindications),
                                 pepIdentityCheckScore);
                     }
+
+                    LOGGER.info("Calculating the identity score...");
                     List<String> combinedContraIndicators = new ArrayList<>();
                     combinedContraIndicators.addAll(pepContraindications);
                     combinedContraIndicators.addAll(fraudContraindications);
