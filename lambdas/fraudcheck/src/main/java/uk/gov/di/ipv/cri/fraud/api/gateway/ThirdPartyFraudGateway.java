@@ -99,8 +99,8 @@ public class ThirdPartyFraudGateway {
 
     public FraudCheckResult performFraudCheck(PersonIdentity personIdentity, boolean pepEnabled)
             throws IOException, InterruptedException {
-        LOGGER.info("Mapping person to third party verification request");
         if (pepEnabled) {
+            LOGGER.info("Mapping person to third party PEP request");
             PEPRequest apiRequest = requestMapper.mapPEPPersonIdentity(personIdentity);
 
             String requestBody = objectMapper.writeValueAsString(apiRequest);
@@ -113,6 +113,7 @@ public class ThirdPartyFraudGateway {
             FraudCheckResult fraudCheckResult = responseHandler(httpResponse, true);
             return fraudCheckResult;
         } else {
+            LOGGER.info("Mapping person to third party Fraud request");
             IdentityVerificationRequest apiRequest =
                     requestMapper.mapPersonIdentity(personIdentity);
 
