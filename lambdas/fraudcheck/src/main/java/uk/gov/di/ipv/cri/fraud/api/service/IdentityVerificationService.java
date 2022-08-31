@@ -125,10 +125,12 @@ public class IdentityVerificationService {
                             pepIdentityCheckScore != null
                                     ? pepIdentityCheckScore
                                     : fraudIdentityCheckScore;
-                    String transactionId =
-                            pepTransactionId != null
-                                    ? fraudTransactionId + "|" + pepTransactionId
-                                    : fraudTransactionId;
+                    String transactionId = fraudTransactionId;
+                    LOGGER.info(
+                            "Third party transaction ids fraud {} pep {}",
+                            fraudTransactionId,
+                            pepTransactionId);
+
                     result.setContraIndicators(combinedContraIndicators.toArray(new String[] {}));
                     result.setIdentityCheckScore(identityCheckScore);
                     result.setTransactionId(transactionId);
