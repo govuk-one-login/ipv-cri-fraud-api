@@ -1,9 +1,14 @@
 # Digital Identity Fraud Credential Issuer
 Identity and Fraud Check Credential Issuer
 
+## Hooks
+
+**important:** One you've cloned the repo, run `pre-commit install` to install the pre-commit hooks.
+If you have not installed `pre-commit` then please do so [here](https://pre-commit.com/).
+
 ## Checkout submodules
 > The first time you check out or clone the repository, you will need to run the following commands:
- 
+
 `git submodule update --init --recursive`
 
 > Subsequent times you will need to run the following commands:
@@ -11,7 +16,7 @@ Identity and Fraud Check Credential Issuer
 `git submodule update --recursive`
 
 ### Updating submodules to the latest "main" branch
-> You can also update the submodules to the latest "main" branch, but this is not done automatically 
+> You can also update the submodules to the latest "main" branch, but this is not done automatically
 > in case there have been changes made to the shared libraries you do not yet want to track
 
 cd into each submodule (folders are `/common-lib` and `/common-lambdas`) and run the following commands:
@@ -39,7 +44,7 @@ Before your **first** deploy, build a sam config toml file.
 > Ensure you set **Parameter Environment** and **SAM configuration environment**, when asked to `dev`.
 > All other defaults can be accepted by leaving them blank
 
-The command to run is: 
+The command to run is:
 
 `gds aws  di-ipv-cri-dev -- sam deploy -t infrastructure/lambda/template.yaml --guided`
 
