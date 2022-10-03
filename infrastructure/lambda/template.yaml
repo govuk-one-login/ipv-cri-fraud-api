@@ -356,6 +356,14 @@ Resources:
       FilterPattern: ""
       LogGroupName: !Ref PublicFraudApiAccessLogGroup
 
+  PublicFraudApiAccessLogGroupSubscriptionFilterCsls:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsNotDevEnvironment
+    Properties:
+      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
+      FilterPattern: ""
+      LogGroupName: !Ref PublicFraudApiAccessLogGroup
+
   PrivateFraudApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -367,6 +375,14 @@ Resources:
     Condition: IsNotDevEnvironment
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
+      FilterPattern: ""
+      LogGroupName: !Ref PrivateFraudApiAccessLogGroup
+
+  PrivateFraudApiAccessLogGroupSubscriptionFilterCsls:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsNotDevEnvironment
+    Properties:
+      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
       LogGroupName: !Ref PrivateFraudApiAccessLogGroup
 
@@ -430,6 +446,14 @@ Resources:
     Condition: IsNotDevEnvironment
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
+      FilterPattern: ""
+      LogGroupName: !Sub "/aws/lambda/${SessionFunction}"
+
+  SessionFunctionLogGroupSubscriptionFilterCsls:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsNotDevEnvironment
+    Properties:
+      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
       LogGroupName: !Sub "/aws/lambda/${SessionFunction}"
 
@@ -522,6 +546,14 @@ Resources:
       FilterPattern: ""
       LogGroupName: !Sub "/aws/lambda/${IdentityCheckingFunction}"
 
+  IdentityCheckingFunctionLogGroupSubscriptionFilterCsls:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsNotDevEnvironment
+    Properties:
+      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
+      FilterPattern: ""
+      LogGroupName: !Sub "/aws/lambda/${IdentityCheckingFunction}"
+
   IdentityCheckingFunctionPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -580,6 +612,14 @@ Resources:
       FilterPattern: ""
       LogGroupName: !Sub "/aws/lambda/${IssueCredentialFunction}"
 
+  IssueCredentialFunctionLogGroupSubscriptionFilterCsls:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsNotDevEnvironment
+    Properties:
+      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
+      FilterPattern: ""
+      LogGroupName: !Sub "/aws/lambda/${IssueCredentialFunction}"
+
   IssueCredentialFunctionPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -625,6 +665,14 @@ Resources:
     Condition: IsNotDevEnvironment
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
+      FilterPattern: ""
+      LogGroupName: !Sub "/aws/lambda/${AccessTokenFunction}"
+
+  AccessTokenFunctionLogGroupSubscriptionFilterCsls:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsNotDevEnvironment
+    Properties:
+      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
       LogGroupName: !Sub "/aws/lambda/${AccessTokenFunction}"
 
@@ -713,6 +761,14 @@ Resources:
     Condition: IsNotDevEnvironment
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
+      FilterPattern: ""
+      LogGroupName: !Sub "/aws/lambda/${AuthorizationFunction}"
+
+  AuthorizationFunctionLogGroupSubscriptionFilterCsls:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsNotDevEnvironment
+    Properties:
+      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
       LogGroupName: !Sub "/aws/lambda/${AuthorizationFunction}"
 
