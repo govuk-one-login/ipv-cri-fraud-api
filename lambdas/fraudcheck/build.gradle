@@ -5,7 +5,7 @@ plugins {
 }
 
 dependencies {
-	implementation project(":common-lib"),
+	implementation configurations.cri_common_lib,
 			configurations.aws,
 			configurations.lambda,
 			configurations.nimbus,
@@ -19,16 +19,6 @@ dependencies {
 
 	testRuntimeOnly configurations.test_runtime
 }
-
-task buildZip(type: Zip) {
-	from compileJava
-	from processResources
-	into('lib') {
-		from configurations.runtimeClasspath
-	}
-}
-
-build.finalizedBy(buildZip)
 
 test {
 	useJUnitPlatform()

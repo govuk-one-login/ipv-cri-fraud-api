@@ -23,8 +23,7 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v2
-        with:
-          submodules: true
+
       - name: Set up JDK 11
         uses: actions/setup-java@v2
         with:
@@ -41,9 +40,6 @@ jobs:
           role-session-name: ${{ secrets.AWS_ROLE_SESSION }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Gradle build
-        run: ./gradlew build -x test -x spotlessCheck
-
       - name: SAM build
         run: sam build -t infrastructure/lambda/template.yaml
 
@@ -54,10 +50,10 @@ jobs:
       - name: SAM deploy integration test stack
         run: |
           STACK_NAME=${{ env.STACK_NAME_PREFIX }}-${{ steps.vars.outputs.sha_short }}
-          sam deploy -t infrastructure/lambda/template.yaml \
+          sam deploy \
             --no-fail-on-empty-changeset \
             --no-confirm-changeset \
-            --parameter-overrides Environment=${{ env.ENVIRONMENT }} \
+            --parameter-overrides "Environment=${{ env.ENVIRONMENT }} CodeSigningEnabled=false AuditEventNamePrefix=/common-cri-parameters/FraudAuditEventNamePrefix CriIdentifier=/common-cri-parameters/FraudCriIdentifier CommonStackName=fraud-common-cri-api" \
             --stack-name $STACK_NAME \
             --s3-bucket ${{ secrets.AWS_CONFIG_BUCKET }} \
             --s3-prefix $STACK_NAME \
