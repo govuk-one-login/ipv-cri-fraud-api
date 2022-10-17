@@ -34,25 +34,14 @@ See onboarding guide for instructions on how to setup the following command line
 
 ### Deploy to dev account
 
-Before your **first** deploy, build a sam config toml file.
-> The stack name *must* be unique to you.
-> Ensure you set **Parameter Environment** and **SAM configuration environment**, when asked to `dev`.
-> All other defaults can be accepted by leaving them blank
-
-The command to run is: 
-
-`gds aws  di-ipv-cri-dev -- sam deploy -t infrastructure/lambda/template.yaml --guided`
-
 Any time you wish to deploy, run:
 
-`gds aws  di-ipv-cri-dev -- ./deploy.sh`
+`gds aws di-ipv-cri-dev -- ./deploy.sh my-fraud-api-stack-name`
 
 ### Delete stack from dev account
 > The stack name *must* be unique to you and created by you in the deploy stage above.
-> The default location of sam config toml file is `./infrastructure/lambda/samconfig.toml`.
-> **Remember to specify the environment name**:`dev`.
 > Type `y`es when prompted to delete the stack and the folders in S3 bucket
 
 The command to run is:
 
-`gds aws di-ipv-cri-dev -- sam delete --config-file ./infrastructure/lambda/samconfig.toml --config-env dev --stack-name <unique-stack-name>`
+`gds aws di-ipv-cri-dev -- sam delete --config-env dev --stack-name <unique-stack-name>`

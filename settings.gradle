@@ -7,16 +7,6 @@ pluginManagement {
 
 rootProject.name = "di-ipv-cri-fraud-api"
 
-// Common libraries
-include "common-lib"
-
-// Common lambdas
-include "session", "accesstoken", "jwkset", "authorization"
-project(':session').projectDir = new File('./common-lambdas/session')
-project(":accesstoken").projectDir = new File('./common-lambdas/accesstoken')
-project(':jwkset').projectDir = new File('./common-lambdas/jwkset')
-project(':authorization').projectDir = new File('./common-lambdas/authorization')
-
 // CRI specific lambdas
 include "issuecredential", "fraudcheck"
 project(':fraudcheck').projectDir = new File('./lambdas/fraudcheck')

@@ -1,11 +1,3 @@
-[submodule "common-lib"]
-	path = common-lib
-	url = git@github.com:alphagov/di-ipv-cri-lib.git
-	branch = main
-[submodule "common-lambdas"]
-	path = common-lambdas
-	url = git@github.com:alphagov/di-ipv-cri-common-lambdas.git
-	branch = main
 [submodule "acceptance-tests"]
 	path = acceptance-tests
 	url = git@github.com:alphagov/di-ipv-cri-fraud-test.git
