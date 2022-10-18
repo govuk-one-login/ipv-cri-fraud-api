@@ -1,8 +1,6 @@
 package uk.gov.di.ipv.cri.fraud.api.service;
 
 import com.nimbusds.oauth2.sdk.util.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import software.amazon.lambda.powertools.parameters.ParamProvider;
 import software.amazon.lambda.powertools.parameters.SecretsProvider;
 
@@ -11,8 +9,6 @@ import java.util.Objects;
 import static software.amazon.lambda.powertools.parameters.transform.Transformer.json;
 
 public class ConfigurationService {
-
-    private static final Logger LOGGER = LogManager.getLogger();
 
     static class KeyStoreParams {
         private String keyStore;
@@ -57,7 +53,7 @@ public class ConfigurationService {
             throw new IllegalArgumentException("env must be specified");
         }
 
-        // ****************************Private Paramaters****************************
+        // ****************************Private Parameters****************************
 
         this.parameterPrefix = System.getenv("AWS_STACK_NAME");
         this.tenantId = paramProvider.get(String.format(KEY_FORMAT, env, "thirdPartyApiTenantId"));
@@ -72,14 +68,7 @@ public class ConfigurationService {
 
         // *****************************Feature Toggles*******************************
 
-        String pepEnabledFlag;
-        try {
-            // pepEnabled flag will need to be manually added as a parameter in AWS
-            pepEnabledFlag = paramProvider.get(getParameterName("pepEnabled"));
-        } catch (Exception e) {
-            pepEnabledFlag = "false";
-        }
-        this.pepEnabled = pepEnabledFlag;
+        this.pepEnabled = paramProvider.get(getParameterName("pepEnabled"));
 
         // *********************************Secrets***********************************
 
