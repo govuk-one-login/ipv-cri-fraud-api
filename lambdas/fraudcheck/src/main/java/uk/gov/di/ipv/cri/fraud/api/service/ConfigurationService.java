@@ -1,6 +1,8 @@
 package uk.gov.di.ipv.cri.fraud.api.service;
 
 import com.nimbusds.oauth2.sdk.util.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import software.amazon.lambda.powertools.parameters.ParamProvider;
 import software.amazon.lambda.powertools.parameters.SecretsProvider;
 
@@ -9,6 +11,8 @@ import java.util.Objects;
 import static software.amazon.lambda.powertools.parameters.transform.Transformer.json;
 
 public class ConfigurationService {
+
+    private static final Logger LOGGER = LogManager.getLogger();
 
     static class KeyStoreParams {
         private String keyStore;
@@ -68,7 +72,15 @@ public class ConfigurationService {
 
         // *****************************Feature Toggles*******************************
 
-        this.pepEnabled = paramProvider.get(getParameterName("pepEnabled"));
+        String pepEnabledFlag;
+        try {
+            // pepEnabled flag will need to be manually added as a parameter in AWS
+            pepEnabledFlag = paramProvider.get(getParameterName("pepEnabled"));
+        } catch (Exception e) {
+            LOGGER.info("Failed to get pepEnabled paramater in store, defaulting to false");
+            pepEnabledFlag = "false";
+        }
+        this.pepEnabled = pepEnabledFlag;
 
         // *********************************Secrets***********************************
 
