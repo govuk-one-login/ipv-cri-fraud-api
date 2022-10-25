@@ -1,5 +1,8 @@
 package uk.gov.di.ipv.cri.fraud.api.gateway;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.*;
 
@@ -14,7 +17,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class IdentityVerificationRequestMapper {
 
-    final String tenantId;
+    private static final Logger LOGGER = LogManager.getLogger();
+    private final String tenantId;
 
     public IdentityVerificationRequestMapper(String tenantId) {
         this.tenantId = tenantId;
@@ -34,7 +38,7 @@ public class IdentityVerificationRequestMapper {
                 DateTimeFormatter.ISO_DATE.format(personIdentity.getDateOfBirth()));
 
         Name contactPersonName = mapName(personIdentity);
-        List<Address> personAddresses = mapAddresses(personIdentity.getAddresses());
+        List<Address> personAddresses = mapMultipleAddresses(personIdentity.getAddresses());
 
         Person contactPerson = new Person();
         contactPerson.setPersonIdentifier("MAINPERSON_1");
@@ -78,7 +82,7 @@ public class IdentityVerificationRequestMapper {
                 String.valueOf(personIdentity.getDateOfBirth().getYear()));
 
         Name contactPersonName = mapName(personIdentity);
-        List<Address> personAddresses = mapAddresses(personIdentity.getAddresses());
+        List<Address> personAddresses = mapSingleAddress(personIdentity.getAddresses());
 
         Person contactPerson = new Person();
         contactPerson.setPersonIdentifier(null);
@@ -130,7 +134,7 @@ public class IdentityVerificationRequestMapper {
         return apiRequestHeader;
     }
 
-    Name mapName(PersonIdentity personIdentity) {
+    private Name mapName(PersonIdentity personIdentity) {
         Name personName = new Name();
         personName.setId("MAINPERSONNAME_1");
         personName.setType("CURRENT");
@@ -140,7 +144,7 @@ public class IdentityVerificationRequestMapper {
         return personName;
     }
 
-    Applicant createApplicant() {
+    private Applicant createApplicant() {
         Applicant applicant = new Applicant();
         applicant.setId("APPLICANT_1");
         applicant.setContactId("MAINCONTACT_1");
@@ -150,7 +154,7 @@ public class IdentityVerificationRequestMapper {
         return applicant;
     }
 
-    Applicant createPEPApplicant() {
+    private Applicant createPEPApplicant() {
         Applicant applicant = new Applicant();
         applicant.setId("APPLICANT_1");
         applicant.setContactId("MAINCONTACT_1");
@@ -160,32 +164,60 @@ public class IdentityVerificationRequestMapper {
         return applicant;
     }
 
-    List<Address> mapAddresses(
+    private List<Address> mapMultipleAddresses(
             List<uk.gov.di.ipv.cri.common.library.domain.personidentity.Address> personAddresses) {
         List<Address> addresses = new ArrayList<>();
         AtomicInteger addressId = new AtomicInteger(0);
         personAddresses.forEach(
                 personAddress -> {
-                    Address address = new Address();
-
-                    address.setId("MAINAPPADDRESS_" + addressId.incrementAndGet());
-                    address.setAddressIdentifier("ADDRESS_" + addressId.get());
-
-                    String addressType = mapAddressType(personAddress.getAddressType());
-                    address.setAddressType(addressType);
-
-                    address.setBuildingNumber(personAddress.getBuildingNumber());
-                    address.setBuildingName(personAddress.getBuildingName());
-                    address.setSubBuilding(personAddress.getSubBuildingName());
-                    address.setStreet(personAddress.getStreetName());
-                    address.setPostTown(personAddress.getAddressLocality());
-
-                    address.setPostal(personAddress.getPostalCode());
-
+                    Address address = mapAddressFromPersonAddress(addressId, personAddress);
                     addresses.add(address);
                 });
 
         return addresses;
+    }
+
+    private List<Address> mapSingleAddress(
+            List<uk.gov.di.ipv.cri.common.library.domain.personidentity.Address> personAddresses) {
+        List<Address> addresses = new ArrayList<>();
+        AtomicInteger addressId = new AtomicInteger(0);
+        personAddresses.forEach(
+                personAddress -> {
+                    if (AddressType.CURRENT == personAddress.getAddressType()) {
+                        Address address = mapAddressFromPersonAddress(addressId, personAddress);
+                        addresses.add(address);
+                    }
+                });
+
+        // PEP can only be sent with one address
+        if (addresses.size() > 1) {
+            LOGGER.error("mapSingleAddress Found {} CURRENT Addresses", addresses.size());
+        }
+
+        return addresses;
+    }
+
+    private Address mapAddressFromPersonAddress(
+            AtomicInteger addressId,
+            uk.gov.di.ipv.cri.common.library.domain.personidentity.Address personAddress) {
+
+        Address address = new Address();
+
+        address.setId("MAINAPPADDRESS_" + addressId.incrementAndGet());
+        address.setAddressIdentifier("ADDRESS_" + addressId.get());
+
+        String addressType = mapAddressType(personAddress.getAddressType());
+        address.setAddressType(addressType);
+
+        address.setBuildingNumber(personAddress.getBuildingNumber());
+        address.setBuildingName(personAddress.getBuildingName());
+        address.setSubBuilding(personAddress.getSubBuildingName());
+        address.setStreet(personAddress.getStreetName());
+        address.setPostTown(personAddress.getAddressLocality());
+
+        address.setPostal(personAddress.getPostalCode());
+
+        return address;
     }
 
     private String mapAddressType(

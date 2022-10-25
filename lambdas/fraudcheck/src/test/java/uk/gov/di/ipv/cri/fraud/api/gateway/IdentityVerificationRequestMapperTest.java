@@ -173,39 +173,10 @@ class IdentityVerificationRequestMapperTest {
         assertEquals("44", address.getBuildingNumber());
     }
 
-    @Test
-    void shouldConvertPepPersonIdentityToCrossCoreApiRequestForPreviousAddress() {
-        personIdentity = TestDataCreator.createTestPersonIdentity(PREVIOUS);
-
-        PEPRequest result = requestMapper.mapPEPPersonIdentity(personIdentity);
-
-        assertNotNull(result);
-
-        Person person = result.getPayload().getContacts().get(0).getPerson();
-
-        assertEquals(
-                LocalDate.of(1976, 12, 26).toString(), person.getPersonDetails().getDateOfBirth());
-        assertEquals(personIdentity.getFirstName(), person.getNames().get(0).getFirstName());
-        assertEquals(personIdentity.getSurname(), person.getNames().get(0).getSurName());
-        assertEquals("Y", person.getPersonDetails().getPepsSanctionsFlag());
-        assertNotNull(person.getPersonDetails().getYearOfBirth());
-        assertEquals("APPLICANT", person.getTypeOfPerson());
-
-        assertEquals(
-                "MS_CON",
-                result.getPayload().getApplication().getProductDetails().getProductCode());
-
-        Address address = result.getPayload().getContacts().get(0).getAddresses().get(0);
-
-        assertEquals(PREVIOUS.toString(), address.getAddressType());
-        assertEquals("PostTown", address.getPostTown());
-        assertEquals("Street Name", address.getStreet());
-        assertEquals("Postcode", address.getPostal());
-    }
-
     @ParameterizedTest
     @MethodSource("getAddressCount")
-    void shouldConvertPepPersonIdentityToCrossCoreApiRequestWithAddressCount(int addressCount) {
+    void shouldConvertPepPersonIdentityToCrossCoreApiRequestFromMultipleAddressToSingleAddress(
+            int addressCount) {
 
         personIdentity =
                 TestDataCreator.createTestPersonIdentityMultipleAddresses(
@@ -231,18 +202,23 @@ class IdentityVerificationRequestMapperTest {
 
         assertNotEquals(0, addressCount);
 
-        List<Address> addresses = result.getPayload().getContacts().get(0).getAddresses();
+        List<Address> pepAddresses = result.getPayload().getContacts().get(0).getAddresses();
 
-        IntStream.range(0, addressCount)
+        int numberOfPEPaddresses = pepAddresses.size();
+
+        IntStream.range(0, numberOfPEPaddresses)
                 .forEach(
                         a -> {
                             assertEquals(
                                     a == 0 ? CURRENT.toString() : PREVIOUS.toString(),
-                                    addresses.get(a).getAddressType());
-                            assertEquals("PostTown" + a, addresses.get(a).getPostTown());
-                            assertEquals("Street Name" + a, addresses.get(a).getStreet());
-                            assertEquals("Postcode" + a, addresses.get(a).getPostal());
+                                    pepAddresses.get(a).getAddressType());
+                            assertEquals("PostTown" + a, pepAddresses.get(a).getPostTown());
+                            assertEquals("Street Name" + a, pepAddresses.get(a).getStreet());
+                            assertEquals("Postcode" + a, pepAddresses.get(a).getPostal());
                         });
+
+        // Pep Request must only contain 1 address
+        assertEquals(1, numberOfPEPaddresses);
     }
 
     @Test
