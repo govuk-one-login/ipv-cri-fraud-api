@@ -35,7 +35,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_IDENTITY_CHECK_COMPLETED_OK;
 
 @ExtendWith(MockitoExtension.class)
 class CredentialHandlerTest {
@@ -106,6 +109,8 @@ class CredentialHandlerTest {
         APIGatewayProxyResponseEvent responseEvent =
                 fraudHandler.handleRequest(mockRequestEvent, context);
 
+        verify(mockEventProbe).counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_OK);
+
         assertNotNull(responseEvent);
         assertEquals(200, responseEvent.getStatusCode());
         assertEquals(
@@ -152,6 +157,8 @@ class CredentialHandlerTest {
         when(context.getFunctionVersion()).thenReturn("1.0");
         APIGatewayProxyResponseEvent responseEvent =
                 fraudHandler.handleRequest(mockRequestEvent, context);
+
+        verify(mockEventProbe).counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR);
 
         assertNotNull(responseEvent);
         assertEquals(500, responseEvent.getStatusCode());

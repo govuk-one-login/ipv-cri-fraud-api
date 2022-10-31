@@ -46,6 +46,9 @@ import java.util.UUID;
 import static org.apache.logging.log4j.Level.ERROR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_ISSUE_CREDENTIAL_COMPLETED_OK;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.TODO_REMOVE_BK_COMPAT_M2;
 
 @ExtendWith(MockitoExtension.class)
 class IssueCredentialHandlerTest {
@@ -90,6 +93,10 @@ class IssueCredentialHandlerTest {
                         any(AuditEventContext.class),
                         any(VCISSFraudAuditExtension.class));
 
+        when(mockEventProbe.counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_OK))
+                .thenReturn(mockEventProbe);
+        when(mockEventProbe.counterMetric(TODO_REMOVE_BK_COMPAT_M2, 0d)).thenReturn(mockEventProbe);
+
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, context);
 
         verify(mockSessionService).getSessionByAccessToken(accessToken);
@@ -103,7 +110,9 @@ class IssueCredentialHandlerTest {
                         eq(AuditEventType.VC_ISSUED),
                         any(AuditEventContext.class),
                         any(VCISSFraudAuditExtension.class));
-        verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
+        verify(mockEventProbe).counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_OK);
+        verify(mockEventProbe)
+                .counterMetric(TODO_REMOVE_BK_COMPAT_M2, 0d); // Old Metric set incorrect value
         assertEquals(
                 ContentType.APPLICATION_JWT.getType(), response.getHeaders().get("Content-Type"));
         assertEquals(HttpStatusCode.OK, response.getStatusCode());
@@ -146,7 +155,7 @@ class IssueCredentialHandlerTest {
         verify(mockVerifiableCredentialService)
                 .generateSignedVerifiableCredentialJwt(
                         sessionItem.getSubject(), fraudResultItem, personIdentityDetailed);
-        verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
+        verify(mockEventProbe).counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
         verifyNoMoreInteractions(mockVerifiableCredentialService);
         verify(mockAuditService, never())
                 .sendAuditEvent(
@@ -168,7 +177,7 @@ class IssueCredentialHandlerTest {
         setupEventProbeErrorBehaviour();
 
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, context);
-        verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
+        verify(mockEventProbe).counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
         verify(mockAuditService, never())
                 .sendAuditEvent(
                         eq(AuditEventType.VC_ISSUED),
@@ -218,7 +227,7 @@ class IssueCredentialHandlerTest {
                         eq(AuditEventType.VC_ISSUED),
                         any(AuditEventContext.class),
                         any(VCISSFraudAuditExtension.class));
-        verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
+        verify(mockEventProbe).counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
         verify(mockAuditService, never()).sendAuditEvent((AuditEventType) any());
         String responseBody = new ObjectMapper().readValue(response.getBody(), String.class);
         assertEquals(awsErrorDetails.sdkHttpResponse().statusCode(), response.getStatusCode());
@@ -236,7 +245,6 @@ class IssueCredentialHandlerTest {
                         accessToken.toAuthorizationHeader()));
 
         setRequestBodyAsPlainJWT(event);
-        setupEventProbeErrorBehaviour();
 
         AwsErrorDetails awsErrorDetails =
                 AwsErrorDetails.builder()
@@ -256,6 +264,10 @@ class IssueCredentialHandlerTest {
                                 .statusCode(500)
                                 .awsErrorDetails(awsErrorDetails)
                                 .build());
+        when(mockEventProbe.log(any(Level.class), any(Exception.class))).thenReturn(mockEventProbe);
+        when(mockEventProbe.counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR))
+                .thenReturn(mockEventProbe);
+        when(mockEventProbe.counterMetric(TODO_REMOVE_BK_COMPAT_M2, 0d)).thenReturn(mockEventProbe);
 
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, context);
 
@@ -267,7 +279,8 @@ class IssueCredentialHandlerTest {
                         any(AuditEventContext.class),
                         any(VCISSFraudAuditExtension.class));
         verify(mockEventProbe).log(eq(ERROR), any(AwsServiceException.class));
-        verify(mockEventProbe).counterMetric(IssueCredentialHandler.FRAUD_CREDENTIAL_ISSUER, 0d);
+        verify(mockEventProbe).counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
+        verify(mockEventProbe).counterMetric(TODO_REMOVE_BK_COMPAT_M2, 0d);
         String responseBody = new ObjectMapper().readValue(response.getBody(), String.class);
         assertEquals(awsErrorDetails.sdkHttpResponse().statusCode(), response.getStatusCode());
         assertEquals(awsErrorDetails.errorMessage(), responseBody);

@@ -3,6 +3,7 @@ package uk.gov.di.ipv.cri.fraud.api.gateway;
 import com.nimbusds.oauth2.sdk.util.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.ValidationResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.*;
@@ -11,6 +12,17 @@ import uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationInfoResponseValid
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_FRAUD_RESPONSE_TYPE_ERROR;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO_VALIDATION_FAIL;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO_VALIDATION_PASS;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_FRAUD_RESPONSE_TYPE_UNKNOWN;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_PEP_RESPONSE_TYPE_ERROR;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_PEP_RESPONSE_TYPE_INFO;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_PEP_RESPONSE_TYPE_INFO_VALIDATION_FAIL;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_PEP_RESPONSE_TYPE_INFO_VALIDATION_PASS;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_PEP_RESPONSE_TYPE_UNKNOWN;
 
 public class IdentityVerificationResponseMapper {
 
@@ -22,33 +34,45 @@ public class IdentityVerificationResponseMapper {
     public static final String IV_INFO_RESPONSE_VALIDATION_FAILED_MSG =
             "Identity Verification Info Response failed validation.";
 
-    FraudCheckResult mapIdentityVerificationResponse(IdentityVerificationResponse response) {
+    private final EventProbe eventProbe;
+
+    public IdentityVerificationResponseMapper(EventProbe eventProbe) {
+        this.eventProbe = eventProbe;
+    }
+
+    public FraudCheckResult mapIdentityVerificationResponse(IdentityVerificationResponse response) {
         ResponseType responseType = response.getResponseHeader().getResponseType();
 
         switch (responseType) {
             case INFO:
+                eventProbe.counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO);
                 return mapResponse(response, new IdentityVerificationInfoResponseValidator());
             case ERROR:
             case WARN:
             case WARNING:
+                eventProbe.counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_ERROR);
                 return mapErrorResponse(response.getResponseHeader());
             default:
+                eventProbe.counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_UNKNOWN);
                 throw new IllegalArgumentException(
                         "Unmapped response type encountered: " + responseType);
         }
     }
 
-    FraudCheckResult mapPEPResponse(PEPResponse response) {
+    public FraudCheckResult mapPEPResponse(PEPResponse response) {
         ResponseType responseType = response.getResponseHeader().getResponseType();
 
         switch (responseType) {
             case INFO:
+                eventProbe.counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_INFO);
                 return mapPEPResponse(response, new IdentityVerificationInfoResponseValidator());
             case ERROR:
             case WARN:
             case WARNING:
+                eventProbe.counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_ERROR);
                 return mapErrorResponse(response.getResponseHeader());
             default:
+                eventProbe.counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_UNKNOWN);
                 throw new IllegalArgumentException(
                         "Unmapped response type encountered: " + responseType);
         }
@@ -79,12 +103,16 @@ public class IdentityVerificationResponseMapper {
 
             fraudCheckResult.setThirdPartyFraudCodes(
                     fraudCodes.toArray(fraudCodes.toArray(String[]::new)));
+
+            eventProbe.counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO_VALIDATION_PASS);
         } else {
             fraudCheckResult.setExecutedSuccessfully(false);
             fraudCheckResult.setErrorMessage(IV_INFO_RESPONSE_VALIDATION_FAILED_MSG);
 
             LOGGER.error(
                     () -> (IV_INFO_RESPONSE_VALIDATION_FAILED_MSG + validationResult.getError()));
+
+            eventProbe.counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO_VALIDATION_FAIL);
         }
         fraudCheckResult.setTransactionId(response.getResponseHeader().getExpRequestId());
         return fraudCheckResult;
@@ -115,12 +143,16 @@ public class IdentityVerificationResponseMapper {
 
             fraudCheckResult.setThirdPartyFraudCodes(
                     fraudCodes.toArray(fraudCodes.toArray(String[]::new)));
+
+            eventProbe.counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_INFO_VALIDATION_PASS);
         } else {
             fraudCheckResult.setExecutedSuccessfully(false);
             fraudCheckResult.setErrorMessage(IV_INFO_RESPONSE_VALIDATION_FAILED_MSG);
 
             LOGGER.error(
                     () -> (IV_INFO_RESPONSE_VALIDATION_FAILED_MSG + validationResult.getError()));
+
+            eventProbe.counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_INFO_VALIDATION_FAIL);
         }
         fraudCheckResult.setTransactionId(response.getResponseHeader().getExpRequestId());
         return fraudCheckResult;

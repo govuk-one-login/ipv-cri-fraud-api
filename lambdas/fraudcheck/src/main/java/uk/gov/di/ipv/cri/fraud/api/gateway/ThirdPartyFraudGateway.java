@@ -3,9 +3,11 @@ package uk.gov.di.ipv.cri.fraud.api.gateway;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.oauth2.sdk.util.StringUtils;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
+import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PEPRequest;
@@ -21,6 +23,11 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Objects;
 
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_CREATED;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_FAIL;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_OK;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_RETRY;
+
 public class ThirdPartyFraudGateway {
 
     private static final Logger LOGGER = LogManager.getLogger();
@@ -32,6 +39,8 @@ public class ThirdPartyFraudGateway {
     private final HmacGenerator hmacGenerator;
     private final URI endpointUri;
     private final SleepHelper sleepHelper;
+
+    private final EventProbe eventProbe;
 
     public static final String HTTP_300_REDIRECT_MESSAGE =
             "Redirection Message returned from Fraud Check Response, Status Code - ";
@@ -51,7 +60,8 @@ public class ThirdPartyFraudGateway {
             IdentityVerificationResponseMapper responseMapper,
             ObjectMapper objectMapper,
             HmacGenerator hmacGenerator,
-            String endpointUrl) {
+            String endpointUrl,
+            EventProbe eventProbe) {
         Objects.requireNonNull(httpClient, "httpClient must not be null");
         Objects.requireNonNull(requestMapper, "requestMapper must not be null");
         Objects.requireNonNull(responseMapper, "responseMapper must not be null");
@@ -68,6 +78,7 @@ public class ThirdPartyFraudGateway {
         this.hmacGenerator = hmacGenerator;
         this.endpointUri = URI.create(endpointUrl);
         this.sleepHelper = new SleepHelper(HTTP_RETRY_WAIT_TIME_LIMIT_MS);
+        this.eventProbe = eventProbe;
     }
 
     public ThirdPartyFraudGateway(
@@ -77,7 +88,8 @@ public class ThirdPartyFraudGateway {
             ObjectMapper objectMapper,
             HmacGenerator hmacGenerator,
             String endpointUrl,
-            SleepHelper sleepHelper) {
+            SleepHelper sleepHelper,
+            EventProbe eventProbe) {
         Objects.requireNonNull(httpClient, "httpClient must not be null");
         Objects.requireNonNull(requestMapper, "requestMapper must not be null");
         Objects.requireNonNull(responseMapper, "responseMapper must not be null");
@@ -88,6 +100,7 @@ public class ThirdPartyFraudGateway {
             throw new IllegalArgumentException("endpointUrl must be specified");
         }
         Objects.requireNonNull(sleepHelper, "sleepHelper must not be null");
+        Objects.requireNonNull(eventProbe, "eventProbe must not be null");
         this.httpClient = httpClient;
         this.requestMapper = requestMapper;
         this.responseMapper = responseMapper;
@@ -95,6 +108,7 @@ public class ThirdPartyFraudGateway {
         this.hmacGenerator = hmacGenerator;
         this.endpointUri = URI.create(endpointUrl);
         this.sleepHelper = sleepHelper;
+        this.eventProbe = eventProbe;
     }
 
     public FraudCheckResult performFraudCheck(PersonIdentity personIdentity, boolean pepEnabled)
@@ -106,6 +120,7 @@ public class ThirdPartyFraudGateway {
             String requestBody = objectMapper.writeValueAsString(apiRequest);
             String requestBodyHmac = hmacGenerator.generateHmac(requestBody);
             HttpRequest request = requestBuilder(requestBody, requestBodyHmac);
+            eventProbe.counterMetric(THIRD_PARTY_REQUEST_CREATED);
 
             LOGGER.info("Submitting pep check request to third party...");
             HttpResponse<String> httpResponse = sendHTTPRequestRetryIfAllowed(request);
@@ -184,6 +199,11 @@ public class ThirdPartyFraudGateway {
         boolean retry = false;
 
         do {
+            // "If" added for capturing retries
+            if (retry) {
+                eventProbe.counterMetric(THIRD_PARTY_REQUEST_SEND_RETRY);
+            }
+
             // Wait before sending request (0ms for first try)
             sleepHelper.sleepWithExponentialBackOff(tryCount);
 
@@ -201,6 +221,7 @@ public class ThirdPartyFraudGateway {
 
             } catch (IOException e) {
                 if (!(e instanceof HttpConnectTimeoutException)) {
+                    eventProbe.log(Level.ERROR, e).counterMetric(THIRD_PARTY_REQUEST_SEND_FAIL);
                     throw e;
                 }
 
@@ -238,6 +259,7 @@ public class ThirdPartyFraudGateway {
     private boolean shouldHttpClientRetry(int statusCode) {
         if (statusCode == 200) {
             // OK, Success
+            eventProbe.counterMetric(THIRD_PARTY_REQUEST_SEND_OK);
             return false;
         } else if (statusCode == 429) {
             // Too many recent requests

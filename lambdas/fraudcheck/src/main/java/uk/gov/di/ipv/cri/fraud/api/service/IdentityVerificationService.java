@@ -8,6 +8,7 @@ import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
+import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.ValidationResult;
@@ -18,6 +19,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.FRAUD_CHECK_CI_PREFIX;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.FRAUD_CHECK_REQUEST_FAILED;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.FRAUD_CHECK_REQUEST_SUCCEEDED;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.IDENTITY_CHECK_SCORE_PREFIX;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.PEP_CHECK_CI_PREFIX;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.PEP_CHECK_REQUEST_FAILED;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.PEP_CHECK_REQUEST_SUCCEEDED;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.PERSON_DETAILS_VALIDATION_FAIL;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.PERSON_DETAILS_VALIDATION_PASS;
 
 public class IdentityVerificationService {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -34,19 +45,23 @@ public class IdentityVerificationService {
     private final ConfigurationService configurationService;
     private final AuditService auditService;
 
+    private final EventProbe eventProbe;
+
     IdentityVerificationService(
             ThirdPartyFraudGateway thirdPartyGateway,
             PersonIdentityValidator personIdentityValidator,
             ContraindicationMapper contraindicationMapper,
             IdentityScoreCalculator identityScoreCalculator,
             AuditService auditService,
-            ConfigurationService configurationService) {
+            ConfigurationService configurationService,
+            EventProbe eventProbe) {
         this.thirdPartyGateway = thirdPartyGateway;
         this.personIdentityValidator = personIdentityValidator;
         this.contraindicationMapper = contraindicationMapper;
         this.identityScoreCalculator = identityScoreCalculator;
         this.auditService = auditService;
         this.configurationService = configurationService;
+        this.eventProbe = eventProbe;
     }
 
     public IdentityVerificationResult verifyIdentity(
@@ -55,16 +70,19 @@ public class IdentityVerificationService {
             Map<String, String> requestHeaders) {
         IdentityVerificationResult result = new IdentityVerificationResult();
         try {
-            LOGGER.info("Validating identity...");
+            LOGGER.info("Validating PersonIdentity...");
             ValidationResult<List<String>> validationResult =
                     this.personIdentityValidator.validate(personIdentity);
             if (!validationResult.isValid()) {
                 result.setSuccess(false);
                 result.setValidationErrors(validationResult.getError());
-                result.setError("IdentityValidationError");
+                result.setError("PersonIdentityValidationError");
+                eventProbe.counterMetric(PERSON_DETAILS_VALIDATION_FAIL);
                 return result;
             }
-            LOGGER.info("Identity info validated");
+            LOGGER.info("PersonIdentity validated");
+            eventProbe.counterMetric(PERSON_DETAILS_VALIDATION_PASS);
+
             FraudCheckResult fraudCheckResult =
                     thirdPartyGateway.performFraudCheck(personIdentity, false);
 
@@ -94,46 +112,66 @@ public class IdentityVerificationService {
                             "Fraud check passed successfully. Indicators {}, Score {}",
                             String.join(", ", fraudContraindications),
                             fraudIdentityCheckScore);
+                    eventProbe.counterMetric(FRAUD_CHECK_REQUEST_SUCCEEDED);
 
                     if (configurationService.getPepEnabled()) {
                         FraudCheckResult pepCheckResult =
                                 thirdPartyGateway.performFraudCheck(personIdentity, true);
-                        pepContraindications =
-                                List.of(
-                                        this.contraindicationMapper.mapThirdPartyFraudCodes(
-                                                pepCheckResult.getThirdPartyFraudCodes()));
-                        pepIdentityCheckScore =
-                                identityScoreCalculator.calculateIdentityScore(
-                                        fraudCheckResult.isExecutedSuccessfully(),
-                                        pepCheckResult.isExecutedSuccessfully());
-                        pepTransactionId = pepCheckResult.getTransactionId();
-                        LOGGER.info(
-                                "Third party pep response {}",
-                                new ObjectMapper().writeValueAsString(pepCheckResult));
-                        LOGGER.info(
-                                "Pep check passed successfully. Indicators {}, Score {}",
-                                String.join(", ", pepContraindications),
-                                pepIdentityCheckScore);
+
+                        if (pepCheckResult.isExecutedSuccessfully()) {
+
+                            LOGGER.info("Mapping contra indicators from pep response");
+                            pepContraindications =
+                                    List.of(
+                                            this.contraindicationMapper.mapThirdPartyFraudCodes(
+                                                    pepCheckResult.getThirdPartyFraudCodes()));
+                            pepIdentityCheckScore =
+                                    identityScoreCalculator.calculateIdentityScore(
+                                            fraudCheckResult.isExecutedSuccessfully(),
+                                            pepCheckResult.isExecutedSuccessfully());
+                            pepTransactionId = pepCheckResult.getTransactionId();
+                            LOGGER.info(
+                                    "Third party pep response {}",
+                                    new ObjectMapper().writeValueAsString(pepCheckResult));
+                            LOGGER.info(
+                                    "Pep check passed successfully. Indicators {}, Score {}",
+                                    String.join(", ", pepContraindications),
+                                    pepIdentityCheckScore);
+                            eventProbe.counterMetric(PEP_CHECK_REQUEST_SUCCEEDED);
+                        } else {
+                            LOGGER.warn("Pep check failed");
+                            eventProbe.counterMetric(PEP_CHECK_REQUEST_FAILED);
+                        }
                     }
 
                     LOGGER.info("Calculating the identity score...");
                     List<String> combinedContraIndicators = new ArrayList<>();
                     combinedContraIndicators.addAll(pepContraindications);
                     combinedContraIndicators.addAll(fraudContraindications);
+
+                    // Per-request contra-indicator metrics
+                    recordCIMetrics(FRAUD_CHECK_CI_PREFIX, fraudContraindications);
+                    recordCIMetrics(PEP_CHECK_CI_PREFIX, pepContraindications);
+
                     String fraudTransactionId = fraudCheckResult.getTransactionId();
-                    int identityCheckScore =
-                            pepIdentityCheckScore != null
-                                    ? pepIdentityCheckScore
-                                    : fraudIdentityCheckScore;
                     String transactionId = fraudTransactionId;
                     LOGGER.info(
                             "Third party transaction ids fraud {} pep {}",
                             fraudTransactionId,
                             pepTransactionId);
 
+                    int identityCheckScore =
+                            pepIdentityCheckScore != null
+                                    ? pepIdentityCheckScore
+                                    : fraudIdentityCheckScore;
+                    LOGGER.info("IdentityCheckScore {}", identityCheckScore);
+                    eventProbe.counterMetric(IDENTITY_CHECK_SCORE_PREFIX + identityCheckScore);
+
                     result.setContraIndicators(combinedContraIndicators.toArray(new String[] {}));
                     result.setIdentityCheckScore(identityCheckScore);
                     result.setTransactionId(transactionId);
+                    // If fraudCheck succeeded a result can still be returned without pepCheck
+                    // succeeding
                     result.setSuccess(fraudCheckResult.isExecutedSuccessfully());
                     auditService.sendAuditEvent(
                             AuditEventType.THIRD_PARTY_REQUEST_ENDED,
@@ -142,6 +180,8 @@ public class IdentityVerificationService {
                                     List.of(fraudCheckResult.getThirdPartyFraudCodes())));
                 } else {
                     LOGGER.warn("Fraud check failed");
+                    eventProbe.counterMetric(FRAUD_CHECK_REQUEST_FAILED);
+
                     if (Objects.nonNull(fraudCheckResult.getErrorMessage())) {
                         result.setError(fraudCheckResult.getErrorMessage());
                     } else {
@@ -152,6 +192,8 @@ public class IdentityVerificationService {
                 return result;
             }
             LOGGER.error(ERROR_FRAUD_CHECK_RESULT_RETURN_NULL);
+            eventProbe.counterMetric(FRAUD_CHECK_REQUEST_FAILED);
+
             result.setError(ERROR_MSG_CONTEXT);
             result.setSuccess(false);
         } catch (InterruptedException ie) {
@@ -165,5 +207,11 @@ public class IdentityVerificationService {
             result.setSuccess(false);
         }
         return result;
+    }
+
+    private void recordCIMetrics(String ciRequestPrefix, List<String> contraIndications) {
+        for (String ci : contraIndications) {
+            eventProbe.counterMetric(ciRequestPrefix + ci);
+        }
     }
 }

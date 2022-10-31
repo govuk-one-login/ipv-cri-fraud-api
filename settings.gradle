@@ -7,6 +7,9 @@ pluginManagement {
 
 rootProject.name = "di-ipv-cri-fraud-api"
 
+// Internal CRI Lib
+include "lib"
+
 // CRI specific lambdas
 include "issuecredential", "fraudcheck"
 project(':fraudcheck').projectDir = new File('./lambdas/fraudcheck')
