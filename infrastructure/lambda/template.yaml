@@ -174,7 +174,7 @@ Resources:
           "responseLength":"$context.responseLength"
           }
       TracingEnabled: true
-      Name: !Sub "fraud-cri-${AWS::StackName}"
+      Name: !Sub "${AWS::StackName}-PublicFraudApi"
       StageName: !Ref Environment
       DefinitionBody:
         openapi: "3.0.1" # workaround to get `sam validate` to work
@@ -256,7 +256,7 @@ Resources:
           "responseLength":"$context.responseLength"
           }
       TracingEnabled: true
-      Name: !Sub "fraud-cri-${AWS::StackName}"
+      Name: !Sub "${AWS::StackName}-PrivateFraudApi"
       StageName: !Ref Environment
       DefinitionBody:
         openapi: "3.0.1" # workaround to get `sam validate` to work
