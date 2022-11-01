@@ -21,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.*;
 import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.util.SignedJWTFactory;
+import uk.gov.di.ipv.cri.common.library.util.VerifiableCredentialClaimsSetBuilder;
 import uk.gov.di.ipv.cri.fraud.api.persistence.item.FraudResultItem;
 import uk.gov.di.ipv.cri.fraud.api.service.fixtures.TestFixtures;
 import uk.gov.di.ipv.cri.fraud.api.util.FraudPersonIdentityDetailedMapper;
@@ -29,6 +30,7 @@ import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.text.ParseException;
+import java.time.Clock;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -45,7 +47,6 @@ class VerifiableCredentialServiceTest implements TestFixtures {
     private static final int ADDRESSES_TO_GENERATE_IN_TEST = 5;
 
     private final String UNIT_TEST_VC_ISSUER = "UNIT_TEST_VC_ISSUER";
-    private final long UNIT_TEST_MAX_JWT_TTL = 100L;
     private final String UNIT_TEST_SUBJECT = "UNIT_TEST_SUBJECT";
 
     @Mock private ConfigurationService mockConfigurationService;
@@ -56,20 +57,58 @@ class VerifiableCredentialServiceTest implements TestFixtures {
 
     @BeforeEach
     void setup() throws JOSEException, InvalidKeySpecException, NoSuchAlgorithmException {
-
         SignedJWTFactory signedJwtFactory = new SignedJWTFactory(new ECDSASigner(getPrivateKey()));
 
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
 
+        when(mockConfigurationService.getParameterValue("JwtTtlUnit")).thenReturn("SECONDS");
+        VerifiableCredentialClaimsSetBuilder verifiableCredentialClaimsSetBuilder =
+                new VerifiableCredentialClaimsSetBuilder(
+                        mockConfigurationService, Clock.systemUTC());
         verifiableCredentialService =
                 new VerifiableCredentialService(
-                        signedJwtFactory, mockConfigurationService, objectMapper);
+                        signedJwtFactory,
+                        mockConfigurationService,
+                        objectMapper,
+                        verifiableCredentialClaimsSetBuilder);
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSimulatedMaxJWTTTL")
+    void testWithinExpiryTimeVC(long maxJWTTTL)
+            throws JOSEException, JsonProcessingException, ParseException {
+        JsonNode claimsSet = setupTest(1, maxJWTTTL);
+
+        long notBeforeTime = claimsSet.get("nbf").asLong();
+        final long expirationTime = claimsSet.get("exp").asLong();
+        assertEquals(expirationTime, notBeforeTime + maxJWTTTL);
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSimulatedMaxJWTTTL")
+    void testExceedsExpiryTimeVC(long maxJWTTTL)
+            throws JOSEException, JsonProcessingException, ParseException {
+        JsonNode claimsSet = setupTest(1, maxJWTTTL);
+
+        long notBeforeTime = claimsSet.get("nbf").asLong();
+        final long expirationTime = claimsSet.get("exp").asLong();
+        assertTrue(expirationTime < notBeforeTime + maxJWTTTL + 10L);
     }
 
     @ParameterizedTest
     @MethodSource("getAddressCount")
     void testGenerateSignedVerifiableCredentialJWTWithAddressCount(int addressCount)
+            throws JOSEException, JsonProcessingException, ParseException {
+
+        JsonNode claimsSet = setupTest(addressCount, 100L);
+
+        long notBeforeTime = claimsSet.get("nbf").asLong();
+        final long expirationTime = claimsSet.get("exp").asLong();
+        assertEquals(expirationTime, notBeforeTime + 100L);
+    }
+
+    private JsonNode setupTest(int addressCount, long maxExpiryTime)
             throws JOSEException, JsonProcessingException, ParseException {
         FraudResultItem fraudResultItem =
                 new FraudResultItem(UUID.randomUUID(), List.of("A01"), 1, "90");
@@ -80,7 +119,7 @@ class VerifiableCredentialServiceTest implements TestFixtures {
 
         when(mockConfigurationService.getVerifiableCredentialIssuer())
                 .thenReturn(UNIT_TEST_VC_ISSUER);
-        when(mockConfigurationService.getMaxJwtTtl()).thenReturn(UNIT_TEST_MAX_JWT_TTL);
+        when(mockConfigurationService.getMaxJwtTtl()).thenReturn(maxExpiryTime);
 
         SignedJWT signedJWT =
                 verifiableCredentialService.generateSignedVerifiableCredentialJwt(
@@ -156,12 +195,18 @@ class VerifiableCredentialServiceTest implements TestFixtures {
         assertEquals(UNIT_TEST_VC_ISSUER, claimsSet.get("iss").textValue());
         assertEquals(UNIT_TEST_SUBJECT, claimsSet.get("sub").textValue());
 
-        long notBeforeTime = claimsSet.get("nbf").asLong();
-        final long expirationTime = claimsSet.get("exp").asLong();
-        assertEquals(expirationTime, notBeforeTime + UNIT_TEST_MAX_JWT_TTL);
-
         ECDSAVerifier ecVerifier = new ECDSAVerifier(ECKey.parse(TestFixtures.EC_PUBLIC_JWK_1));
         assertTrue(signedJWT.verify(ecVerifier));
+
+        return claimsSet;
+    }
+
+    private static long[] getSimulatedMaxJWTTTL() {
+        return new long[] {
+            3600L, // 1 hour
+            1814400L, // 3 weeks
+            15780000L // 6 months
+        };
     }
 
     private static int[] getAddressCount() {

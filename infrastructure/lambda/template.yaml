@@ -115,11 +115,20 @@ Mappings:
 
   MaxJwtTtlMapping:
     Environment:
-      dev: "7200" # 2 hrs
-      build: "7200"
-      staging: "7200"
-      integration: "7200"
-      production: "7200"
+      dev: "6"
+      build: "6"
+      staging: "6"
+      integration: "6"
+      production: "2"
+
+  # Permitted values: SECONDS,MINUTES,HOURS,DAYS,MONTHS,YEARS
+  JwtTtlUnitMapping:
+    Environment:
+      dev: MONTHS
+      build: MONTHS
+      staging: MONTHS
+      integration: MONTHS
+      production: HOURS
 
   FraudCriAudienceMapping:
     Environment:
@@ -136,6 +145,8 @@ Mappings:
       staging: "true"
       integration: "true"
       production: "true"
+
+
 
 Resources:
 
@@ -450,6 +461,7 @@ Resources:
             Resource:
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/FraudTableName"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/MaxJwtTtl"
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/JwtTtlUnit"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/contraindicationMappings"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/verifiableCredentialKmsSigningKeyId"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/SessionTableName"
@@ -575,7 +587,7 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/MaxJwtTtl"
       Type: String
-      Value: !FindInMap [MaxJwtTtlMapping, Environment, !Ref 'Environment']
+      Value: !FindInMap [MaxJwtTtlMapping, Environment, !Ref Environment]
       Description: default time to live for an JWT in (seconds)
 
   FraudCriAudienceParameter:
@@ -593,6 +605,14 @@ Resources:
       Type: String
       Value: !FindInMap [ FraudCriPepEnabledMapping, Environment, !Ref 'Environment' ]
       Description: The fraud PEP enabled feature toggle
+
+  JwtTtlUnitParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/JwtTtlUnit"
+      Type: String
+      Value: !FindInMap [ JwtTtlUnitMapping, Environment, !Ref Environment ]
+      Description: The unit for the time-to-live for an JWT e.g. (MONTHS)
 
   LoggingKmsKey:
     Type: AWS::KMS::Key
