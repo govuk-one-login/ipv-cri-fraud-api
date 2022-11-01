@@ -148,7 +148,7 @@ Resources:
   PublicFraudApi:
     Type: AWS::Serverless::Api
     Properties:
-      Description: Public Fraud CRI API
+      Description: Public Fraud CRI API with metrics
       MethodSettings:
         - LoggingLevel: INFO
           ResourcePath: '/*'
@@ -230,7 +230,7 @@ Resources:
   PrivateFraudApi:
     Type: AWS::Serverless::Api
     Properties:
-      Description: Private Fraud CRI API
+      Description: Private Fraud CRI API with metrics
       MethodSettings:
         - LoggingLevel: INFO
           ResourcePath: '/*'
