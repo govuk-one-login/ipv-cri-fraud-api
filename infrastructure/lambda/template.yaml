@@ -296,15 +296,6 @@ Resources:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PublicFraudApi}-public-AccessLogs
       RetentionInDays: 365
 
-  ### CSLS to be retired
-  PublicFraudApiAccessLogGroupSubscriptionFilter:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
-    Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
-      FilterPattern: ""
-      LogGroupName: !Ref PublicFraudApiAccessLogGroup
-
   PublicFraudApiAccessLogGroupSubscriptionFilterCsls:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsNotDevEnvironment
@@ -318,15 +309,6 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PrivateFraudApi}-private-AccessLogs
       RetentionInDays: 365
-
-  ### CSLS to be retired
-  PrivateFraudApiAccessLogGroupSubscriptionFilter:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
-    Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
-      FilterPattern: ""
-      LogGroupName: !Ref PrivateFraudApiAccessLogGroup
 
   PrivateFraudApiAccessLogGroupSubscriptionFilterCsls:
     Type: AWS::Logs::SubscriptionFilter
@@ -414,15 +396,6 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${IdentityCheckingFunction}"
       RetentionInDays: 30
 
-  ### CSLS to be retired
-  IdentityCheckingFunctionLogGroupSubscriptionFilter:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
-    Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
-      FilterPattern: ""
-      LogGroupName: !Ref IdentityCheckingFunctionLogGroup
-
   IdentityCheckingFunctionLogGroupSubscriptionFilterCsls:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsNotDevEnvironment
@@ -493,15 +466,6 @@ Resources:
     Properties:
       LogGroupName: !Sub "/aws/lambda/${IssueCredentialFunction}"
       RetentionInDays: 30
-
-  ### CSLS to be retired
-  IssueCredentialFunctionLogGroupSubscriptionFilter:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
-    Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prod"
-      FilterPattern: ""
-      LogGroupName: !Ref IssueCredentialFunctionLogGroup
 
   IssueCredentialFunctionLogGroupSubscriptionFilterCsls:
     Type: AWS::Logs::SubscriptionFilter
