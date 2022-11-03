@@ -136,6 +136,7 @@ components:
           type: "string"
           minLength: 1
           example: "ipv-core-stub"
+          description: "client id calling the cri"
         request:
           type: "string"
     AuthorizationResponse:
