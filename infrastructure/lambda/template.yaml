@@ -631,9 +631,9 @@ Resources:
       AlarmDescription: !Sub Fraud ${Environment} lambda errors
       ActionsEnabled: true
       AlarmActions:
-        - !ImportValue core-infrastructure-AlarmTopic
+        - !Ref AlarmTopicFraud
       OKActions:
-        - !ImportValue core-infrastructure-AlarmTopic
+        - !Ref AlarmTopicFraud
       InsufficientDataActions: []
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -652,9 +652,9 @@ Resources:
       AlarmDescription: !Sub Fraud ${Environment} API Gateway 5XX errors
       ActionsEnabled: true
       AlarmActions:
-        - !ImportValue core-infrastructure-AlarmTopic
+        - !Ref AlarmTopicFraud
       OKActions:
-        - !ImportValue core-infrastructure-AlarmTopic
+        - !Ref AlarmTopicFraud
       InsufficientDataActions: []
       Dimensions: []
       DatapointsToAlarm: 3
@@ -696,9 +696,9 @@ Resources:
       AlarmDescription: !Sub Fraud ${Environment} API Gateway 4XX errors
       ActionsEnabled: true
       AlarmActions:
-        - !ImportValue core-infrastructure-AlarmTopic
+        - !Ref AlarmTopicFraud
       OKActions:
-        - !ImportValue core-infrastructure-AlarmTopic
+        - !Ref AlarmTopicFraud
       InsufficientDataActions: []
       Dimensions: []
       DatapointsToAlarm: 3
@@ -733,6 +733,47 @@ Resources:
                   Value: !Sub "${AWS::StackName}-PrivateFraudApi"
             Period: 300
             Stat: Sum
+
+  ####################################################################
+  #                                                                  #
+  # Alarm setup                                                      #
+  #                                                                  #
+  ####################################################################
+
+  AlarmTopicFraud:
+    Type: AWS::SNS::Topic
+    Metadata:
+      SamResourceId: AlarmTopicFraud
+  AlarmTopicSubscriptionPagerDutyFraud:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn:
+        Ref: AlarmTopicFraud
+      Endpoint:
+        Fn::Sub: '{{resolve:ssm:/alerting/pagerduty-fraud/url}}'
+      Protocol: https
+    Metadata:
+      SamResourceId: AlarmTopicSubscriptionPagerDutyFraud
+  AlarmPublishToTopicPolicyFraud:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - Ref: AlarmTopicFraud
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sns:Publish
+            Resource:
+              Ref: AlarmTopicFraud
+            Principal:
+              Service: cloudwatch.amazonaws.com
+            Condition:
+              ArnLike:
+                AWS:SourceArn:
+                  Fn::Sub: arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*
+    Metadata:
+      SamResourceId: AlarmPublishToTopicPolicyFraud
 
 Outputs:
   StackName:
