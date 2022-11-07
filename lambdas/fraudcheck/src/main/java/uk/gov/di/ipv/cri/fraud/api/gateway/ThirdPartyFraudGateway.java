@@ -11,6 +11,7 @@ import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PEPRequest;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.ClientResponsePayload;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.IdentityVerificationResponse;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.PEPResponse;
 import uk.gov.di.ipv.cri.fraud.api.util.SleepHelper;
@@ -153,10 +154,12 @@ public class ThirdPartyFraudGateway {
             String responseBody = httpResponse.body();
             if (pepEnabled) {
                 PEPResponse response = objectMapper.readValue(responseBody, PEPResponse.class);
+
                 return responseMapper.mapPEPResponse(response);
             } else {
                 IdentityVerificationResponse response =
                         objectMapper.readValue(responseBody, IdentityVerificationResponse.class);
+
                 return responseMapper.mapIdentityVerificationResponse(response);
             }
         } else {

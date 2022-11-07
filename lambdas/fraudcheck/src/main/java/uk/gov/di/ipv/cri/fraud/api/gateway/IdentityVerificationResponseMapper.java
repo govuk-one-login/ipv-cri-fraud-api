@@ -101,8 +101,11 @@ public class IdentityVerificationResponseMapper {
                         .collect(Collectors.toCollection(() -> fraudCodes));
             }
 
+            Integer decisionScore = getDecisionScore(decisionElements, "Fraud");
+
             fraudCheckResult.setThirdPartyFraudCodes(
                     fraudCodes.toArray(fraudCodes.toArray(String[]::new)));
+            fraudCheckResult.setDecisionScore(String.valueOf(decisionScore));
 
             eventProbe.counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO_VALIDATION_PASS);
         } else {
@@ -141,6 +144,8 @@ public class IdentityVerificationResponseMapper {
                         .collect(Collectors.toCollection(() -> fraudCodes));
             }
 
+            getDecisionScore(decisionElements, "PEP");
+
             fraudCheckResult.setThirdPartyFraudCodes(
                     fraudCodes.toArray(fraudCodes.toArray(String[]::new)));
 
@@ -173,5 +178,16 @@ public class IdentityVerificationResponseMapper {
         return StringUtils.isBlank(input)
                 ? IV_ERROR_RESPONSE_ERROR_MESSAGE_DEFAULT_FIELD_VALUE_IF_BLANK
                 : input;
+    }
+
+    private Integer getDecisionScore(List<DecisionElement> decisionElements, String checkType) {
+        if (!decisionElements.isEmpty()) {
+            Integer decisionScore = decisionElements.get(0).getScore();
+            LOGGER.info("{} decision score = {}", checkType, decisionScore);
+            return decisionScore;
+        } else {
+            LOGGER.info("No decision elements");
+        }
+        return null;
     }
 }
