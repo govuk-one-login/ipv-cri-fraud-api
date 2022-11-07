@@ -154,13 +154,11 @@ public class ThirdPartyFraudGateway {
             String responseBody = httpResponse.body();
             if (pepEnabled) {
                 PEPResponse response = objectMapper.readValue(responseBody, PEPResponse.class);
-                ClientResponsePayload clientResponsePayload = response.getClientResponsePayload();
 
                 return responseMapper.mapPEPResponse(response);
             } else {
                 IdentityVerificationResponse response =
                         objectMapper.readValue(responseBody, IdentityVerificationResponse.class);
-                ClientResponsePayload clientResponsePayload = response.getClientResponsePayload();
 
                 return responseMapper.mapIdentityVerificationResponse(response);
             }
