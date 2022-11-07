@@ -10,6 +10,7 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
+import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PEPRequest;
@@ -48,6 +49,8 @@ class ThirdPartyFraudGatewayTest {
         private final ObjectMapper objectMapper;
         private final HmacGenerator hmacGenerator;
         private final String experianEndpointUrl;
+        private final SleepHelper sleepHelper;
+        private final EventProbe eventProbe;
 
         private ExperianGatewayConstructorArgs(
                 HttpClient httpClient,
@@ -55,7 +58,9 @@ class ThirdPartyFraudGatewayTest {
                 IdentityVerificationResponseMapper responseMapper,
                 ObjectMapper objectMapper,
                 HmacGenerator hmacGenerator,
-                String experianEndpointUrl) {
+                String experianEndpointUrl,
+                SleepHelper sleepHelper,
+                EventProbe eventProbe) {
 
             this.httpClient = httpClient;
             this.requestMapper = requestMapper;
@@ -63,6 +68,8 @@ class ThirdPartyFraudGatewayTest {
             this.objectMapper = objectMapper;
             this.hmacGenerator = hmacGenerator;
             this.experianEndpointUrl = experianEndpointUrl;
+            this.sleepHelper = sleepHelper;
+            this.eventProbe = eventProbe;
         }
     }
 
@@ -75,6 +82,7 @@ class ThirdPartyFraudGatewayTest {
     @Mock private ObjectMapper mockObjectMapper;
     @Mock private HmacGenerator mockHmacGenerator;
     @Mock private SleepHelper sleepHelper;
+    @Mock private EventProbe eventProbe;
 
     @BeforeEach
     void setUp() {
@@ -86,7 +94,8 @@ class ThirdPartyFraudGatewayTest {
                         mockObjectMapper,
                         mockHmacGenerator,
                         TEST_ENDPOINT_URL,
-                        sleepHelper);
+                        sleepHelper,
+                        eventProbe);
     }
 
     @Test
@@ -472,14 +481,24 @@ class ThirdPartyFraudGatewayTest {
         Map<String, ExperianGatewayConstructorArgs> testCases =
                 Map.of(
                         "httpClient must not be null",
-                        new ExperianGatewayConstructorArgs(null, null, null, null, null, null),
+                        new ExperianGatewayConstructorArgs(
+                                null, null, null, null, null, null, null, null),
                         "requestMapper must not be null",
                         new ExperianGatewayConstructorArgs(
-                                Mockito.mock(HttpClient.class), null, null, null, null, null),
+                                Mockito.mock(HttpClient.class),
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null),
                         "responseMapper must not be null",
                         new ExperianGatewayConstructorArgs(
                                 Mockito.mock(HttpClient.class),
                                 Mockito.mock(IdentityVerificationRequestMapper.class),
+                                null,
+                                null,
                                 null,
                                 null,
                                 null,
@@ -491,6 +510,8 @@ class ThirdPartyFraudGatewayTest {
                                 Mockito.mock(IdentityVerificationResponseMapper.class),
                                 null,
                                 null,
+                                null,
+                                null,
                                 null),
                         "hmacGenerator must not be null",
                         new ExperianGatewayConstructorArgs(
@@ -498,6 +519,8 @@ class ThirdPartyFraudGatewayTest {
                                 Mockito.mock(IdentityVerificationRequestMapper.class),
                                 Mockito.mock(IdentityVerificationResponseMapper.class),
                                 Mockito.mock(ObjectMapper.class),
+                                null,
+                                null,
                                 null,
                                 null),
                         "crossCoreApiConfig must not be null",
@@ -507,6 +530,28 @@ class ThirdPartyFraudGatewayTest {
                                 Mockito.mock(IdentityVerificationResponseMapper.class),
                                 Mockito.mock(ObjectMapper.class),
                                 Mockito.mock(HmacGenerator.class),
+                                null,
+                                null,
+                                null),
+                        "sleepHelper must not be null",
+                        new ExperianGatewayConstructorArgs(
+                                Mockito.mock(HttpClient.class),
+                                Mockito.mock(IdentityVerificationRequestMapper.class),
+                                Mockito.mock(IdentityVerificationResponseMapper.class),
+                                Mockito.mock(ObjectMapper.class),
+                                Mockito.mock(HmacGenerator.class),
+                                TEST_ENDPOINT_URL,
+                                null,
+                                null),
+                        "eventProbe must not be null",
+                        new ExperianGatewayConstructorArgs(
+                                Mockito.mock(HttpClient.class),
+                                Mockito.mock(IdentityVerificationRequestMapper.class),
+                                Mockito.mock(IdentityVerificationResponseMapper.class),
+                                Mockito.mock(ObjectMapper.class),
+                                Mockito.mock(HmacGenerator.class),
+                                TEST_ENDPOINT_URL,
+                                Mockito.mock(SleepHelper.class),
                                 null));
 
         testCases.forEach(
@@ -520,7 +565,9 @@ class ThirdPartyFraudGatewayTest {
                                                 constructorArgs.responseMapper,
                                                 constructorArgs.objectMapper,
                                                 constructorArgs.hmacGenerator,
-                                                constructorArgs.experianEndpointUrl),
+                                                constructorArgs.experianEndpointUrl,
+                                                constructorArgs.sleepHelper,
+                                                constructorArgs.eventProbe),
                                 errorMessage));
     }
 

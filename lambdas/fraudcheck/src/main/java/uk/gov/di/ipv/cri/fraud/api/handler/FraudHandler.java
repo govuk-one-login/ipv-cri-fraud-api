@@ -38,13 +38,14 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_IDENTITY_CHECK_COMPLETED_OK;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.TODO_REMOVE_BK_COMPAT_M1;
+
 public class FraudHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
     private static final Logger LOGGER = LogManager.getLogger();
-
-    private static final String LAMBDA_NAME = "fraud_issue_credential";
-
     private final IdentityVerificationService identityVerificationService;
     private final ObjectMapper objectMapper;
     private final EventProbe eventProbe;
@@ -131,9 +132,11 @@ public class FraudHandler
             if (!result.isSuccess()) {
                 LOGGER.info("Third party failed to assert identity. Error {}", result.getError());
 
-                if (result.getError().equals("IdentityValidationError")) {
+                if (result.getError().equals("PersonIdentityValidationError")) {
                     LOGGER.error(String.join(",", result.getValidationErrors()));
                 }
+
+                eventProbe.counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR);
 
                 return ApiGatewayResponseGenerator.proxyJsonResponse(
                         HttpStatusCode.INTERNAL_SERVER_ERROR,
@@ -141,7 +144,7 @@ public class FraudHandler
             }
             LOGGER.info("Identity verified.");
 
-            eventProbe.counterMetric(LAMBDA_NAME);
+            eventProbe.counterMetric(TODO_REMOVE_BK_COMPAT_M1);
 
             LOGGER.info("Generating authorization code...");
             sessionService.createAuthorizationCode(sessionItem);
@@ -157,10 +160,14 @@ public class FraudHandler
             dataStore.create(fraudResultItem);
             LOGGER.info("Fraud results saved.");
 
+            // Lambda Complete No Error
+            eventProbe.counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_OK);
+
             return ApiGatewayResponseGenerator.proxyJsonResponse(HttpStatusCode.OK, result);
         } catch (Exception e) {
             LOGGER.warn("Exception while handling lambda {}", context.getFunctionName());
-            eventProbe.log(Level.ERROR, e).counterMetric(LAMBDA_NAME, 0d);
+            eventProbe.counterMetric(TODO_REMOVE_BK_COMPAT_M1, 0d);
+            eventProbe.log(Level.ERROR, e).counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR);
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorResponse.GENERIC_SERVER_ERROR);
         }

@@ -6,6 +6,7 @@ import software.amazon.lambda.powertools.parameters.ParamManager;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.common.library.service.AuditEventFactory;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
+import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.gateway.*;
 
 import java.io.IOException;
@@ -25,9 +26,12 @@ public class ServiceFactory {
     private final HttpClient httpClient;
     private final AuditService auditService;
 
+    private final EventProbe eventProbe;
+
     public ServiceFactory(ObjectMapper objectMapper)
             throws NoSuchAlgorithmException, InvalidKeyException, IOException {
         this.objectMapper = objectMapper;
+        this.eventProbe = new EventProbe();
         this.personIdentityValidator = new PersonIdentityValidator();
         this.configurationService = createConfigurationService();
         this.sslContextFactory =
@@ -43,6 +47,7 @@ public class ServiceFactory {
     @ExcludeFromGeneratedCoverageReport
     ServiceFactory(
             ObjectMapper objectMapper,
+            EventProbe eventProbe,
             ConfigurationService configurationService,
             SSLContextFactory sslContextFactory,
             ContraindicationMapper contraindicationMapper,
@@ -51,6 +56,7 @@ public class ServiceFactory {
             AuditService auditService)
             throws NoSuchAlgorithmException, InvalidKeyException {
         this.objectMapper = objectMapper;
+        this.eventProbe = eventProbe;
         this.configurationService = configurationService;
         this.sslContextFactory = sslContextFactory;
         this.contraindicationMapper = contraindicationMapper;
@@ -80,22 +86,24 @@ public class ServiceFactory {
 
         ThirdPartyFraudGateway thirdPartyGateway =
                 new ThirdPartyFraudGateway(
-                        this.httpClient,
+                        httpClient,
                         new IdentityVerificationRequestMapper(
                                 this.configurationService.getTenantId()),
-                        new IdentityVerificationResponseMapper(),
+                        new IdentityVerificationResponseMapper(eventProbe),
                         this.objectMapper,
-                        new HmacGenerator(this.configurationService.getHmacKey()),
-                        this.configurationService.getEndpointUrl());
+                        new HmacGenerator(configurationService.getHmacKey()),
+                        configurationService.getEndpointUrl(),
+                        eventProbe);
 
         final IdentityScoreCalculator identityScoreCalculator = new IdentityScoreCalculator();
         return new IdentityVerificationService(
                 thirdPartyGateway,
-                this.personIdentityValidator,
-                this.contraindicationMapper,
+                personIdentityValidator,
+                contraindicationMapper,
                 identityScoreCalculator,
                 auditService,
-                configurationService);
+                configurationService,
+                eventProbe);
     }
 
     public AuditService getAuditService() {

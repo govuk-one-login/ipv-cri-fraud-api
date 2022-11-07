@@ -2,6 +2,11 @@ package uk.gov.di.ipv.cri.fraud.api.gateway;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.*;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
@@ -13,13 +18,25 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.verify;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_FRAUD_RESPONSE_TYPE_ERROR;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO_VALIDATION_FAIL;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO_VALIDATION_PASS;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_PEP_RESPONSE_TYPE_ERROR;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_PEP_RESPONSE_TYPE_INFO;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_PEP_RESPONSE_TYPE_INFO_VALIDATION_FAIL;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_PEP_RESPONSE_TYPE_INFO_VALIDATION_PASS;
 
+@ExtendWith(MockitoExtension.class)
 class IdentityVerificationResponseMapperTest {
+    @Mock private EventProbe mockEventProbe;
     private IdentityVerificationResponseMapper responseMapper;
 
     @BeforeEach
     void setup() {
-        this.responseMapper = new IdentityVerificationResponseMapper();
+        this.responseMapper = new IdentityVerificationResponseMapper(mockEventProbe);
     }
 
     @Test
@@ -43,6 +60,11 @@ class IdentityVerificationResponseMapperTest {
                 this.responseMapper.mapIdentityVerificationResponse(
                         testIdentityVerificationResponse);
 
+        InOrder inOrder = inOrder(mockEventProbe);
+        inOrder.verify(mockEventProbe).counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO);
+        inOrder.verify(mockEventProbe)
+                .counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO_VALIDATION_PASS);
+
         assertNotNull(fraudCheckResult);
         assertTrue(fraudCheckResult.isExecutedSuccessfully());
         assertNull(fraudCheckResult.getErrorMessage());
@@ -60,6 +82,11 @@ class IdentityVerificationResponseMapperTest {
         FraudCheckResult fraudCheckResult =
                 this.responseMapper.mapIdentityVerificationResponse(
                         testIdentityVerificationResponse);
+
+        InOrder inOrder = inOrder(mockEventProbe);
+        inOrder.verify(mockEventProbe).counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO);
+        inOrder.verify(mockEventProbe)
+                .counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO_VALIDATION_FAIL);
 
         final String EXPECTED_ERROR =
                 IdentityVerificationResponseMapper.IV_INFO_RESPONSE_VALIDATION_FAILED_MSG;
@@ -87,6 +114,8 @@ class IdentityVerificationResponseMapperTest {
         FraudCheckResult fraudCheckResult =
                 this.responseMapper.mapIdentityVerificationResponse(
                         testIdentityVerificationResponse);
+
+        verify(mockEventProbe).counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_ERROR);
 
         assertEquals(responseHeader, testIdentityVerificationResponse.getResponseHeader());
         assertEquals(TYPE, testIdentityVerificationResponse.getResponseHeader().getResponseType());
@@ -128,6 +157,8 @@ class IdentityVerificationResponseMapperTest {
                 this.responseMapper.mapIdentityVerificationResponse(
                         testIdentityVerificationResponse);
 
+        verify(mockEventProbe).counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_ERROR);
+
         assertEquals(responseHeader, testIdentityVerificationResponse.getResponseHeader());
         assertEquals(TYPE, testIdentityVerificationResponse.getResponseHeader().getResponseType());
         assertEquals(
@@ -167,6 +198,8 @@ class IdentityVerificationResponseMapperTest {
         FraudCheckResult fraudCheckResult =
                 this.responseMapper.mapIdentityVerificationResponse(
                         testIdentityVerificationResponse);
+
+        verify(mockEventProbe).counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_ERROR);
 
         assertEquals(responseHeader, testIdentityVerificationResponse.getResponseHeader());
         assertEquals(TYPE, testIdentityVerificationResponse.getResponseHeader().getResponseType());
@@ -208,6 +241,8 @@ class IdentityVerificationResponseMapperTest {
                 this.responseMapper.mapIdentityVerificationResponse(
                         testIdentityVerificationResponse);
 
+        verify(mockEventProbe).counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_ERROR);
+
         assertEquals(responseHeader, testIdentityVerificationResponse.getResponseHeader());
         assertEquals(TYPE, testIdentityVerificationResponse.getResponseHeader().getResponseType());
         assertEquals(
@@ -248,6 +283,8 @@ class IdentityVerificationResponseMapperTest {
         FraudCheckResult fraudCheckResult =
                 this.responseMapper.mapIdentityVerificationResponse(
                         testIdentityVerificationResponse);
+
+        verify(mockEventProbe).counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_ERROR);
 
         assertEquals(responseHeader, testIdentityVerificationResponse.getResponseHeader());
         assertEquals(TYPE, testIdentityVerificationResponse.getResponseHeader().getResponseType());
@@ -291,6 +328,8 @@ class IdentityVerificationResponseMapperTest {
                 this.responseMapper.mapIdentityVerificationResponse(
                         testIdentityVerificationResponse);
 
+        verify(mockEventProbe).counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_ERROR);
+
         assertEquals(responseHeader, testIdentityVerificationResponse.getResponseHeader());
         assertEquals(TYPE, testIdentityVerificationResponse.getResponseHeader().getResponseType());
         assertEquals(
@@ -333,6 +372,8 @@ class IdentityVerificationResponseMapperTest {
                 this.responseMapper.mapIdentityVerificationResponse(
                         testIdentityVerificationResponse);
 
+        verify(mockEventProbe).counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_ERROR);
+
         assertEquals(responseHeader, testIdentityVerificationResponse.getResponseHeader());
         assertEquals(TYPE, testIdentityVerificationResponse.getResponseHeader().getResponseType());
         assertEquals(
@@ -368,8 +409,12 @@ class IdentityVerificationResponseMapperTest {
         List<Rule> rules = List.of(rule);
         decisionElement.setRules(rules);
 
-        FraudCheckResult fraudCheckResult =
-                this.responseMapper.mapIdentityVerificationResponse(testPEPResponse);
+        FraudCheckResult fraudCheckResult = this.responseMapper.mapPEPResponse(testPEPResponse);
+
+        InOrder inOrder = inOrder(mockEventProbe);
+        inOrder.verify(mockEventProbe).counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_INFO);
+        inOrder.verify(mockEventProbe)
+                .counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_INFO_VALIDATION_PASS);
 
         assertNotNull(fraudCheckResult);
         assertTrue(fraudCheckResult.isExecutedSuccessfully());
@@ -384,8 +429,12 @@ class IdentityVerificationResponseMapperTest {
 
         testPEPResponse.getResponseHeader().setTenantID(null);
 
-        FraudCheckResult fraudCheckResult =
-                this.responseMapper.mapIdentityVerificationResponse(testPEPResponse);
+        FraudCheckResult fraudCheckResult = this.responseMapper.mapPEPResponse(testPEPResponse);
+
+        InOrder inOrder = inOrder(mockEventProbe);
+        inOrder.verify(mockEventProbe).counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_INFO);
+        inOrder.verify(mockEventProbe)
+                .counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_INFO_VALIDATION_FAIL);
 
         final String EXPECTED_ERROR =
                 IdentityVerificationResponseMapper.IV_INFO_RESPONSE_VALIDATION_FAILED_MSG;
@@ -409,8 +458,9 @@ class IdentityVerificationResponseMapperTest {
 
         testPEPResponse.setResponseHeader(responseHeader);
 
-        FraudCheckResult fraudCheckResult =
-                this.responseMapper.mapIdentityVerificationResponse(testPEPResponse);
+        FraudCheckResult fraudCheckResult = this.responseMapper.mapPEPResponse(testPEPResponse);
+
+        verify(mockEventProbe).counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_ERROR);
 
         assertEquals(responseHeader, testPEPResponse.getResponseHeader());
         assertEquals(TYPE, testPEPResponse.getResponseHeader().getResponseType());
@@ -443,8 +493,9 @@ class IdentityVerificationResponseMapperTest {
 
         testPEPResponse.setResponseHeader(responseHeader);
 
-        FraudCheckResult fraudCheckResult =
-                this.responseMapper.mapIdentityVerificationResponse(testPEPResponse);
+        FraudCheckResult fraudCheckResult = this.responseMapper.mapPEPResponse(testPEPResponse);
+
+        verify(mockEventProbe).counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_ERROR);
 
         assertEquals(responseHeader, testPEPResponse.getResponseHeader());
         assertEquals(TYPE, testPEPResponse.getResponseHeader().getResponseType());
@@ -477,8 +528,9 @@ class IdentityVerificationResponseMapperTest {
 
         testPEPResponse.setResponseHeader(responseHeader);
 
-        FraudCheckResult fraudCheckResult =
-                this.responseMapper.mapIdentityVerificationResponse(testPEPResponse);
+        FraudCheckResult fraudCheckResult = this.responseMapper.mapPEPResponse(testPEPResponse);
+
+        verify(mockEventProbe).counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_ERROR);
 
         assertEquals(responseHeader, testPEPResponse.getResponseHeader());
         assertEquals(TYPE, testPEPResponse.getResponseHeader().getResponseType());
@@ -511,8 +563,9 @@ class IdentityVerificationResponseMapperTest {
 
         testPEPResponse.setResponseHeader(responseHeader);
 
-        FraudCheckResult fraudCheckResult =
-                this.responseMapper.mapIdentityVerificationResponse(testPEPResponse);
+        FraudCheckResult fraudCheckResult = this.responseMapper.mapPEPResponse(testPEPResponse);
+
+        verify(mockEventProbe).counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_ERROR);
 
         assertEquals(responseHeader, testPEPResponse.getResponseHeader());
         assertEquals(TYPE, testPEPResponse.getResponseHeader().getResponseType());
@@ -546,8 +599,9 @@ class IdentityVerificationResponseMapperTest {
 
         testPEPResponse.setResponseHeader(responseHeader);
 
-        FraudCheckResult fraudCheckResult =
-                this.responseMapper.mapIdentityVerificationResponse(testPEPResponse);
+        FraudCheckResult fraudCheckResult = this.responseMapper.mapPEPResponse(testPEPResponse);
+
+        verify(mockEventProbe).counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_ERROR);
 
         assertEquals(responseHeader, testPEPResponse.getResponseHeader());
         assertEquals(TYPE, testPEPResponse.getResponseHeader().getResponseType());
@@ -581,8 +635,9 @@ class IdentityVerificationResponseMapperTest {
 
         testPEPResponse.setResponseHeader(responseHeader);
 
-        FraudCheckResult fraudCheckResult =
-                this.responseMapper.mapIdentityVerificationResponse(testPEPResponse);
+        FraudCheckResult fraudCheckResult = this.responseMapper.mapPEPResponse(testPEPResponse);
+
+        verify(mockEventProbe).counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_ERROR);
 
         assertEquals(responseHeader, testPEPResponse.getResponseHeader());
         assertEquals(TYPE, testPEPResponse.getResponseHeader().getResponseType());
@@ -616,8 +671,9 @@ class IdentityVerificationResponseMapperTest {
 
         testPEPResponse.setResponseHeader(responseHeader);
 
-        FraudCheckResult fraudCheckResult =
-                this.responseMapper.mapIdentityVerificationResponse(testPEPResponse);
+        FraudCheckResult fraudCheckResult = this.responseMapper.mapPEPResponse(testPEPResponse);
+
+        verify(mockEventProbe).counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_ERROR);
 
         assertEquals(responseHeader, testPEPResponse.getResponseHeader());
         assertEquals(TYPE, testPEPResponse.getResponseHeader().getResponseType());
