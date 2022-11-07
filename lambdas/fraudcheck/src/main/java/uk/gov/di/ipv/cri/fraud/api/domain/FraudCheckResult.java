@@ -5,6 +5,7 @@ public class FraudCheckResult {
     private String[] thirdPartyFraudCodes;
     private String errorMessage;
     private String transactionId;
+    private String decisionScore;
 
     public FraudCheckResult() {
         this.thirdPartyFraudCodes = new String[] {};
@@ -40,5 +41,13 @@ public class FraudCheckResult {
 
     public void setTransactionId(String transactionId) {
         this.transactionId = transactionId;
+    }
+
+    public String getDecisionScore() {
+        return decisionScore;
+    }
+
+    public void setDecisionScore(String decisionScore) {
+        this.decisionScore = decisionScore;
     }
 }

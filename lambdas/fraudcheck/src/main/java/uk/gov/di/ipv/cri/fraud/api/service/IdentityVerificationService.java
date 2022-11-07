@@ -16,6 +16,7 @@ import uk.gov.di.ipv.cri.fraud.api.domain.audit.TPREFraudAuditExtension;
 import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyFraudGateway;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -105,6 +106,12 @@ public class IdentityVerificationService {
                             List.of(
                                     this.contraindicationMapper.mapThirdPartyFraudCodes(
                                             fraudCheckResult.getThirdPartyFraudCodes()));
+
+                    LOGGER.info(
+                            "Third party decision score {} and fraud codes {}",
+                            fraudCheckResult.getDecisionScore(),
+                            Arrays.toString(fraudCheckResult.getThirdPartyFraudCodes()));
+
                     int fraudIdentityCheckScore =
                             identityScoreCalculator.calculateIdentityScore(
                                     fraudCheckResult.isExecutedSuccessfully(), false);

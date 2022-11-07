@@ -69,6 +69,7 @@ class IdentityVerificationResponseMapperTest {
         assertTrue(fraudCheckResult.isExecutedSuccessfully());
         assertNull(fraudCheckResult.getErrorMessage());
         assertEquals(1, fraudCheckResult.getThirdPartyFraudCodes().length);
+        assertEquals("90", fraudCheckResult.getDecisionScore());
         assertEquals(rule.getRuleId(), fraudCheckResult.getThirdPartyFraudCodes()[0]);
     }
 
