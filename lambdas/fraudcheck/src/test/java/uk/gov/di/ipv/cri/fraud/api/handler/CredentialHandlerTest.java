@@ -81,6 +81,7 @@ class CredentialHandlerTest {
         testIdentityVerificationResult.setSuccess(true);
         testIdentityVerificationResult.setContraIndicators(new String[] {"A01"});
         testIdentityVerificationResult.setIdentityCheckScore(1);
+        testIdentityVerificationResult.setDecisionScore("90");
 
         APIGatewayProxyRequestEvent mockRequestEvent =
                 Mockito.mock(APIGatewayProxyRequestEvent.class);
@@ -114,7 +115,7 @@ class CredentialHandlerTest {
         assertNotNull(responseEvent);
         assertEquals(200, responseEvent.getStatusCode());
         assertEquals(
-                "{\"success\":true,\"validationErrors\":null,\"error\":null,\"contraIndicators\":[\"A01\"],\"identityCheckScore\":1,\"transactionId\":null}",
+                "{\"success\":true,\"validationErrors\":null,\"error\":null,\"contraIndicators\":[\"A01\"],\"identityCheckScore\":1,\"transactionId\":null,\"decisionScore\":\"90\"}",
                 responseEvent.getBody());
     }
 

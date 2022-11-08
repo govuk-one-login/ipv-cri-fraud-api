@@ -153,7 +153,8 @@ public class FraudHandler
                     new FraudResultItem(
                             UUID.fromString(sessionId),
                             Arrays.asList(result.getContraIndicators()),
-                            result.getIdentityCheckScore());
+                            result.getIdentityCheckScore(),
+                            result.getDecisionScore());
             fraudResultItem.setTransactionId(result.getTransactionId());
 
             LOGGER.info("Saving fraud results...");

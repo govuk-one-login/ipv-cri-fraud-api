@@ -19,6 +19,9 @@ public class Evidence {
     @JsonProperty("ci")
     private List<String> ci;
 
+    @JsonProperty("decisionScore")
+    private String decisionScore;
+
     public String getType() {
         return type;
     }
@@ -49,5 +52,13 @@ public class Evidence {
 
     public void setCi(List<String> ci) {
         this.ci = ci;
+    }
+
+    public String getDecisionScore() {
+        return decisionScore;
+    }
+
+    public void setDecisionScore(String decisionScore) {
+        this.decisionScore = decisionScore;
     }
 }

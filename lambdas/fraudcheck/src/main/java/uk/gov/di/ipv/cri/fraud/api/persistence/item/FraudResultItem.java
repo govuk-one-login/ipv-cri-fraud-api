@@ -12,14 +12,19 @@ public class FraudResultItem {
     private List<String> contraIndicators;
     private Integer identityFraudScore;
     private String transactionId;
+    private String decisionScore;
 
     public FraudResultItem() {}
 
     public FraudResultItem(
-            UUID sessionId, List<String> contraIndicators, Integer identityFraudScore) {
+            UUID sessionId,
+            List<String> contraIndicators,
+            Integer identityFraudScore,
+            String decisionScore) {
         this.sessionId = sessionId;
         this.contraIndicators = contraIndicators;
         this.identityFraudScore = identityFraudScore;
+        this.decisionScore = decisionScore;
     }
 
     @DynamoDbPartitionKey()
@@ -53,5 +58,13 @@ public class FraudResultItem {
 
     public void setTransactionId(String transactionId) {
         this.transactionId = transactionId;
+    }
+
+    public String getDecisionScore() {
+        return decisionScore;
+    }
+
+    public void setDecisionScore(String decisionScore) {
+        this.decisionScore = decisionScore;
     }
 }

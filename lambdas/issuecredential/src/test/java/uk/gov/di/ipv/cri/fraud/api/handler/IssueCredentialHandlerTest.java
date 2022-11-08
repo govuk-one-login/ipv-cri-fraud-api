@@ -76,7 +76,8 @@ class IssueCredentialHandlerTest {
                 FraudPersonIdentityDetailedMapper.generatePersonIdentityDetailed(
                         TestDataCreator.createTestPersonIdentity());
         SessionItem sessionItem = new SessionItem();
-        FraudResultItem fraudResultItem = new FraudResultItem(UUID.randomUUID(), List.of(""), 1);
+        FraudResultItem fraudResultItem =
+                new FraudResultItem(UUID.randomUUID(), List.of(""), 1, "90");
 
         when(mockSessionService.getSessionByAccessToken(accessToken)).thenReturn(sessionItem);
         when(mockPersonIdentityService.getPersonIdentityDetailed(any()))
@@ -136,7 +137,8 @@ class IssueCredentialHandlerTest {
                         TestDataCreator.createTestPersonIdentity());
 
         SessionItem sessionItem = new SessionItem();
-        FraudResultItem fraudResultItem = new FraudResultItem(UUID.randomUUID(), List.of(""), 1);
+        FraudResultItem fraudResultItem =
+                new FraudResultItem(UUID.randomUUID(), List.of(""), 1, "90");
 
         when(mockSessionService.getSessionByAccessToken(accessToken)).thenReturn(sessionItem);
         when(mockPersonIdentityService.getPersonIdentityDetailed(any()))
