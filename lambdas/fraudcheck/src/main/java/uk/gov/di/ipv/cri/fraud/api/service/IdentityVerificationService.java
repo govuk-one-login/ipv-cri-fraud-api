@@ -162,6 +162,8 @@ public class IdentityVerificationService {
 
                     String fraudTransactionId = fraudCheckResult.getTransactionId();
                     String transactionId = fraudTransactionId;
+                    String decisionScore = fraudCheckResult.getDecisionScore();
+
                     LOGGER.info(
                             "Third party transaction ids fraud {} pep {}",
                             fraudTransactionId,
@@ -177,6 +179,7 @@ public class IdentityVerificationService {
                     result.setContraIndicators(combinedContraIndicators.toArray(new String[] {}));
                     result.setIdentityCheckScore(identityCheckScore);
                     result.setTransactionId(transactionId);
+                    result.setDecisionScore(decisionScore);
                     // If fraudCheck succeeded a result can still be returned without pepCheck
                     // succeeding
                     result.setSuccess(fraudCheckResult.isExecutedSuccessfully());

@@ -27,6 +27,7 @@ public class IssueCredentialFraudAuditExtensionUtil {
             evidence.setTxn(fraudResultItem.getTransactionId());
             evidence.setIdentityFraudScore(fraudResultItem.getIdentityFraudScore());
             evidence.setCi(fraudResultItem.getContraIndicators());
+            evidence.setDecisionScore(fraudResultItem.getDecisionScore());
 
             evidenceList.add(evidence);
         }

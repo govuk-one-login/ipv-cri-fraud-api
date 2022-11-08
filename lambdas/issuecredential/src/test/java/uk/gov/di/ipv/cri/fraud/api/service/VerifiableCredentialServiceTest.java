@@ -71,7 +71,8 @@ class VerifiableCredentialServiceTest implements TestFixtures {
     @MethodSource("getAddressCount")
     void testGenerateSignedVerifiableCredentialJWTWithAddressCount(int addressCount)
             throws JOSEException, JsonProcessingException, ParseException {
-        FraudResultItem fraudResultItem = new FraudResultItem(UUID.randomUUID(), List.of("A01"), 1);
+        FraudResultItem fraudResultItem =
+                new FraudResultItem(UUID.randomUUID(), List.of("A01"), 1, "90");
 
         PersonIdentityDetailed personIdentityDetailed =
                 FraudPersonIdentityDetailedMapper.generatePersonIdentityDetailed(

@@ -9,6 +9,7 @@ public class IdentityVerificationResult {
     private String[] contraIndicators;
     private int identityCheckScore;
     private String transactionId;
+    private String decisionScore;
 
     public boolean isSuccess() {
         return success;
@@ -56,5 +57,13 @@ public class IdentityVerificationResult {
 
     public void setTransactionId(String transactionId) {
         this.transactionId = transactionId;
+    }
+
+    public String getDecisionScore() {
+        return decisionScore;
+    }
+
+    public void setDecisionScore(String decisionScore) {
+        this.decisionScore = decisionScore;
     }
 }
