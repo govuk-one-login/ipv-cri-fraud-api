@@ -4,6 +4,8 @@ import com.nimbusds.oauth2.sdk.util.StringUtils;
 import software.amazon.lambda.powertools.parameters.ParamProvider;
 import software.amazon.lambda.powertools.parameters.SecretsProvider;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 import static software.amazon.lambda.powertools.parameters.transform.Transformer.json;
@@ -43,6 +45,8 @@ public class ConfigurationService {
     private final String contraindicationMappings;
     private final String parameterPrefix;
     private final String pepEnabled;
+    private List<String> zeroScoreUcodes;
+    private Integer noFileFoundThreshold;
 
     public ConfigurationService(
             SecretsProvider secretsProvider, ParamProvider paramProvider, String env) {
@@ -65,6 +69,10 @@ public class ConfigurationService {
         this.contraindicationMappings =
                 paramProvider.get(getParameterName("contraindicationMappings"));
         this.fraudResultTableName = paramProvider.get(getParameterName("FraudTableName"));
+        this.zeroScoreUcodes =
+                Arrays.asList(paramProvider.get(getParameterName("zeroScoreUcodes")).split(","));
+        this.noFileFoundThreshold =
+                Integer.valueOf(paramProvider.get(getParameterName("noFileFoundThreshold")));
 
         // *****************************Feature Toggles*******************************
 
@@ -117,6 +125,22 @@ public class ConfigurationService {
 
     public Boolean getPepEnabled() {
         return Boolean.valueOf(pepEnabled);
+    }
+
+    public List<String> getZeroScoreUcodes() {
+        return zeroScoreUcodes;
+    }
+
+    public void setZeroScoreUcodes(List<String> zeroScoreUcodes) {
+        this.zeroScoreUcodes = zeroScoreUcodes;
+    }
+
+    public Integer getNoFileFoundThreshold() {
+        return noFileFoundThreshold;
+    }
+
+    public void setNoFileFoundThreshold(Integer noFileFoundThreshold) {
+        this.noFileFoundThreshold = noFileFoundThreshold;
     }
 
     public String getParameterName(String parameterName) {

@@ -47,7 +47,10 @@ class ConfigurationServiceTest {
                 .thenReturn(endpointValue);
         when(mockParamProvider.get(String.format(KEY_FORMAT, env, thirdPartyIdKey)))
                 .thenReturn(thirdPartyIdValue);
-
+        when(mockParamProvider.get("/null/FraudTableName")).thenReturn("None");
+        when(mockParamProvider.get("/null/contraindicationMappings")).thenReturn("null:null");
+        when(mockParamProvider.get("/null/zeroScoreUcodes")).thenReturn("U001,U002");
+        when(mockParamProvider.get("/null/noFileFoundThreshold")).thenReturn("35");
         when(mockSecretsProvider.get(String.format(KEY_FORMAT, env, hmacKey)))
                 .thenReturn(testHmacKeyValue);
         when(mockSecretsProvider.get(

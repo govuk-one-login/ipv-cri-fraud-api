@@ -95,7 +95,8 @@ public class ServiceFactory {
                         configurationService.getEndpointUrl(),
                         eventProbe);
 
-        final IdentityScoreCalculator identityScoreCalculator = new IdentityScoreCalculator();
+        final IdentityScoreCalculator identityScoreCalculator =
+                new IdentityScoreCalculator(configurationService);
         return new IdentityVerificationService(
                 thirdPartyGateway,
                 personIdentityValidator,

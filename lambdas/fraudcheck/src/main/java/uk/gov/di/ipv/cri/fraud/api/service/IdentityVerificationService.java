@@ -113,8 +113,7 @@ public class IdentityVerificationService {
                             Arrays.toString(fraudCheckResult.getThirdPartyFraudCodes()));
 
                     int fraudIdentityCheckScore =
-                            identityScoreCalculator.calculateIdentityScore(
-                                    fraudCheckResult.isExecutedSuccessfully(), false);
+                            identityScoreCalculator.calculateIdentityScore(fraudCheckResult, false);
                     LOGGER.info(
                             "Fraud check passed successfully. Indicators {}, Score {}",
                             String.join(", ", fraudContraindications),
@@ -134,7 +133,7 @@ public class IdentityVerificationService {
                                                     pepCheckResult.getThirdPartyFraudCodes()));
                             pepIdentityCheckScore =
                                     identityScoreCalculator.calculateIdentityScore(
-                                            fraudCheckResult.isExecutedSuccessfully(),
+                                            fraudCheckResult,
                                             pepCheckResult.isExecutedSuccessfully());
                             pepTransactionId = pepCheckResult.getTransactionId();
                             LOGGER.info(
