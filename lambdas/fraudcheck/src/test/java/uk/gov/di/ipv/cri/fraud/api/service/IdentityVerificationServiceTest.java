@@ -97,12 +97,10 @@ class IdentityVerificationServiceTest {
         when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyPEPCodes))
                 .thenReturn(mappedPEPCodes);
 
-        when(identityScoreCalculator.calculateIdentityScore(
-                        testFraudCheckResult.isExecutedSuccessfully(), false))
+        when(identityScoreCalculator.calculateIdentityScore(testFraudCheckResult, false))
                 .thenReturn(1);
         when(identityScoreCalculator.calculateIdentityScore(
-                        testFraudCheckResult.isExecutedSuccessfully(),
-                        testPEPCheckResult.isExecutedSuccessfully()))
+                        testFraudCheckResult, testPEPCheckResult.isExecutedSuccessfully()))
                 .thenReturn(2);
 
         IdentityVerificationResult result =
@@ -125,12 +123,10 @@ class IdentityVerificationServiceTest {
         verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyFraudCodes);
         verify(mockThirdPartyGateway).performFraudCheck(testPersonIdentity, true);
         verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyPEPCodes);
-        verify(identityScoreCalculator)
-                .calculateIdentityScore(testFraudCheckResult.isExecutedSuccessfully(), false);
+        verify(identityScoreCalculator).calculateIdentityScore(testFraudCheckResult, false);
         verify(identityScoreCalculator)
                 .calculateIdentityScore(
-                        testFraudCheckResult.isExecutedSuccessfully(),
-                        testPEPCheckResult.isExecutedSuccessfully());
+                        testFraudCheckResult, testPEPCheckResult.isExecutedSuccessfully());
     }
 
     @Test
