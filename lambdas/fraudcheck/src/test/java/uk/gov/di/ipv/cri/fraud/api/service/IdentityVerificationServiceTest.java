@@ -65,12 +65,63 @@ class IdentityVerificationServiceTest {
     }
 
     @Test
+    void verifyIdentityShouldReturnResultWhenValidInputProvidedDecisionScoreLessThanThreshold()
+            throws IOException, InterruptedException {
+        PersonIdentity testPersonIdentity = TestDataCreator.createTestPersonIdentity();
+
+        FraudCheckResult testFraudCheckResult = new FraudCheckResult();
+        testFraudCheckResult.setExecutedSuccessfully(true);
+
+        FraudCheckResult testPEPCheckResult = new FraudCheckResult();
+        testPEPCheckResult.setExecutedSuccessfully(true);
+
+        String[] thirdPartyFraudCodes = new String[] {"sample-f-code"};
+        String[] mappedFraudCodes = new String[] {"mapped-f-code"};
+        String[] thirdPartyPEPCodes = new String[] {"sample-p-code"};
+        String[] mappedPEPCodes = new String[] {"mapped-p-code"};
+        testFraudCheckResult.setThirdPartyFraudCodes(thirdPartyFraudCodes);
+        testPEPCheckResult.setThirdPartyFraudCodes(thirdPartyPEPCodes);
+
+        when(personIdentityValidator.validate(testPersonIdentity))
+                .thenReturn(ValidationResult.createValidResult());
+
+        when(mockConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
+
+        when(mockThirdPartyGateway.performFraudCheck(testPersonIdentity, false))
+                .thenReturn(testFraudCheckResult);
+        when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyFraudCodes))
+                .thenReturn(mappedFraudCodes);
+
+        when(identityScoreCalculator.calculateIdentityScore(testFraudCheckResult, false))
+                .thenReturn(1);
+
+        IdentityVerificationResult result =
+                this.identityVerificationService.verifyIdentity(
+                        testPersonIdentity, sessionItem, requestHeaders);
+
+        InOrder inOrder = inOrder(mockEventProbe);
+
+        inOrder.verify(mockEventProbe).counterMetric(PERSON_DETAILS_VALIDATION_PASS);
+        inOrder.verify(mockEventProbe).counterMetric(FRAUD_CHECK_REQUEST_SUCCEEDED);
+
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        assertEquals(mappedFraudCodes[0], result.getContraIndicators()[0]);
+        verify(personIdentityValidator).validate(testPersonIdentity);
+        verify(mockThirdPartyGateway).performFraudCheck(testPersonIdentity, false);
+        verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyFraudCodes);
+        verify(identityScoreCalculator).calculateIdentityScore(testFraudCheckResult, false);
+        verify(identityScoreCalculator).calculateIdentityScore(testFraudCheckResult, false);
+    }
+
+    @Test
     void verifyIdentityShouldReturnResultWhenValidInputProvided()
             throws IOException, InterruptedException {
         PersonIdentity testPersonIdentity = TestDataCreator.createTestPersonIdentity();
 
         FraudCheckResult testFraudCheckResult = new FraudCheckResult();
         testFraudCheckResult.setExecutedSuccessfully(true);
+        testFraudCheckResult.setDecisionScore("60");
 
         FraudCheckResult testPEPCheckResult = new FraudCheckResult();
         testPEPCheckResult.setExecutedSuccessfully(true);
