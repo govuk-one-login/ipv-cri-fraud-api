@@ -120,34 +120,44 @@ public class IdentityVerificationService {
                             fraudIdentityCheckScore);
                     eventProbe.counterMetric(FRAUD_CHECK_REQUEST_SUCCEEDED);
 
-                    if (configurationService.getPepEnabled()) {
-                        FraudCheckResult pepCheckResult =
-                                thirdPartyGateway.performFraudCheck(personIdentity, true);
+                    int decisionScore =
+                            fraudCheckResult.getDecisionScore() != null
+                                    ? Integer.valueOf(fraudCheckResult.getDecisionScore())
+                                    : 0;
+                    if (decisionScore > configurationService.getNoFileFoundThreshold()) {
+                        if (configurationService.getPepEnabled()) {
+                            FraudCheckResult pepCheckResult =
+                                    thirdPartyGateway.performFraudCheck(personIdentity, true);
 
-                        if (pepCheckResult.isExecutedSuccessfully()) {
+                            if (pepCheckResult.isExecutedSuccessfully()) {
 
-                            LOGGER.info("Mapping contra indicators from pep response");
-                            pepContraindications =
-                                    List.of(
-                                            this.contraindicationMapper.mapThirdPartyFraudCodes(
-                                                    pepCheckResult.getThirdPartyFraudCodes()));
-                            pepIdentityCheckScore =
-                                    identityScoreCalculator.calculateIdentityScore(
-                                            fraudCheckResult,
-                                            pepCheckResult.isExecutedSuccessfully());
-                            pepTransactionId = pepCheckResult.getTransactionId();
-                            LOGGER.info(
-                                    "Third party pep response {}",
-                                    new ObjectMapper().writeValueAsString(pepCheckResult));
-                            LOGGER.info(
-                                    "Pep check passed successfully. Indicators {}, Score {}",
-                                    String.join(", ", pepContraindications),
-                                    pepIdentityCheckScore);
-                            eventProbe.counterMetric(PEP_CHECK_REQUEST_SUCCEEDED);
-                        } else {
-                            LOGGER.warn("Pep check failed");
-                            eventProbe.counterMetric(PEP_CHECK_REQUEST_FAILED);
+                                LOGGER.info("Mapping contra indicators from pep response");
+                                pepContraindications =
+                                        List.of(
+                                                this.contraindicationMapper.mapThirdPartyFraudCodes(
+                                                        pepCheckResult.getThirdPartyFraudCodes()));
+                                pepIdentityCheckScore =
+                                        identityScoreCalculator.calculateIdentityScore(
+                                                fraudCheckResult,
+                                                pepCheckResult.isExecutedSuccessfully());
+                                pepTransactionId = pepCheckResult.getTransactionId();
+                                LOGGER.info(
+                                        "Third party pep response {}",
+                                        new ObjectMapper().writeValueAsString(pepCheckResult));
+                                LOGGER.info(
+                                        "Pep check passed successfully. Indicators {}, Score {}",
+                                        String.join(", ", pepContraindications),
+                                        pepIdentityCheckScore);
+                                eventProbe.counterMetric(PEP_CHECK_REQUEST_SUCCEEDED);
+                            } else {
+                                LOGGER.warn("Pep check failed");
+                                eventProbe.counterMetric(PEP_CHECK_REQUEST_FAILED);
+                            }
                         }
+                    } else {
+                        LOGGER.info(
+                                "User was file not found with decision score {} so PEP checks have been skipped",
+                                decisionScore);
                     }
 
                     LOGGER.info("Calculating the identity score...");
@@ -161,7 +171,6 @@ public class IdentityVerificationService {
 
                     String fraudTransactionId = fraudCheckResult.getTransactionId();
                     String transactionId = fraudTransactionId;
-                    String decisionScore = fraudCheckResult.getDecisionScore();
 
                     LOGGER.info(
                             "Third party transaction ids fraud {} pep {}",
@@ -178,7 +187,7 @@ public class IdentityVerificationService {
                     result.setContraIndicators(combinedContraIndicators.toArray(new String[] {}));
                     result.setIdentityCheckScore(identityCheckScore);
                     result.setTransactionId(transactionId);
-                    result.setDecisionScore(decisionScore);
+                    result.setDecisionScore(String.valueOf(decisionScore));
                     // If fraudCheck succeeded a result can still be returned without pepCheck
                     // succeeding
                     result.setSuccess(fraudCheckResult.isExecutedSuccessfully());
