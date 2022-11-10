@@ -24,7 +24,9 @@ import java.net.http.HttpResponse;
 import java.util.Objects;
 
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_CREATED;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_ERROR;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_FAIL;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_MAX_RETRIES;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_OK;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_RETRY;
 
@@ -135,6 +137,7 @@ public class ThirdPartyFraudGateway {
             String requestBody = objectMapper.writeValueAsString(apiRequest);
             String requestBodyHmac = hmacGenerator.generateHmac(requestBody);
             HttpRequest request = requestBuilder(requestBody, requestBodyHmac);
+            eventProbe.counterMetric(THIRD_PARTY_REQUEST_CREATED);
 
             LOGGER.info("Submitting fraud check request to third party...");
             HttpResponse<String> httpResponse = sendHTTPRequestRetryIfAllowed(request);
@@ -251,7 +254,16 @@ public class ThirdPartyFraudGateway {
             }
         } while (retry && (tryCount++ < MAX_HTTP_RETRIES));
 
-        LOGGER.info("HTTPRequestRetry Exited lastStatusCode {}", httpResponse.statusCode());
+        int lastStatusCode = httpResponse.statusCode();
+        LOGGER.info("HTTPRequestRetry Exited lastStatusCode {}", lastStatusCode);
+
+        if (lastStatusCode == 200) {
+            eventProbe.counterMetric(THIRD_PARTY_REQUEST_SEND_OK);
+        } else if (tryCount < MAX_HTTP_RETRIES) {
+            eventProbe.counterMetric(THIRD_PARTY_REQUEST_SEND_ERROR);
+        } else {
+            eventProbe.counterMetric(THIRD_PARTY_REQUEST_SEND_MAX_RETRIES);
+        }
 
         return httpResponse;
     }
@@ -259,7 +271,6 @@ public class ThirdPartyFraudGateway {
     private boolean shouldHttpClientRetry(int statusCode) {
         if (statusCode == 200) {
             // OK, Success
-            eventProbe.counterMetric(THIRD_PARTY_REQUEST_SEND_OK);
             return false;
         } else if (statusCode == 429) {
             // Too many recent requests
