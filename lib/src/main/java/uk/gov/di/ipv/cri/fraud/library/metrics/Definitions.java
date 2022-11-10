@@ -41,8 +41,11 @@ public class Definitions {
 
     // HTTP Connection Send (Both)
     public static final String THIRD_PARTY_REQUEST_CREATED = "third_party_requests_created";
-    public static final String THIRD_PARTY_REQUEST_SEND_OK = "third_party_requests_send_ok";
     public static final String THIRD_PARTY_REQUEST_SEND_RETRY = "third_party_requests_send_retry";
+    public static final String THIRD_PARTY_REQUEST_SEND_OK = "third_party_request_send_ok";
+    public static final String THIRD_PARTY_REQUEST_SEND_ERROR = "third_party_request_send_error";
+    public static final String THIRD_PARTY_REQUEST_SEND_MAX_RETRIES =
+            "third_party_request_send_max_retries";
     public static final String THIRD_PARTY_REQUEST_SEND_FAIL =
             "third_party_requests_send_fail"; // IOException
 

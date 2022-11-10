@@ -38,6 +38,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_CREATED;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_ERROR;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_MAX_RETRIES;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_OK;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_RETRY;
 
 @ExtendWith(MockitoExtension.class)
 class ThirdPartyFraudGatewayTest {
@@ -82,7 +87,7 @@ class ThirdPartyFraudGatewayTest {
     @Mock private ObjectMapper mockObjectMapper;
     @Mock private HmacGenerator mockHmacGenerator;
     @Mock private SleepHelper sleepHelper;
-    @Mock private EventProbe eventProbe;
+    @Mock private EventProbe mockEventProbe;
 
     @BeforeEach
     void setUp() {
@@ -95,7 +100,7 @@ class ThirdPartyFraudGatewayTest {
                         mockHmacGenerator,
                         TEST_ENDPOINT_URL,
                         sleepHelper,
-                        eventProbe);
+                        mockEventProbe);
     }
 
     @Test
@@ -124,6 +129,9 @@ class ThirdPartyFraudGatewayTest {
 
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity, false);
+
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_OK);
 
         verify(mockRequestMapper).mapPersonIdentity(personIdentity);
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
@@ -164,6 +172,9 @@ class ThirdPartyFraudGatewayTest {
 
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity, false);
+
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_ERROR);
 
         final String EXPECTED_ERROR =
                 ThirdPartyFraudGateway.HTTP_300_REDIRECT_MESSAGE + MOCK_HTTP_STATUS_CODE;
@@ -210,6 +221,9 @@ class ThirdPartyFraudGatewayTest {
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity, false);
 
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_ERROR);
+
         final String EXPECTED_ERROR =
                 ThirdPartyFraudGateway.HTTP_400_CLIENT_REQUEST_ERROR + MOCK_HTTP_STATUS_CODE;
 
@@ -254,6 +268,10 @@ class ThirdPartyFraudGatewayTest {
 
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity, false);
+
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
+        verify(mockEventProbe, times(7)).counterMetric(THIRD_PARTY_REQUEST_SEND_RETRY);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_MAX_RETRIES);
 
         final String EXPECTED_ERROR =
                 ThirdPartyFraudGateway.HTTP_500_SERVER_ERROR + MOCK_HTTP_STATUS_CODE;
@@ -301,6 +319,9 @@ class ThirdPartyFraudGatewayTest {
 
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity, false);
+
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_ERROR);
 
         final String EXPECTED_ERROR =
                 ThirdPartyFraudGateway.HTTP_UNHANDLED_ERROR + MOCK_HTTP_STATUS_CODE;
@@ -354,6 +375,10 @@ class ThirdPartyFraudGatewayTest {
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity, false);
 
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_RETRY);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_OK);
+
         verify(mockRequestMapper).mapPersonIdentity(personIdentity);
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHmacGenerator).generateHmac(testRequestBody);
@@ -405,6 +430,10 @@ class ThirdPartyFraudGatewayTest {
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity, false);
 
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
+        verify(mockEventProbe, times(7)).counterMetric(THIRD_PARTY_REQUEST_SEND_RETRY);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_OK);
+
         verify(mockRequestMapper).mapPersonIdentity(personIdentity);
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHmacGenerator).generateHmac(testRequestBody);
@@ -453,6 +482,10 @@ class ThirdPartyFraudGatewayTest {
 
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity, false);
+
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
+        verify(mockEventProbe, times(7)).counterMetric(THIRD_PARTY_REQUEST_SEND_RETRY);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_MAX_RETRIES);
 
         final String EXPECTED_ERROR =
                 ThirdPartyFraudGateway.HTTP_500_SERVER_ERROR + MOCK_HTTP_STATUS_CODE;
@@ -596,6 +629,9 @@ class ThirdPartyFraudGatewayTest {
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity, true);
 
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_OK);
+
         verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHmacGenerator).generateHmac(testRequestBody);
@@ -636,6 +672,9 @@ class ThirdPartyFraudGatewayTest {
 
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity, true);
+
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_ERROR);
 
         final String EXPECTED_ERROR =
                 ThirdPartyFraudGateway.HTTP_300_REDIRECT_MESSAGE + MOCK_HTTP_STATUS_CODE;
@@ -683,6 +722,9 @@ class ThirdPartyFraudGatewayTest {
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity, true);
 
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_ERROR);
+
         final String EXPECTED_ERROR =
                 ThirdPartyFraudGateway.HTTP_400_CLIENT_REQUEST_ERROR + MOCK_HTTP_STATUS_CODE;
 
@@ -728,6 +770,10 @@ class ThirdPartyFraudGatewayTest {
 
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity, true);
+
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
+        verify(mockEventProbe, times(7)).counterMetric(THIRD_PARTY_REQUEST_SEND_RETRY);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_MAX_RETRIES);
 
         final String EXPECTED_ERROR =
                 ThirdPartyFraudGateway.HTTP_500_SERVER_ERROR + MOCK_HTTP_STATUS_CODE;
@@ -775,6 +821,9 @@ class ThirdPartyFraudGatewayTest {
 
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity, true);
+
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_ERROR);
 
         final String EXPECTED_ERROR =
                 ThirdPartyFraudGateway.HTTP_UNHANDLED_ERROR + MOCK_HTTP_STATUS_CODE;
@@ -826,6 +875,10 @@ class ThirdPartyFraudGatewayTest {
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity, true);
 
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_RETRY);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_OK);
+
         verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHmacGenerator).generateHmac(testRequestBody);
@@ -875,6 +928,10 @@ class ThirdPartyFraudGatewayTest {
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity, true);
 
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
+        verify(mockEventProbe, times(7)).counterMetric(THIRD_PARTY_REQUEST_SEND_RETRY);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_OK);
+
         verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHmacGenerator).generateHmac(testRequestBody);
@@ -923,6 +980,10 @@ class ThirdPartyFraudGatewayTest {
 
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity, true);
+
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
+        verify(mockEventProbe, times(7)).counterMetric(THIRD_PARTY_REQUEST_SEND_RETRY);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_MAX_RETRIES);
 
         final String EXPECTED_ERROR =
                 ThirdPartyFraudGateway.HTTP_500_SERVER_ERROR + MOCK_HTTP_STATUS_CODE;
