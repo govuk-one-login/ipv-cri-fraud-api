@@ -1,0 +1,12 @@
+version: '3'
+services:
+  allure:
+    image: "frankescobar/allure-docker-service"
+    environment:
+      KEEP_HISTORY: 1
+      SERVER_URL: "http://my-domain.com/allure-docker-service/latest-report"
+    ports:
+      - "5050:5050"
+    volumes:
+      - ${PWD}/target/allure-results:/app/allure-results
+      - ${PWD}/target/allure-reports:/app/default-reports

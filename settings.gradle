@@ -10,6 +10,8 @@ rootProject.name = "di-ipv-cri-fraud-api"
 // Internal CRI Lib
 include "lib"
 
+include "acceptance-tests"
+
 // CRI specific lambdas
 include "issuecredential", "fraudcheck"
 project(':fraudcheck').projectDir = new File('./lambdas/fraudcheck')
