@@ -752,7 +752,7 @@ Resources:
       TopicArn:
         Ref: AlarmTopicFraud
       Endpoint:
-        Fn::Sub: '{{resolve:ssm:/alerting/pagerduty-fraud/url}}'
+        "https://events.pagerduty.com"
       Protocol: https
     Metadata:
       SamResourceId: AlarmTopicSubscriptionPagerDutyFraud
