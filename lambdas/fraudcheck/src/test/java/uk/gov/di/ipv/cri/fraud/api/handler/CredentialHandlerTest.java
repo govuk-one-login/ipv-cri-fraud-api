@@ -81,7 +81,7 @@ class CredentialHandlerTest {
         IdentityVerificationResult testIdentityVerificationResult =
                 new IdentityVerificationResult();
         testIdentityVerificationResult.setSuccess(true);
-        testIdentityVerificationResult.setContraIndicators(new String[] {"A01"});
+        testIdentityVerificationResult.setContraIndicators(List.of("A01"));
         testIdentityVerificationResult.setIdentityCheckScore(1);
         testIdentityVerificationResult.setDecisionScore("90");
         testIdentityVerificationResult.setChecksSucceeded(
@@ -134,7 +134,7 @@ class CredentialHandlerTest {
                 new IdentityVerificationResult();
         testIdentityVerificationResult.setSuccess(false);
         testIdentityVerificationResult.setError(errorMessage);
-        testIdentityVerificationResult.setContraIndicators(new String[] {});
+        testIdentityVerificationResult.setContraIndicators(List.of(""));
         testIdentityVerificationResult.setIdentityCheckScore(0);
 
         APIGatewayProxyRequestEvent mockRequestEvent =

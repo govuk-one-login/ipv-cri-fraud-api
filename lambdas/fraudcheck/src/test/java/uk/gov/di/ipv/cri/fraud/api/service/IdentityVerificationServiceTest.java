@@ -31,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.di.ipv.cri.fraud.library.domain.CheckType.IDENTITY_THEFT_CHECK;
@@ -51,7 +50,6 @@ class IdentityVerificationServiceTest {
     @Mock private ThirdPartyFraudGateway mockThirdPartyGateway;
     @Mock private PersonIdentityValidator personIdentityValidator;
     @Mock private ContraindicationMapper mockContraindicationMapper;
-    @Mock private IdentityScoreCalculator identityScoreCalculator;
     @Mock private AuditService mockAuditService;
     @Mock private SessionItem sessionItem;
     @Mock private Map<String, String> requestHeaders;
@@ -63,12 +61,15 @@ class IdentityVerificationServiceTest {
 
     @BeforeEach
     void setup() {
+        // Tests rely on real IdentityScoreCalculator not mock
+        when(mockConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("zero-score-ucode"));
+
         this.identityVerificationService =
                 new IdentityVerificationService(
                         mockThirdPartyGateway,
                         personIdentityValidator,
                         mockContraindicationMapper,
-                        identityScoreCalculator,
+                        new IdentityScoreCalculator(mockConfigurationService),
                         mockAuditService,
                         mockConfigurationService,
                         mockEventProbe);
@@ -81,6 +82,7 @@ class IdentityVerificationServiceTest {
 
         FraudCheckResult testFraudCheckResult = new FraudCheckResult();
         testFraudCheckResult.setExecutedSuccessfully(true);
+        testFraudCheckResult.setDecisionScore("35");
 
         String[] thirdPartyFraudCodes = new String[] {"sample-f-code"};
         String[] mappedFraudCodes = new String[] {"mapped-f-code"};
@@ -96,9 +98,6 @@ class IdentityVerificationServiceTest {
         when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyFraudCodes))
                 .thenReturn(mappedFraudCodes);
 
-        when(identityScoreCalculator.calculateIdentityScore(testFraudCheckResult, false))
-                .thenReturn(1);
-
         IdentityVerificationResult result =
                 this.identityVerificationService.verifyIdentity(
                         testPersonIdentity, sessionItem, requestHeaders);
@@ -110,13 +109,11 @@ class IdentityVerificationServiceTest {
 
         assertNotNull(result);
         assertTrue(result.isSuccess());
-        assertEquals(mappedFraudCodes[0], result.getContraIndicators()[0]);
+        assertEquals(mappedFraudCodes[0], result.getContraIndicators().get(0));
         verify(personIdentityValidator).validate(testPersonIdentity);
         verify(mockThirdPartyGateway).performFraudCheck(testPersonIdentity, false);
         verify(mockThirdPartyGateway, never()).performFraudCheck(testPersonIdentity, true);
         verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyFraudCodes);
-        verify(identityScoreCalculator, times(1))
-                .calculateIdentityScore(testFraudCheckResult, false);
     }
 
     @Test
@@ -153,12 +150,6 @@ class IdentityVerificationServiceTest {
         when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyPEPCodes))
                 .thenReturn(mappedPEPCodes);
 
-        when(identityScoreCalculator.calculateIdentityScore(testFraudCheckResult, false))
-                .thenReturn(1);
-        when(identityScoreCalculator.calculateIdentityScore(
-                        testFraudCheckResult, testPEPCheckResult.isExecutedSuccessfully()))
-                .thenReturn(2);
-
         IdentityVerificationResult result =
                 this.identityVerificationService.verifyIdentity(
                         testPersonIdentity, sessionItem, requestHeaders);
@@ -172,18 +163,14 @@ class IdentityVerificationServiceTest {
 
         assertNotNull(result);
         assertTrue(result.isSuccess());
-        assertEquals(mappedFraudCodes[0], result.getContraIndicators()[0]);
-        assertEquals(mappedPEPCodes[0], result.getContraIndicators()[1]);
+        assertEquals(mappedFraudCodes[0], result.getContraIndicators().get(0));
+        assertEquals(mappedPEPCodes[0], result.getContraIndicators().get(1));
 
         verify(personIdentityValidator).validate(testPersonIdentity);
         verify(mockThirdPartyGateway).performFraudCheck(testPersonIdentity, false);
         verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyFraudCodes);
         verify(mockThirdPartyGateway).performFraudCheck(testPersonIdentity, true);
         verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyPEPCodes);
-        verify(identityScoreCalculator).calculateIdentityScore(testFraudCheckResult, false);
-        verify(identityScoreCalculator)
-                .calculateIdentityScore(
-                        testFraudCheckResult, testPEPCheckResult.isExecutedSuccessfully());
     }
 
     @Test
@@ -273,21 +260,18 @@ class IdentityVerificationServiceTest {
 
         when(mockConfigurationService.getNoFileFoundThreshold()).thenReturn(noFileFoundThreshold);
 
-        when(mockThirdPartyGateway.performFraudCheck(testPersonIdentity, false))
-                .thenReturn(testFraudCheckResult);
-        when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyFraudCodes))
-                .thenReturn(mappedFraudCodes);
-
-        // Fraud check then Pep check
         if (zeroScoreUCodePresent) {
-            when(identityScoreCalculator.calculateIdentityScore(testFraudCheckResult, false))
-                    .thenReturn(0);
-        } else {
-            when(identityScoreCalculator.calculateIdentityScore(testFraudCheckResult, false))
-                    .thenReturn(1);
+            // Make the sample thirdPartyFraudCodes uCode a zero score one
+            thirdPartyFraudCodes = new String[] {"zero-score-ucode"};
+            testFraudCheckResult.setThirdPartyFraudCodes(thirdPartyFraudCodes);
         }
 
-        // Pep performed scenarios - (score above threhold and no zeroScoreUCode found)
+        when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyFraudCodes))
+                .thenReturn(mappedFraudCodes);
+        when(mockThirdPartyGateway.performFraudCheck(testPersonIdentity, false))
+                .thenReturn(testFraudCheckResult);
+
+        // Pep performed scenarios - (score above threshold and no zeroScoreUCode found)
         if ((expectedDecisionScore > noFileFoundThreshold) && !zeroScoreUCodePresent) {
             // Pep is checked to be enabled
             when(mockConfigurationService.getPepEnabled()).thenReturn(Boolean.TRUE);
@@ -296,10 +280,6 @@ class IdentityVerificationServiceTest {
                     .thenReturn(testPEPCheckResult);
             when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyPEPCodes))
                     .thenReturn(mappedPEPCodes);
-
-            when(identityScoreCalculator.calculateIdentityScore(
-                            testFraudCheckResult, testPEPCheckResult.isExecutedSuccessfully()))
-                    .thenReturn(2);
         }
 
         IdentityVerificationResult result =
@@ -315,16 +295,12 @@ class IdentityVerificationServiceTest {
         assertTrue(result.isSuccess());
 
         // Fraud ucodes
-        assertEquals(mappedFraudCodes[0], result.getContraIndicators()[0]);
+        assertEquals(mappedFraudCodes[0], result.getContraIndicators().get(0));
 
         if ((expectedDecisionScore > noFileFoundThreshold) && !zeroScoreUCodePresent) {
             // Performed for step 2 pep check after fraud has succeeded
             verify(mockThirdPartyGateway).performFraudCheck(testPersonIdentity, true);
             verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyPEPCodes);
-            verify(identityScoreCalculator).calculateIdentityScore(testFraudCheckResult, false);
-            verify(identityScoreCalculator)
-                    .calculateIdentityScore(
-                            testFraudCheckResult, testPEPCheckResult.isExecutedSuccessfully());
 
             InOrder inOrder = inOrder(mockEventProbe);
 
@@ -336,7 +312,7 @@ class IdentityVerificationServiceTest {
                     .counterMetric(IDENTITY_CHECK_SCORE_PREFIX + expectedIdentityFraudScore);
 
             // Pep ucodes are set
-            assertEquals(mappedPEPCodes[0], result.getContraIndicators()[1]);
+            assertEquals(mappedPEPCodes[0], result.getContraIndicators().get(1));
 
             // Checks for DecisionScore > 35 and Pep success
             assertAllChecksSucceed(result.getChecksSucceeded(), result.getChecksFailed());
@@ -354,7 +330,6 @@ class IdentityVerificationServiceTest {
             // Checks for DecisionScore <= 35/zeroScoreUCodePresent and Pep Not done
             assertAllFraudChecksFailAndPepNotPresent(
                     result.getChecksSucceeded(), result.getChecksFailed());
-            ;
         }
 
         assertEquals(expectedIdentityFraudScore, result.getIdentityCheckScore());
@@ -463,10 +438,6 @@ class IdentityVerificationServiceTest {
         when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyFraudCodes))
                 .thenReturn(mappedFraudCodes);
 
-        // Fraud check then Pep check
-        when(identityScoreCalculator.calculateIdentityScore(testFraudCheckResult, false))
-                .thenReturn(1);
-
         // Pep is checked to be enabled
         when(mockConfigurationService.getPepEnabled()).thenReturn(Boolean.TRUE);
 
@@ -494,11 +465,9 @@ class IdentityVerificationServiceTest {
         assertTrue(result.isSuccess());
 
         // Fraud ucodes
-        assertEquals(mappedFraudCodes[0], result.getContraIndicators()[0]);
-
+        assertEquals(mappedFraudCodes[0], result.getContraIndicators().get(0));
         // Performed for step 2 pep check after fraud has succeeded
         verify(mockThirdPartyGateway).performFraudCheck(testPersonIdentity, true);
-        verify(identityScoreCalculator).calculateIdentityScore(testFraudCheckResult, false);
 
         // Checks for DecisionScore > 35 and Pep Fail
         InOrder inOrder = inOrder(mockEventProbe);

@@ -12,7 +12,7 @@ public class Check {
     private String fraudCheck;
 
     @JsonProperty("checkMethod")
-    private String CHECK_METHOD = "data";
+    private String checkMethod = "data";
 
     // Txn is required for IPR Check
     @JsonProperty("txn")
@@ -27,7 +27,7 @@ public class Check {
     }
 
     public String getCheckMethod() {
-        return CHECK_METHOD;
+        return checkMethod;
     }
 
     public String getTxn() {

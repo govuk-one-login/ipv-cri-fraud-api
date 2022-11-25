@@ -34,7 +34,6 @@ import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
@@ -153,7 +152,7 @@ public class FraudHandler
             final FraudResultItem fraudResultItem =
                     new FraudResultItem(
                             UUID.fromString(sessionId),
-                            Arrays.asList(result.getContraIndicators()),
+                            result.getContraIndicators(),
                             result.getIdentityCheckScore(),
                             result.getDecisionScore());
             fraudResultItem.setTransactionId(result.getTransactionId());

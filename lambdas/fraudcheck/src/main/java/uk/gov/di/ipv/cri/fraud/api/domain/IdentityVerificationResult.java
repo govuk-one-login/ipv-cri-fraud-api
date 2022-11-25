@@ -6,7 +6,7 @@ public class IdentityVerificationResult {
     private boolean success;
     private List<String> validationErrors;
     private String error;
-    private String[] contraIndicators;
+    private List<String> contraIndicators;
     private int identityCheckScore;
     private String transactionId;
     private String pepTransactionId;
@@ -32,11 +32,11 @@ public class IdentityVerificationResult {
         this.validationErrors = validationErrors;
     }
 
-    public String[] getContraIndicators() {
+    public List<String> getContraIndicators() {
         return contraIndicators;
     }
 
-    public void setContraIndicators(String[] contraIndicators) {
+    public void setContraIndicators(List<String> contraIndicators) {
         this.contraIndicators = contraIndicators;
     }
 

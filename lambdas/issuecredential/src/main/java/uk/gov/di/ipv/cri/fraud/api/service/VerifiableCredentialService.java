@@ -12,8 +12,8 @@ import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.util.KMSSigner;
 import uk.gov.di.ipv.cri.common.library.util.SignedJWTFactory;
 import uk.gov.di.ipv.cri.common.library.util.VerifiableCredentialClaimsSetBuilder;
-import uk.gov.di.ipv.cri.fraud.api.domain.ThirdPartyAddress;
 import uk.gov.di.ipv.cri.fraud.api.domain.Evidence;
+import uk.gov.di.ipv.cri.fraud.api.domain.ThirdPartyAddress;
 import uk.gov.di.ipv.cri.fraud.api.util.EvidenceHelper;
 import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
 

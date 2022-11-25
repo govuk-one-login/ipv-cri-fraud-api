@@ -12,7 +12,9 @@ import static uk.gov.di.ipv.cri.fraud.library.domain.CheckType.IMPERSONATION_RIS
 
 public class EvidenceHelper {
 
-    private static String OPENID_CHECK_METHOD = "data";
+    private EvidenceHelper() {
+        throw new IllegalStateException("Instantiation is not valid for this class.");
+    }
 
     public static Evidence fraudCheckResultItemToEvidence(FraudResultItem fraudResultItem) {
 
@@ -25,12 +27,12 @@ public class EvidenceHelper {
         evidence.setDecisionScore(fraudResultItem.getDecisionScore());
 
         List<String> stringCheckDetails = fraudResultItem.getCheckDetails();
-        if (stringCheckDetails != null && stringCheckDetails.size() > 0) {
+        if (stringCheckDetails != null && !stringCheckDetails.isEmpty()) {
             evidence.setCheckDetails(createCheckList(stringCheckDetails, fraudResultItem));
         }
 
         List<String> stringFailedCheckDetails = fraudResultItem.getFailedCheckDetails();
-        if (stringFailedCheckDetails != null && stringFailedCheckDetails.size() > 0) {
+        if (stringFailedCheckDetails != null && !stringFailedCheckDetails.isEmpty()) {
             evidence.setFailedCheckDetails(
                     createCheckList(stringFailedCheckDetails, fraudResultItem));
         }

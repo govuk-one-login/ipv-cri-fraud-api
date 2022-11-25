@@ -95,6 +95,46 @@ public class IdentityVerificationService {
         LOGGER.info("PersonIdentity validated");
         eventProbe.counterMetric(PERSON_DETAILS_VALIDATION_PASS);
 
+        // For creating check details / failed check details
+        List<String> checksSucceeded = new ArrayList<>();
+        List<String> checksFailed = new ArrayList<>();
+        List<String> combinedContraIndicators = new ArrayList<>();
+
+        identityVerificationResult.setChecksSucceeded(checksSucceeded);
+        identityVerificationResult.setChecksFailed(checksFailed);
+        identityVerificationResult.setContraIndicators(combinedContraIndicators);
+
+        boolean pepValidToPerform = fraudCheckStep(identityVerificationResult, personIdentity);
+
+        if (pepValidToPerform && configurationService.getPepEnabled()) {
+            pepCheckStep(identityVerificationResult, personIdentity);
+        }
+
+        if (identityVerificationResult.isSuccess()) {
+            int identityCheckScore = identityVerificationResult.getIdentityCheckScore();
+            LOGGER.info("Final IdentityCheckScore {}", identityCheckScore);
+            eventProbe.counterMetric(IDENTITY_CHECK_SCORE_PREFIX + identityCheckScore);
+
+            LOGGER.info(
+                    "Third party transaction ids fraud {} pep {}",
+                    identityVerificationResult.getTransactionId(),
+                    identityVerificationResult.getPepTransactionId());
+
+            String stringCIs = String.join(", ", identityVerificationResult.getContraIndicators());
+            LOGGER.info("Final Combined Indicators {}", stringCIs);
+
+            auditService.sendAuditEvent(
+                    AuditEventType.THIRD_PARTY_REQUEST_ENDED,
+                    new AuditEventContext(requestHeaders, sessionItem),
+                    new TPREFraudAuditExtension(identityVerificationResult.getContraIndicators()));
+        }
+
+        return identityVerificationResult;
+    }
+
+    public boolean fraudCheckStep(
+            IdentityVerificationResult identityVerificationResult, PersonIdentity personIdentity)
+            throws JsonProcessingException {
         // Requests split into two try blocks to differentiate tech failures in fraud from pep
         FraudCheckResult fraudCheckResult;
         try {
@@ -107,7 +147,7 @@ public class IdentityVerificationService {
             identityVerificationResult.setError(ERROR_MSG_CONTEXT + ": " + ie.getMessage());
             identityVerificationResult.setSuccess(false);
 
-            return identityVerificationResult;
+            return false;
         } catch (Exception e) {
             LOGGER.error(ERROR_MSG_CONTEXT, e);
             eventProbe.counterMetric(FRAUD_CHECK_REQUEST_FAILED);
@@ -115,7 +155,7 @@ public class IdentityVerificationService {
             identityVerificationResult.setError(ERROR_MSG_CONTEXT + ": " + e.getMessage());
             identityVerificationResult.setSuccess(false);
 
-            return identityVerificationResult;
+            return false;
         }
 
         String loggedFraudCheckObject = objectMapper.writeValueAsString(fraudCheckResult);
@@ -129,7 +169,7 @@ public class IdentityVerificationService {
             identityVerificationResult.setError(ERROR_MSG_CONTEXT);
             identityVerificationResult.setSuccess(false);
 
-            return identityVerificationResult;
+            return false;
         }
 
         if (!fraudCheckResult.isExecutedSuccessfully()) {
@@ -146,15 +186,16 @@ public class IdentityVerificationService {
                 LOGGER.warn(ERROR_FRAUD_CHECK_RESULT_NO_ERR_MSG);
             }
 
-            return identityVerificationResult;
+            return false;
         }
 
         // FraudCheck has now succeeded and result can be returned without pepCheck succeeding
         identityVerificationResult.setSuccess(true);
+        identityVerificationResult.setTransactionId(fraudCheckResult.getTransactionId());
 
-        // For creating check details / failed check details
-        List<String> checksSucceeded = new ArrayList<>();
-        List<String> checksFailed = new ArrayList<>();
+        List<String> checksSucceeded = identityVerificationResult.getChecksSucceeded();
+        List<String> checksFailed = identityVerificationResult.getChecksFailed();
+        List<String> combinedContraIndicators = identityVerificationResult.getContraIndicators();
 
         LOGGER.info("Mapping contra indicators from fraud response");
         List<String> fraudContraindications =
@@ -162,140 +203,140 @@ public class IdentityVerificationService {
                         this.contraindicationMapper.mapThirdPartyFraudCodes(
                                 fraudCheckResult.getThirdPartyFraudCodes()));
 
+        // Record FraudCheck CI's
+        recordCIMetrics(FRAUD_CHECK_CI_PREFIX, fraudContraindications);
+        combinedContraIndicators.addAll(fraudContraindications);
+
+        String thirdPartyFraudCodes = Arrays.toString(fraudCheckResult.getThirdPartyFraudCodes());
         LOGGER.info(
                 "Third party decision score {} and fraud codes {}",
                 fraudCheckResult.getDecisionScore(),
-                Arrays.toString(fraudCheckResult.getThirdPartyFraudCodes()));
+                thirdPartyFraudCodes);
 
         int fraudIdentityCheckScore =
-                identityScoreCalculator.calculateIdentityScore(fraudCheckResult, false);
+                identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(
+                        fraudCheckResult, true);
+
+        // For deciding if a pepCheck should be done
+        int decisionScore = Integer.parseInt(fraudCheckResult.getDecisionScore());
+        identityVerificationResult.setDecisionScore(fraudCheckResult.getDecisionScore());
+
+        LOGGER.info("IdentityCheckScore after Fraud {}", fraudIdentityCheckScore);
+        identityVerificationResult.setIdentityCheckScore(fraudIdentityCheckScore);
+
+        String stringFraudContraindications = String.join(", ", fraudContraindications);
         LOGGER.info(
-                "Fraud check passed successfully. Indicators {}, Score {}",
-                String.join(", ", fraudContraindications),
+                "Fraud check performed successfully. Indicators {}, Score {}",
+                stringFraudContraindications,
                 fraudIdentityCheckScore);
         eventProbe.counterMetric(FRAUD_CHECK_REQUEST_SUCCEEDED);
 
-        // For deciding if a pepCheck should be done
-        int decisionScore =
-                fraudCheckResult.getDecisionScore() != null
-                        ? Integer.valueOf(fraudCheckResult.getDecisionScore())
-                        : 0;
+        if (decisionScore <= configurationService.getNoFileFoundThreshold()) {
 
-        // Pep Check
-        Integer pepIdentityCheckScore = null;
-        List<String> pepContraindications = new ArrayList<>();
-        String pepTransactionId = null;
-
-        // fraudIdentityCheckScore must be also one at this stage to perform pepCheck
-        // (no zero score uCode)
-        if ((decisionScore > configurationService.getNoFileFoundThreshold())
-                && fraudIdentityCheckScore == 1) {
-            if (configurationService.getPepEnabled()) {
-
-                FraudCheckResult pepCheckResult = null;
-
-                try {
-                    pepCheckResult = thirdPartyGateway.performFraudCheck(personIdentity, true);
-                } catch (InterruptedException ie) {
-                    // This handles an IE occurring when doing the sleep in the backoff
-                    LOGGER.error(ERROR_MSG_CONTEXT, ie);
-                    Thread.currentThread().interrupt();
-                } catch (Exception e) {
-                    // Pep check can completely fail and result returned based on fraud check alone
-                    LOGGER.error(ERROR_MSG_CONTEXT, e);
-                }
-
-                String loggedPepCheckObject = objectMapper.writeValueAsString(pepCheckResult);
-                LOGGER.info("Third party pep response {}", loggedPepCheckObject);
-
-                // pepCheckResult null on exceptions
-                if (null != pepCheckResult && pepCheckResult.isExecutedSuccessfully()) {
-
-                    LOGGER.info("Mapping contra indicators from pep response");
-                    pepContraindications =
-                            List.of(
-                                    this.contraindicationMapper.mapThirdPartyFraudCodes(
-                                            pepCheckResult.getThirdPartyFraudCodes()));
-                    pepIdentityCheckScore =
-                            identityScoreCalculator.calculateIdentityScore(
-                                    fraudCheckResult, pepCheckResult.isExecutedSuccessfully());
-                    pepTransactionId = pepCheckResult.getTransactionId();
-
-                    // IPR is present if a PEP check has been performed successfully irrelevant of
-                    // result
-                    checksSucceeded.add(IMPERSONATION_RISK_CHECK.toString());
-                    identityVerificationResult.setPepTransactionId(pepTransactionId);
-
-                    LOGGER.info(
-                            "Pep check passed successfully. Indicators {}, Score {}",
-                            String.join(", ", pepContraindications),
-                            pepIdentityCheckScore);
-                    eventProbe.counterMetric(PEP_CHECK_REQUEST_SUCCEEDED);
-
-                } else {
-                    // IPR is set as failed if the PEP check has been attempted but failed
-                    checksFailed.add(IMPERSONATION_RISK_CHECK.toString());
-                    identityVerificationResult.setPepTransactionId(pepTransactionId);
-
-                    LOGGER.warn("Pep check failed");
-                    eventProbe.counterMetric(PEP_CHECK_REQUEST_FAILED);
-                }
-            }
-
-            // Fraud Checks that have succeeded if decisionScore > NoFileFoundThreshold
-            checksSucceeded.add(MORTALITY_CHECK.toString());
-            checksSucceeded.add(IDENTITY_THEFT_CHECK.toString());
-            checksSucceeded.add(SYNTHETIC_IDENTITY_CHECK.toString());
-        } else {
             // Fraud Checks that have failed if decisionScore <= NoFileFoundThreshold
             checksFailed.add(MORTALITY_CHECK.toString());
             checksFailed.add(IDENTITY_THEFT_CHECK.toString());
             checksFailed.add(SYNTHETIC_IDENTITY_CHECK.toString());
 
             LOGGER.info(
-                    "User was file not found with decision score {} so PEP checks have been skipped",
+                    "User was file not found with decision score {} so PEP check will be skipped",
                     decisionScore);
+
+            // No Pep check
+            return false;
         }
 
-        LOGGER.info("Calculating the identity score...");
-        int identityCheckScore =
-                pepIdentityCheckScore != null ? pepIdentityCheckScore : fraudIdentityCheckScore;
-        LOGGER.info("IdentityCheckScore {}", identityCheckScore);
-        eventProbe.counterMetric(IDENTITY_CHECK_SCORE_PREFIX + identityCheckScore);
-        identityVerificationResult.setIdentityCheckScore(identityCheckScore);
+        // fraudIdentityCheckScore must be one to perform pepCheck (no zero score uCode)
+        if (fraudIdentityCheckScore != 1) {
 
-        // Record Combined CI's
-        List<String> combinedContraIndicators = new ArrayList<>();
-        combinedContraIndicators.addAll(fraudContraindications);
-        combinedContraIndicators.addAll(pepContraindications);
-        identityVerificationResult.setContraIndicators(
-                combinedContraIndicators.toArray(new String[] {}));
+            LOGGER.info(
+                    "fraudIdentityCheckScore {} so PEP check will be skipped",
+                    fraudIdentityCheckScore);
 
-        // Per-request contra-indicator metrics
-        recordCIMetrics(FRAUD_CHECK_CI_PREFIX, fraudContraindications);
-        recordCIMetrics(PEP_CHECK_CI_PREFIX, pepContraindications);
+            checksFailed.add(MORTALITY_CHECK.toString());
+            checksFailed.add(IDENTITY_THEFT_CHECK.toString());
+            checksFailed.add(SYNTHETIC_IDENTITY_CHECK.toString());
 
-        // Record transaction ids
-        String fraudTransactionId = fraudCheckResult.getTransactionId();
-        LOGGER.info(
-                "Third party transaction ids fraud {} pep {}",
-                fraudTransactionId,
-                pepTransactionId);
-        identityVerificationResult.setTransactionId(fraudTransactionId);
-        identityVerificationResult.setPepTransactionId(pepTransactionId);
+            return false;
+        }
 
-        identityVerificationResult.setDecisionScore(String.valueOf(decisionScore));
+        // Fraud Checks that have succeeded if decisionScore > NoFileFoundThreshold and score
+        // currently 1
+        checksSucceeded.add(MORTALITY_CHECK.toString());
+        checksSucceeded.add(IDENTITY_THEFT_CHECK.toString());
+        checksSucceeded.add(SYNTHETIC_IDENTITY_CHECK.toString());
 
-        // Record checks status
-        identityVerificationResult.setChecksSucceeded(checksSucceeded);
-        identityVerificationResult.setChecksFailed(checksFailed);
+        // Pep check is now available
+        return true;
+    }
 
-        auditService.sendAuditEvent(
-                AuditEventType.THIRD_PARTY_REQUEST_ENDED,
-                new AuditEventContext(requestHeaders, sessionItem),
-                new TPREFraudAuditExtension(List.of(fraudCheckResult.getThirdPartyFraudCodes())));
+    public boolean pepCheckStep(
+            IdentityVerificationResult identityVerificationResult, PersonIdentity personIdentity)
+            throws JsonProcessingException {
 
-        return identityVerificationResult;
+        List<String> checksSucceeded = identityVerificationResult.getChecksSucceeded();
+        List<String> checksFailed = identityVerificationResult.getChecksFailed();
+        List<String> combinedContraIndicators = identityVerificationResult.getContraIndicators();
+
+        FraudCheckResult pepCheckResult = null;
+
+        try {
+            pepCheckResult = thirdPartyGateway.performFraudCheck(personIdentity, true);
+        } catch (InterruptedException ie) {
+            // This handles an IE occurring when doing the sleep in the backoff
+            LOGGER.error(ERROR_MSG_CONTEXT, ie);
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            // Pep check can completely fail and result returned based on fraud check alone
+            LOGGER.error(ERROR_MSG_CONTEXT, e);
+        }
+
+        String loggedPepCheckObject = objectMapper.writeValueAsString(pepCheckResult);
+        LOGGER.info("Third party pep response {}", loggedPepCheckObject);
+
+        // pepCheckResult null on exceptions
+        if (null != pepCheckResult && pepCheckResult.isExecutedSuccessfully()) {
+
+            LOGGER.info("Mapping contra indicators from pep response");
+            List<String> pepContraindications =
+                    List.of(
+                            this.contraindicationMapper.mapThirdPartyFraudCodes(
+                                    pepCheckResult.getThirdPartyFraudCodes()));
+            int pepIdentityCheckScore =
+                    identityScoreCalculator.calculateIdentityScoreAfterPEPCheck(
+                            identityVerificationResult.getIdentityCheckScore(),
+                            pepCheckResult.isExecutedSuccessfully());
+
+            LOGGER.info("IdentityCheckScore after PEP {}", pepIdentityCheckScore);
+            identityVerificationResult.setIdentityCheckScore(pepIdentityCheckScore);
+
+            // IPR is present if a PEP check has been performed successfully irrelevant of
+            // result
+            checksSucceeded.add(IMPERSONATION_RISK_CHECK.toString());
+            identityVerificationResult.setPepTransactionId(pepCheckResult.getTransactionId());
+
+            String stringPepContraindications = String.join(", ", pepContraindications);
+            LOGGER.info(
+                    "Pep check passed successfully. Indicators {}, Score {}",
+                    stringPepContraindications,
+                    pepIdentityCheckScore);
+
+            // Record PEP CI's
+            recordCIMetrics(PEP_CHECK_CI_PREFIX, pepContraindications);
+            combinedContraIndicators.addAll(pepContraindications);
+
+            eventProbe.counterMetric(PEP_CHECK_REQUEST_SUCCEEDED);
+
+            return true;
+        }
+
+        // IPR is set as failed if the PEP check has been attempted but failed
+        checksFailed.add(IMPERSONATION_RISK_CHECK.toString());
+
+        LOGGER.warn("Pep check failed");
+        eventProbe.counterMetric(PEP_CHECK_REQUEST_FAILED);
+
+        return false;
     }
 
     private void recordCIMetrics(String ciRequestPrefix, List<String> contraIndications) {
