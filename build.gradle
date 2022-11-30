@@ -16,8 +16,8 @@ ext {
 		nimbusds_jwt_version        : "9.15.1",
 		protobuf_version            : "3.19.4",
 		junit                       : "5.8.2",
-		mockito					    : "4.3.1",
-		cri_common_lib              : "1.1.4"
+		mockito                     : "4.3.1",
+		cri_common_lib              : "1.3.1"
 	]
 }
 
