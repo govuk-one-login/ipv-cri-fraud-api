@@ -28,6 +28,8 @@ import uk.gov.di.ipv.cri.fraud.api.service.ServiceFactory;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -82,6 +84,9 @@ class CredentialHandlerTest {
         testIdentityVerificationResult.setContraIndicators(new String[] {"A01"});
         testIdentityVerificationResult.setIdentityCheckScore(1);
         testIdentityVerificationResult.setDecisionScore("90");
+        testIdentityVerificationResult.setChecksSucceeded(
+                List.of("check_one", "check_two", "check_three"));
+        testIdentityVerificationResult.setChecksFailed(new ArrayList<>());
 
         APIGatewayProxyRequestEvent mockRequestEvent =
                 Mockito.mock(APIGatewayProxyRequestEvent.class);
@@ -115,7 +120,7 @@ class CredentialHandlerTest {
         assertNotNull(responseEvent);
         assertEquals(200, responseEvent.getStatusCode());
         assertEquals(
-                "{\"success\":true,\"validationErrors\":null,\"error\":null,\"contraIndicators\":[\"A01\"],\"identityCheckScore\":1,\"transactionId\":null,\"decisionScore\":\"90\"}",
+                "{\"success\":true,\"validationErrors\":null,\"error\":null,\"contraIndicators\":[\"A01\"],\"identityCheckScore\":1,\"transactionId\":null,\"pepTransactionId\":null,\"decisionScore\":\"90\",\"checksSucceeded\":[\"check_one\",\"check_two\",\"check_three\"],\"checksFailed\":[]}",
                 responseEvent.getBody());
     }
 

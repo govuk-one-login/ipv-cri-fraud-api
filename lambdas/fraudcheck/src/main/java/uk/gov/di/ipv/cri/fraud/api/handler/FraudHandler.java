@@ -25,11 +25,11 @@ import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.ApiGatewayResponseGenerator;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
-import uk.gov.di.ipv.cri.fraud.api.persistence.item.FraudResultItem;
 import uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationService;
 import uk.gov.di.ipv.cri.fraud.api.service.ServiceFactory;
 import uk.gov.di.ipv.cri.fraud.api.util.FraudPersonIdentityDetailedMapper;
+import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -149,6 +149,7 @@ public class FraudHandler
             LOGGER.info("Generating authorization code...");
             sessionService.createAuthorizationCode(sessionItem);
 
+            // Result for later use in VC generation
             final FraudResultItem fraudResultItem =
                     new FraudResultItem(
                             UUID.fromString(sessionId),
@@ -156,6 +157,10 @@ public class FraudHandler
                             result.getIdentityCheckScore(),
                             result.getDecisionScore());
             fraudResultItem.setTransactionId(result.getTransactionId());
+            fraudResultItem.setPepTransactionId(result.getPepTransactionId());
+
+            fraudResultItem.setCheckDetails(result.getChecksSucceeded());
+            fraudResultItem.setFailedCheckDetails(result.getChecksFailed());
 
             LOGGER.info("Saving fraud results...");
             dataStore.create(fraudResultItem);
