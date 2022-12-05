@@ -119,7 +119,7 @@ Mappings:
       build: "6"
       staging: "6"
       integration: "6"
-      production: "2"
+      production: "6"
 
   # Permitted values: SECONDS,MINUTES,HOURS,DAYS,MONTHS,YEARS
   JwtTtlUnitMapping:
@@ -128,7 +128,7 @@ Mappings:
       build: MONTHS
       staging: MONTHS
       integration: MONTHS
-      production: HOURS
+      production: MONTHS
 
   FraudCriAudienceMapping:
     Environment:
