@@ -95,21 +95,6 @@ java {
 	targetCompatibility = JavaVersion.VERSION_11
 }
 
-spotless {
-	java {
-		target "src/**/*.java"
-		googleJavaFormat("1.13.0").aosp()
-		importOrder "", "javax", "java", "\\#"
-		endWithNewline()
-	}
-	groovyGradle {
-		target '*.gradle'
-		greclipse()
-		trimTrailingWhitespace()
-		endWithNewline()
-	}
-}
-
 test {
 	useJUnitPlatform()
 	systemProperty "cucumber.filter.tags", System.getProperty("cucumber.filter.tags")
