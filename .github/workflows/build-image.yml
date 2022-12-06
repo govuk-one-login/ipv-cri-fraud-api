@@ -1,0 +1,77 @@
+name: Build di-ipv-cri-fraud-test image
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - acceptance-tests/src/**
+      - .github/workflows/build-image.yml
+      - acceptance-tests/Dockerfile
+
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Tag used within docker repository to mark as unique
+        required: false
+        type: string
+
+jobs:
+  build-test-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      GHCR_REPO: ghcr.io/alphagov/di/di-ipv-cri-fraud-test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Construct tags string
+        id: tags
+        run: |
+          TAGS="${GHCR_REPO}:latest"
+          if [ "${{ inputs.image_tag }}" != "" ]; then
+            TAGS="${TAGS},${GHCR_REPO}:${{ inputs.image_tag }},"
+          fi
+          echo "::set-output name=tags::$TAGS"
+      - name: Build and export to Docker
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          load: true
+          tags: ${{ steps.tags.outputs.tags }}
+      - name: Test image in build environment
+        env:
+          BROWSER: chrome-headless
+          ENVIRONMENT: ${{ secrets.TEST_ENVIRONMENT }}
+          coreStubUrl: ${{ secrets.CORE_STUB_URL }}
+          coreStubUsername: ${{ secrets.CORE_STUB_USERNAME }}
+          coreStubPassword: ${{ secrets.CORE_STUB_PASSWORD }}
+          orchestratorStubUrl: ${{ secrets.ORCHESTRATOR_STUB_URL }}
+          NO_CHROME_SANDBOX: true
+        run: docker run -f acceptance-tests/Dockerfile -e BROWSER -e NO_CHROME_SANDBOX "${GHCR_REPO}":latest ./gradlew fraudCriSmokeBuild
+      - name: Test image in staging environment
+        env:
+          BROWSER: chrome-headless
+          ENVIRONMENT: ${{ secrets.TEST_ENVIRONMENT }}
+          coreStubUrl: ${{ secrets.CORE_STUB_URL }}
+          coreStubUsername: ${{ secrets.CORE_STUB_USERNAME }}
+          coreStubPassword: ${{ secrets.CORE_STUB_PASSWORD }}
+          orchestratorStubUrl: ${{ secrets.ORCHESTRATOR_STUB_URL }}
+          NO_CHROME_SANDBOX: true
+        run: docker run -f acceptance-tests/Dockerfile -e BROWSER -e NO_CHROME_SANDBOX "${GHCR_REPO}":latest ./gradlew fraudCriSmokeStaging
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
