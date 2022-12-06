@@ -55,13 +55,6 @@ jobs:
           load: true
           tags: ${{ steps.tags.outputs.tags }}
 
-      - name: Assume temporary AWS role
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          role-session-name: ${{ secrets.AWS_ROLE_SESSION }}
-          aws-region: ${{ env.AWS_REGION }}
-
       - name: Test image in build environment
         env:
           BROWSER: chrome-headless
