@@ -1,12 +1,10 @@
 plugins {
 	id 'java'
 	id "io.freefair.aspectj.post-compile-weaving" version "6.3.0"
-	id "org.sonarqube"
-	id "com.diffplug.spotless"
 	id "io.qameta.allure" version "2.10.0"
 }
 
-defaultTasks 'clean', 'spotlessApply', 'build'
+defaultTasks 'clean', 'build'
 
 ext {
 	dependencyVersions = [
@@ -95,14 +93,6 @@ dependencies {
 java {
 	sourceCompatibility = JavaVersion.VERSION_11
 	targetCompatibility = JavaVersion.VERSION_11
-}
-
-sonarqube {
-	properties {
-		property "sonar.projectKey", "alphagov_di-ipv-cri-fraud-test"
-		property "sonar.organization", "alphagov"
-		property "sonar.host.url", "https://sonarcloud.io"
-	}
 }
 
 spotless {
