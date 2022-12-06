@@ -32,20 +32,20 @@ fi
 echo "ENVIRONMENT ${ENVIRONMENT}"
 echo "STACK_NAME ${STACK_NAME}"
 
-if [ "${STACK_NAME}" != "local"]; then
-export JOURNEY_TAG=$(aws ssm get-parameter --name "/tests/${STACK_NAME}/TestTag" | jq -r ".Parameter.Value")
+if [ "${STACK_NAME}" != "local" ]; then
+  export JOURNEY_TAG=$(aws ssm get-parameter --name "/tests/${STACK_NAME}/TestTag" | jq -r ".Parameter.Value")
 
-PARAMETERS_NAMES=(coreStubPassword coreStubUrl coreStubUsername passportCriUrl apiBaseUrl orchestratorStubUrl)
-tLen=${#PARAMETERS_NAMES[@]}
- for (( i=0; i<${tLen}; i++ ));
-do
-  echo "/tests/$STACK_NAME/${PARAMETERS_NAMES[$i]}"
-  PARAMETER=$(aws ssm get-parameter --name "/tests/$STACK_NAME/${PARAMETERS_NAMES[$i]}" --region eu-west-2)
-  VALUE=$(echo "$PARAMETER" | jq '.Parameter.Value')
-  NAME=$(echo "$PARAMETER" | jq '.Parameter.Name' | cut -d "/" -f4 | sed 's/.$//')
+  PARAMETERS_NAMES=(coreStubPassword coreStubUrl coreStubUsername passportCriUrl apiBaseUrl orchestratorStubUrl)
+  tLen=${#PARAMETERS_NAMES[@]}
+   for (( i=0; i<${tLen}; i++ ));
+  do
+    echo "/tests/$STACK_NAME/${PARAMETERS_NAMES[$i]}"
+    PARAMETER=$(aws ssm get-parameter --name "/tests/$STACK_NAME/${PARAMETERS_NAMES[$i]}" --region eu-west-2)
+    VALUE=$(echo "$PARAMETER" | jq '.Parameter.Value')
+    NAME=$(echo "$PARAMETER" | jq '.Parameter.Name' | cut -d "/" -f4 | sed 's/.$//')
 
-  eval $(echo "export ${NAME}=${VALUE}")
-done
+    eval $(echo "export ${NAME}=${VALUE}")
+  done
 else
   export JOURNEY_TAG="${TEST_TAG}"
 fi
