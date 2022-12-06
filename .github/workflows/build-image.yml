@@ -27,14 +27,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Construct tags string
         id: tags
         run: |
@@ -43,6 +46,7 @@ jobs:
             TAGS="${TAGS},${GHCR_REPO}:${{ inputs.image_tag }},"
           fi
           echo "::set-output name=tags::$TAGS"
+
       - name: Build and export to Docker
         uses: docker/build-push-action@v2
         with:
@@ -50,6 +54,14 @@ jobs:
           file: acceptance-tests/Dockerfile
           load: true
           tags: ${{ steps.tags.outputs.tags }}
+
+      - name: Assume temporary AWS role
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: ${{ secrets.AWS_ROLE_SESSION }}
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Test image in build environment
         env:
           BROWSER: chrome-headless
@@ -60,16 +72,7 @@ jobs:
           orchestratorStubUrl: ${{ secrets.ORCHESTRATOR_STUB_URL }}
           NO_CHROME_SANDBOX: true
         run: docker run -e BROWSER -e NO_CHROME_SANDBOX -e ENVIRONMENT -e coreStubUrl -e coreStubUsername -e coreStubPassword -e orchestratorStubUrl "${GHCR_REPO}":latest ./gradlew fraudCriSmokeBuild
-      - name: Test image in staging environment
-        env:
-          BROWSER: chrome-headless
-          ENVIRONMENT: ${{ secrets.TEST_ENVIRONMENT }}
-          coreStubUrl: ${{ secrets.CORE_STUB_URL }}
-          coreStubUsername: ${{ secrets.CORE_STUB_USERNAME }}
-          coreStubPassword: ${{ secrets.CORE_STUB_PASSWORD }}
-          orchestratorStubUrl: ${{ secrets.ORCHESTRATOR_STUB_URL }}
-          NO_CHROME_SANDBOX: true
-        run: docker run -e BROWSER -e NO_CHROME_SANDBOX -e ENVIRONMENT -e coreStubUrl -e coreStubUsername -e coreStubPassword -e orchestratorStubUrl  "${GHCR_REPO}":latest ./gradlew fraudCriSmokeStaging
+
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
