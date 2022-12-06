@@ -59,7 +59,7 @@ jobs:
           coreStubPassword: ${{ secrets.CORE_STUB_PASSWORD }}
           orchestratorStubUrl: ${{ secrets.ORCHESTRATOR_STUB_URL }}
           NO_CHROME_SANDBOX: true
-        run: docker run -f acceptance-tests/Dockerfile -e BROWSER -e NO_CHROME_SANDBOX "${GHCR_REPO}":latest ./gradlew fraudCriSmokeBuild
+        run: docker run -e BROWSER -e NO_CHROME_SANDBOX -e ENVIRONMENT -e coreStubUrl -e coreStubUsername -e coreStubPassword -e orchestratorStubUrl "${GHCR_REPO}":latest ./gradlew fraudCriSmokeBuild
       - name: Test image in staging environment
         env:
           BROWSER: chrome-headless
@@ -69,7 +69,7 @@ jobs:
           coreStubPassword: ${{ secrets.CORE_STUB_PASSWORD }}
           orchestratorStubUrl: ${{ secrets.ORCHESTRATOR_STUB_URL }}
           NO_CHROME_SANDBOX: true
-        run: docker run -f acceptance-tests/Dockerfile -e BROWSER -e NO_CHROME_SANDBOX "${GHCR_REPO}":latest ./gradlew fraudCriSmokeStaging
+        run: docker run -e BROWSER -e NO_CHROME_SANDBOX -e ENVIRONMENT -e coreStubUrl -e coreStubUsername -e coreStubPassword -e orchestratorStubUrl  "${GHCR_REPO}":latest ./gradlew fraudCriSmokeStaging
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
