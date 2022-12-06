@@ -46,7 +46,7 @@ jobs:
       - name: Build and export to Docker
         uses: docker/build-push-action@v2
         with:
-          context: .
+          context: {{defaultContext}}:acceptance-tests
           load: true
           tags: ${{ steps.tags.outputs.tags }}
       - name: Test image in build environment
@@ -72,6 +72,6 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
-          context: .
+          context: {{defaultContext}}:acceptance-tests
           push: true
           tags: ${{ steps.tags.outputs.tags }}
