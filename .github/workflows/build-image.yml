@@ -71,7 +71,8 @@ jobs:
           coreStubPassword: ${{ secrets.CORE_STUB_PASSWORD }}
           orchestratorStubUrl: ${{ secrets.ORCHESTRATOR_STUB_URL }}
           NO_CHROME_SANDBOX: true
-        run: docker run -e BROWSER -e NO_CHROME_SANDBOX -e ENVIRONMENT -e coreStubUrl -e coreStubUsername -e coreStubPassword -e orchestratorStubUrl "${GHCR_REPO}":latest ./gradlew fraudCriSmokeBuild
+          TEST_TAG: @build-fraud
+        run: docker run -e BROWSER -e NO_CHROME_SANDBOX -e ENVIRONMENT -e coreStubUrl -e coreStubUsername -e coreStubPassword -e orchestratorStubUrl -e TEST_TAG "${GHCR_REPO}":latest
 
       - name: Build and push
         uses: docker/build-push-action@v2

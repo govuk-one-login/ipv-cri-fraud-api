@@ -32,6 +32,7 @@ fi
 echo "ENVIRONMENT ${ENVIRONMENT}"
 echo "STACK_NAME ${STACK_NAME}"
 
+if [ "${STACK_NAME}" != "local"]; then
 export JOURNEY_TAG=$(aws ssm get-parameter --name "/tests/${STACK_NAME}/TestTag" | jq -r ".Parameter.Value")
 
 PARAMETERS_NAMES=(coreStubPassword coreStubUrl coreStubUsername passportCriUrl apiBaseUrl orchestratorStubUrl)
@@ -45,6 +46,9 @@ do
 
   eval $(echo "export ${NAME}=${VALUE}")
 done
+else
+  export JOURNEY_TAG="${TEST_TAG}"
+fi
 
 pushd /home/gradle
 gradle cucumber -P tags=${JOURNEY_TAG}
