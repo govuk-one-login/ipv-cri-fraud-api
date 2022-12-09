@@ -96,8 +96,7 @@ public class ConfigurationService {
     public String getFraudCRITestEnvironment() {
         String fraudCRITestEnvironment = this.environment;
         if (fraudCRITestEnvironment == null) {
-            throw new IllegalArgumentException(
-                    "Environment variable ENVIRONMENT is not set");
+            throw new IllegalArgumentException("Environment variable ENVIRONMENT is not set");
         }
         return fraudCRITestEnvironment;
     }
