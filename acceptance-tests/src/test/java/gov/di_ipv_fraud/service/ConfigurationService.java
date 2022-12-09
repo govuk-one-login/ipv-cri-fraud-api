@@ -92,4 +92,12 @@ public class ConfigurationService {
                 + ".execute-api.eu-west-2.amazonaws.com/"
                 + this.environment;
     }
+
+    public static String getFraudCRITestEnvironment() {
+        String fraudCRITestEnvironment = System.getenv("FRAUD_CRI_TEST_ENVIRONMENT");
+        if (fraudCRITestEnvironment == null) {
+            throw new IllegalArgumentException("Environment variable FRAUD_CRI_TEST_ENVIRONMENT is not set");
+        }
+        return fraudCRITestEnvironment;
+    }
 }
