@@ -93,11 +93,11 @@ public class ConfigurationService {
                 + this.environment;
     }
 
-    public static String getFraudCRITestEnvironment() {
-        String fraudCRITestEnvironment = System.getenv("FRAUD_CRI_TEST_ENVIRONMENT");
+    public String getFraudCRITestEnvironment() {
+        String fraudCRITestEnvironment = this.environment;
         if (fraudCRITestEnvironment == null) {
             throw new IllegalArgumentException(
-                    "Environment variable FRAUD_CRI_TEST_ENVIRONMENT is not set");
+                    "Environment variable ENVIRONMENT is not set");
         }
         return fraudCRITestEnvironment;
     }
