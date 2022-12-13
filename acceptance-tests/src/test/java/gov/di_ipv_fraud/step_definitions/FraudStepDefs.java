@@ -25,6 +25,11 @@ public class FraudStepDefs extends FraudPageObject {
         navigateToFraudCRI(environment);
     }
 
+    @And("^I click the Fraud CRI for the testEnvironment$")
+    public void navigateToFraudOnTestEnv() {
+        navigateToFraudCRIOnTestEnv();
+    }
+
     @Then("^I search for user number (.*) in the Experian table$")
     public void userSearch(String number) {
         searchForUATUser(number);

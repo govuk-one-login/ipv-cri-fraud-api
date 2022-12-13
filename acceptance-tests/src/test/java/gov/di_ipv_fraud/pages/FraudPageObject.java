@@ -153,6 +153,21 @@ public class FraudPageObject extends UniversalSteps {
         waitForTextToAppear(IPV_CORE_STUB);
     }
 
+    public void navigateToFraudCRIOnTestEnv() {
+        visitCredentialIssuers.click();
+        String fraudCRITestEnvironment = configurationService.getFraudCRITestEnvironment();
+        LOGGER.info("fraudCRITestEnvironment = " + fraudCRITestEnvironment);
+        if (fraudCRITestEnvironment.equalsIgnoreCase("Build")) {
+            fraudCRIBuild.click();
+        } else if (fraudCRITestEnvironment.equalsIgnoreCase("Staging")) {
+            fraudCRIStaging.click();
+        } else if (fraudCRITestEnvironment.equalsIgnoreCase("Integration")) {
+            fraudCRIIntegration.click();
+        } else {
+            LOGGER.info("No test environment is set");
+        }
+    }
+
     public void navigateToFraudCRI(String environment) {
         visitCredentialIssuers.click();
         assertURLContains("credential-issuers");
