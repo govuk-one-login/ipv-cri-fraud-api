@@ -236,3 +236,12 @@ Feature: Fraud CRI
     Examples:
       | name                    | dob            | ci  | score |
       | ANTHONY ROBERTS         | 25/06/1959     |     |   2   |
+
+  @VC_Validity_to_6_months @build-fraud @staging-fraud @integration-fraud
+  Scenario: Expiry time of Fraud Identity checking VC is set to 6 months (STUB)
+    Given I navigate to the IPV Core Stub
+    And I click the Fraud CRI for the testEnvironment
+    When I search for user number 12 in the Experian table
+    And I navigate to the verifiable issuer to check for a Valid response from experian
+    Then Expiry time should be 6 months from the nbf in the JSON payload
+    And The test is complete and I close the driver

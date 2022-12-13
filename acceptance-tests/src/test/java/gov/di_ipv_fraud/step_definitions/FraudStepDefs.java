@@ -176,4 +176,9 @@ public class FraudStepDefs extends FraudPageObject {
     public void enterValidFromDate(String day, String month, String year) {
         addValidFromDate(day, month, year);
     }
+
+    @And("^Expiry time should be (.*) months from the nbf in the JSON payload$")
+    public void nbfAndExpiryInJsonResponse(long durationInMonths) throws JsonProcessingException {
+        nbfAndExpiryInVC(durationInMonths);
+    }
 }
