@@ -467,16 +467,19 @@ public class FraudPageObject extends UniversalSteps {
         String nbf = jsonNode.get("nbf").asText();
         String exp = jsonNode.get("exp").asText();
         LOGGER.info("nbf = " + nbfNode);
-        LOGGER.info("exp = " + expNode);;
-        LocalDateTime nbfDateTime = LocalDateTime.ofEpochSecond(Long.parseLong(nbf), 0, ZoneOffset.UTC);
-        LocalDateTime expDateTime = LocalDateTime.ofEpochSecond(Long.parseLong(exp), 0, ZoneOffset.UTC);
+        LOGGER.info("exp = " + expNode);
+        LocalDateTime nbfDateTime =
+                LocalDateTime.ofEpochSecond(Long.parseLong(nbf), 0, ZoneOffset.UTC);
+        LocalDateTime expDateTime =
+                LocalDateTime.ofEpochSecond(Long.parseLong(exp), 0, ZoneOffset.UTC);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ENGLISH);
         String nbfFormattedDate = nbfDateTime.format(formatter);
         String expFormattedDate = expDateTime.format(formatter);
-        LOGGER.info("nbf Formatted Date = " + nbfFormattedDate );
+        LOGGER.info("nbf Formatted Date = " + nbfFormattedDate);
         LOGGER.info("exp Formatted Date = " + expFormattedDate);
-        long monthsBetween = ChronoUnit.MONTHS.between(LocalDate.parse(nbfFormattedDate),
-                LocalDate.parse(expFormattedDate));
+        long monthsBetween =
+                ChronoUnit.MONTHS.between(
+                        LocalDate.parse(nbfFormattedDate), LocalDate.parse(expFormattedDate));
         LOGGER.info("Duration in months: " + monthsBetween);
         assertEquals(monthsBetween, durationInMonths);
     }
