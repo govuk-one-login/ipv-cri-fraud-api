@@ -88,9 +88,6 @@ public class ConfigurationService {
         }
         String stage = this.environment.equals("local") ? "dev" : this.environment;
         LOGGER.info("privateGatewayId =>" + privateGatewayId);
-        return "https://"
-                + privateGatewayId
-                + ".execute-api.eu-west-2.amazonaws.com/"
-                + stage;
+        return "https://" + privateGatewayId + ".execute-api.eu-west-2.amazonaws.com/" + stage;
     }
 }

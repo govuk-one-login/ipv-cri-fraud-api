@@ -42,8 +42,7 @@ public class FraudAPIPage {
         LOGGER.info("SESSION_REQUEST_BODY = " + SESSION_REQUEST_BODY);
     }
 
-    public void postRequestToSessionEndpoint()
-            throws IOException, InterruptedException {
+    public void postRequestToSessionEndpoint() throws IOException, InterruptedException {
         String privateApiGatewayUrl = configurationService.getPrivateAPIEndpoint();
         LOGGER.info("getPrivateAPIEndpoint() ==> " + privateApiGatewayUrl);
         HttpRequest request =
@@ -124,5 +123,4 @@ public class FraudAPIPage {
         String valueToEncode = username + ":" + password;
         return "Basic " + Base64.getEncoder().encodeToString(valueToEncode.getBytes());
     }
-
 }
