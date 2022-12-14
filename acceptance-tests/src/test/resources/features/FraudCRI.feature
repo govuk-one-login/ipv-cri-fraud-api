@@ -374,4 +374,4 @@ Feature: Fraud CRI
 
     Examples:
       | name                    | dob            | ci  | score |
-      | ANTHONY ROBERTS         | 25/06/1959     |     |   2   |
+      | ANTHONY ROBERTS         | 25/06/1959     |     |   1   |
