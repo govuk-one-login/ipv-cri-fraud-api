@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 REPORT_DIR="${TEST_REPORT_DIR:=$PWD}"
 
 export BROWSER="${BROWSER:-chrome-headless}"
