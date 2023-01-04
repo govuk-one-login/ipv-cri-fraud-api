@@ -27,7 +27,6 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
@@ -194,7 +193,7 @@ class IdentityVerificationServiceTest {
         inOrder.verify(mockEventProbe, never()).counterMetric(IDENTITY_CHECK_SCORE_PREFIX + 2);
 
         assertNotNull(result);
-        assertNull(result.getContraIndicators());
+        assertTrue(result.getContraIndicators().isEmpty());
         assertFalse(result.isSuccess());
         assertEquals(validationErrors.get(0), result.getValidationErrors().get(0));
     }

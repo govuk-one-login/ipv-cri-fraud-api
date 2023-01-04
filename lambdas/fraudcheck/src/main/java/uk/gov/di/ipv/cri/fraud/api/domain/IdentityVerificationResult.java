@@ -1,20 +1,21 @@
 package uk.gov.di.ipv.cri.fraud.api.domain;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class IdentityVerificationResult {
     private boolean success;
     private List<String> validationErrors;
     private String error;
-    private List<String> contraIndicators;
+    private List<String> contraIndicators = new ArrayList<>();
     private int identityCheckScore;
     private String transactionId;
     private String pepTransactionId;
     private String decisionScore;
 
     // These checks have specific meanings and appear in the VC
-    private List<String> checksSucceeded;
-    private List<String> checksFailed;
+    private List<String> checksSucceeded = new ArrayList<>();
+    private List<String> checksFailed = new ArrayList<>();
 
     public boolean isSuccess() {
         return success;

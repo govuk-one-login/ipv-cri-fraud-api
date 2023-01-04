@@ -95,23 +95,47 @@ public class IdentityVerificationService {
         LOGGER.info("PersonIdentity validated");
         eventProbe.counterMetric(PERSON_DETAILS_VALIDATION_PASS);
 
-        // For creating check details / failed check details
-        List<String> checksSucceeded = new ArrayList<>();
-        List<String> checksFailed = new ArrayList<>();
-        List<String> combinedContraIndicators = new ArrayList<>();
+        IdentityVerificationResult fraudIdentityVerificationResult = fraudCheckStep(personIdentity);
+        IdentityVerificationResult pepIdentityVerificationResult = new IdentityVerificationResult();
 
-        identityVerificationResult.setChecksSucceeded(checksSucceeded);
-        identityVerificationResult.setChecksFailed(checksFailed);
-        identityVerificationResult.setContraIndicators(combinedContraIndicators);
-
-        boolean pepValidToPerform = fraudCheckStep(identityVerificationResult, personIdentity);
+        boolean pepValidToPerform =
+                fraudIdentityVerificationResult.isSuccess()
+                        && fraudIdentityVerificationResult.getChecksFailed().isEmpty();
 
         if (pepValidToPerform && configurationService.getPepEnabled()) {
-            pepCheckStep(identityVerificationResult, personIdentity);
+            pepIdentityVerificationResult =
+                    pepCheckStep(
+                            personIdentity,
+                            fraudIdentityVerificationResult.getIdentityCheckScore());
         }
 
+        int identityCheckScore =
+                pepIdentityVerificationResult.getIdentityCheckScore() != 0
+                        ? pepIdentityVerificationResult.getIdentityCheckScore()
+                        : fraudIdentityVerificationResult.getIdentityCheckScore();
+        identityVerificationResult.setIdentityCheckScore(identityCheckScore);
+        identityVerificationResult.setError(fraudIdentityVerificationResult.getError());
+        identityVerificationResult.setSuccess(fraudIdentityVerificationResult.isSuccess());
+        identityVerificationResult.setDecisionScore(
+                fraudIdentityVerificationResult.getDecisionScore());
+        identityVerificationResult.setPepTransactionId(
+                pepIdentityVerificationResult.getPepTransactionId());
+        identityVerificationResult.setTransactionId(
+                fraudIdentityVerificationResult.getTransactionId());
+
+        List<String> combinedContraIndicators =
+                combineCIs(fraudIdentityVerificationResult, pepIdentityVerificationResult);
+        List<String> combinedChecksSucceeded =
+                combineChecksSucceeded(
+                        fraudIdentityVerificationResult, pepIdentityVerificationResult);
+        List<String> combinedChecksFailed =
+                combineChecksFailed(fraudIdentityVerificationResult, pepIdentityVerificationResult);
+
+        identityVerificationResult.setContraIndicators(combinedContraIndicators);
+        identityVerificationResult.setChecksFailed(combinedChecksFailed);
+        identityVerificationResult.setChecksSucceeded(combinedChecksSucceeded);
+
         if (identityVerificationResult.isSuccess()) {
-            int identityCheckScore = identityVerificationResult.getIdentityCheckScore();
             LOGGER.info("Final IdentityCheckScore {}", identityCheckScore);
             eventProbe.counterMetric(IDENTITY_CHECK_SCORE_PREFIX + identityCheckScore);
 
@@ -132,9 +156,9 @@ public class IdentityVerificationService {
         return identityVerificationResult;
     }
 
-    public boolean fraudCheckStep(
-            IdentityVerificationResult identityVerificationResult, PersonIdentity personIdentity)
+    public IdentityVerificationResult fraudCheckStep(PersonIdentity personIdentity)
             throws JsonProcessingException {
+        IdentityVerificationResult identityVerificationResult = new IdentityVerificationResult();
         // Requests split into two try blocks to differentiate tech failures in fraud from pep
         FraudCheckResult fraudCheckResult;
         try {
@@ -147,7 +171,7 @@ public class IdentityVerificationService {
             identityVerificationResult.setError(ERROR_MSG_CONTEXT + ": " + ie.getMessage());
             identityVerificationResult.setSuccess(false);
 
-            return false;
+            return identityVerificationResult;
         } catch (Exception e) {
             LOGGER.error(ERROR_MSG_CONTEXT, e);
             eventProbe.counterMetric(FRAUD_CHECK_REQUEST_FAILED);
@@ -155,7 +179,7 @@ public class IdentityVerificationService {
             identityVerificationResult.setError(ERROR_MSG_CONTEXT + ": " + e.getMessage());
             identityVerificationResult.setSuccess(false);
 
-            return false;
+            return identityVerificationResult;
         }
 
         String loggedFraudCheckObject = objectMapper.writeValueAsString(fraudCheckResult);
@@ -169,7 +193,7 @@ public class IdentityVerificationService {
             identityVerificationResult.setError(ERROR_MSG_CONTEXT);
             identityVerificationResult.setSuccess(false);
 
-            return false;
+            return identityVerificationResult;
         }
 
         if (!fraudCheckResult.isExecutedSuccessfully()) {
@@ -186,16 +210,15 @@ public class IdentityVerificationService {
                 LOGGER.warn(ERROR_FRAUD_CHECK_RESULT_NO_ERR_MSG);
             }
 
-            return false;
+            return identityVerificationResult;
         }
 
         // FraudCheck has now succeeded and result can be returned without pepCheck succeeding
         identityVerificationResult.setSuccess(true);
         identityVerificationResult.setTransactionId(fraudCheckResult.getTransactionId());
 
-        List<String> checksSucceeded = identityVerificationResult.getChecksSucceeded();
-        List<String> checksFailed = identityVerificationResult.getChecksFailed();
-        List<String> combinedContraIndicators = identityVerificationResult.getContraIndicators();
+        List<String> checksSucceeded = new ArrayList<>();
+        List<String> checksFailed = new ArrayList<>();
 
         LOGGER.info("Mapping contra indicators from fraud response");
         List<String> fraudContraindications =
@@ -205,7 +228,8 @@ public class IdentityVerificationService {
 
         // Record FraudCheck CI's
         recordCIMetrics(FRAUD_CHECK_CI_PREFIX, fraudContraindications);
-        combinedContraIndicators.addAll(fraudContraindications);
+
+        identityVerificationResult.setContraIndicators(fraudContraindications);
 
         String thirdPartyFraudCodes = Arrays.toString(fraudCheckResult.getThirdPartyFraudCodes());
         LOGGER.info(
@@ -242,8 +266,10 @@ public class IdentityVerificationService {
                     "User was file not found with decision score {} so PEP check will be skipped",
                     decisionScore);
 
+            identityVerificationResult.setChecksFailed(checksFailed);
+
             // No Pep check
-            return false;
+            return identityVerificationResult;
         }
 
         // fraudIdentityCheckScore must be one to perform pepCheck (no zero score uCode)
@@ -257,7 +283,9 @@ public class IdentityVerificationService {
             checksFailed.add(IDENTITY_THEFT_CHECK.toString());
             checksFailed.add(SYNTHETIC_IDENTITY_CHECK.toString());
 
-            return false;
+            identityVerificationResult.setChecksFailed(checksFailed);
+
+            return identityVerificationResult;
         }
 
         // Fraud Checks that have succeeded if decisionScore > NoFileFoundThreshold and score
@@ -266,17 +294,18 @@ public class IdentityVerificationService {
         checksSucceeded.add(IDENTITY_THEFT_CHECK.toString());
         checksSucceeded.add(SYNTHETIC_IDENTITY_CHECK.toString());
 
+        identityVerificationResult.setChecksSucceeded(checksSucceeded);
+
         // Pep check is now available
-        return true;
+        return identityVerificationResult;
     }
 
-    public boolean pepCheckStep(
-            IdentityVerificationResult identityVerificationResult, PersonIdentity personIdentity)
+    public IdentityVerificationResult pepCheckStep(PersonIdentity personIdentity, int currentScore)
             throws JsonProcessingException {
 
-        List<String> checksSucceeded = identityVerificationResult.getChecksSucceeded();
-        List<String> checksFailed = identityVerificationResult.getChecksFailed();
-        List<String> combinedContraIndicators = identityVerificationResult.getContraIndicators();
+        IdentityVerificationResult identityVerificationResult = new IdentityVerificationResult();
+        List<String> checksSucceeded = new ArrayList<>();
+        List<String> checksFailed = new ArrayList<>();
 
         FraudCheckResult pepCheckResult = null;
 
@@ -304,8 +333,7 @@ public class IdentityVerificationService {
                                     pepCheckResult.getThirdPartyFraudCodes()));
             int pepIdentityCheckScore =
                     identityScoreCalculator.calculateIdentityScoreAfterPEPCheck(
-                            identityVerificationResult.getIdentityCheckScore(),
-                            pepCheckResult.isExecutedSuccessfully());
+                            currentScore, pepCheckResult.isExecutedSuccessfully());
 
             LOGGER.info("IdentityCheckScore after PEP {}", pepIdentityCheckScore);
             identityVerificationResult.setIdentityCheckScore(pepIdentityCheckScore);
@@ -323,25 +351,55 @@ public class IdentityVerificationService {
 
             // Record PEP CI's
             recordCIMetrics(PEP_CHECK_CI_PREFIX, pepContraindications);
-            combinedContraIndicators.addAll(pepContraindications);
+
+            identityVerificationResult.setChecksSucceeded(checksSucceeded);
+            identityVerificationResult.setContraIndicators(pepContraindications);
 
             eventProbe.counterMetric(PEP_CHECK_REQUEST_SUCCEEDED);
 
-            return true;
+            return identityVerificationResult;
         }
 
         // IPR is set as failed if the PEP check has been attempted but failed
         checksFailed.add(IMPERSONATION_RISK_CHECK.toString());
+        identityVerificationResult.setChecksFailed(checksFailed);
 
         LOGGER.warn("Pep check failed");
         eventProbe.counterMetric(PEP_CHECK_REQUEST_FAILED);
 
-        return false;
+        return identityVerificationResult;
     }
 
     private void recordCIMetrics(String ciRequestPrefix, List<String> contraIndications) {
         for (String ci : contraIndications) {
             eventProbe.counterMetric(ciRequestPrefix + ci);
         }
+    }
+
+    private List<String> combineChecksFailed(
+            IdentityVerificationResult fraudIdentityVerificationResult,
+            IdentityVerificationResult pepIdentityVerificationResult) {
+        List<String> combinedChecksFailed = new ArrayList<>();
+        combinedChecksFailed.addAll(fraudIdentityVerificationResult.getChecksFailed());
+        combinedChecksFailed.addAll(pepIdentityVerificationResult.getChecksFailed());
+        return combinedChecksFailed;
+    }
+
+    private List<String> combineChecksSucceeded(
+            IdentityVerificationResult fraudIdentityVerificationResult,
+            IdentityVerificationResult pepIdentityVerificationResult) {
+        List<String> combinedChecksSucceeded = new ArrayList<>();
+        combinedChecksSucceeded.addAll(fraudIdentityVerificationResult.getChecksSucceeded());
+        combinedChecksSucceeded.addAll(pepIdentityVerificationResult.getChecksSucceeded());
+        return combinedChecksSucceeded;
+    }
+
+    private List<String> combineCIs(
+            IdentityVerificationResult fraudIdentityVerificationResult,
+            IdentityVerificationResult pepIdentityVerificationResult) {
+        List<String> combinedContraIndicators = new ArrayList<>();
+        combinedContraIndicators.addAll(fraudIdentityVerificationResult.getContraIndicators());
+        combinedContraIndicators.addAll(pepIdentityVerificationResult.getContraIndicators());
+        return combinedContraIndicators;
     }
 }
