@@ -12,9 +12,10 @@ import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.util.KMSSigner;
 import uk.gov.di.ipv.cri.common.library.util.SignedJWTFactory;
 import uk.gov.di.ipv.cri.common.library.util.VerifiableCredentialClaimsSetBuilder;
+import uk.gov.di.ipv.cri.fraud.api.domain.Evidence;
 import uk.gov.di.ipv.cri.fraud.api.domain.ThirdPartyAddress;
-import uk.gov.di.ipv.cri.fraud.api.domain.audit.Evidence;
-import uk.gov.di.ipv.cri.fraud.api.persistence.item.FraudResultItem;
+import uk.gov.di.ipv.cri.fraud.api.util.EvidenceHelper;
+import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -115,12 +116,10 @@ public class VerifiableCredentialService {
 
     private Object[] calculateEvidence(FraudResultItem fraudResultItem) {
 
-        Evidence evidence = new Evidence();
-        evidence.setType("IdentityCheck");
-        evidence.setTxn(fraudResultItem.getTransactionId());
+        Evidence evidence = EvidenceHelper.fraudCheckResultItemToEvidence(fraudResultItem);
 
-        evidence.setIdentityFraudScore(fraudResultItem.getIdentityFraudScore());
-        evidence.setCi(fraudResultItem.getContraIndicators());
+        // DecisionScore not currently requested to be in VC
+        evidence.setDecisionScore(null);
 
         return new Map[] {objectMapper.convertValue(evidence, Map.class)};
     }

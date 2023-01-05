@@ -44,7 +44,7 @@ public class ConfigurationService {
     private final String fraudResultTableName;
     private final String contraindicationMappings;
     private final String parameterPrefix;
-    private final String pepEnabled;
+    private final boolean pepEnabled;
     private List<String> zeroScoreUcodes;
     private Integer noFileFoundThreshold;
 
@@ -76,7 +76,7 @@ public class ConfigurationService {
 
         // *****************************Feature Toggles*******************************
 
-        this.pepEnabled = paramProvider.get(getParameterName("pepEnabled"));
+        this.pepEnabled = Boolean.valueOf(paramProvider.get(getParameterName("pepEnabled")));
 
         // *********************************Secrets***********************************
 
@@ -123,8 +123,8 @@ public class ConfigurationService {
         return contraindicationMappings;
     }
 
-    public Boolean getPepEnabled() {
-        return Boolean.valueOf(pepEnabled);
+    public boolean getPepEnabled() {
+        return pepEnabled;
     }
 
     public List<String> getZeroScoreUcodes() {

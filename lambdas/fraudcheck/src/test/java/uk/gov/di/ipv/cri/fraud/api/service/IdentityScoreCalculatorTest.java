@@ -30,24 +30,13 @@ class IdentityScoreCalculatorTest {
         when(mockConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
         this.identityScoreCalculator = new IdentityScoreCalculator(mockConfigurationService);
 
-        int identityScore = identityScoreCalculator.calculateIdentityScore(fraudCheckResult, true);
-        assertEquals(identityScore, 2);
-    }
+        int identityScore =
+                identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(
+                        fraudCheckResult, true);
+        identityScore =
+                identityScoreCalculator.calculateIdentityScoreAfterPEPCheck(identityScore, true);
 
-    @Test
-    void testSuccessInFraudAndSuccessInPepWithDecisionScoreBelow35IsScoreOfOne() {
-        FraudCheckResult fraudCheckResult = new FraudCheckResult();
-        fraudCheckResult.setDecisionScore("30");
-        fraudCheckResult.setThirdPartyFraudCodes(new String[] {});
-        fraudCheckResult.setExecutedSuccessfully(true);
-        fraudCheckResult.setTransactionId("123456789");
-
-        when(mockConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("U001"));
-        when(mockConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
-        this.identityScoreCalculator = new IdentityScoreCalculator(mockConfigurationService);
-
-        int identityScore = identityScoreCalculator.calculateIdentityScore(fraudCheckResult, true);
-        assertEquals(identityScore, 1);
+        assertEquals(2, identityScore);
     }
 
     @Test
@@ -62,7 +51,11 @@ class IdentityScoreCalculatorTest {
         when(mockConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
         this.identityScoreCalculator = new IdentityScoreCalculator(mockConfigurationService);
 
-        int identityScore = identityScoreCalculator.calculateIdentityScore(fraudCheckResult, true);
+        int identityScore =
+                identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(
+                        fraudCheckResult, true);
+        identityScore =
+                identityScoreCalculator.calculateIdentityScoreAfterPEPCheck(identityScore, true);
         assertEquals(identityScore, 0);
     }
 
@@ -78,8 +71,12 @@ class IdentityScoreCalculatorTest {
         when(mockConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
         this.identityScoreCalculator = new IdentityScoreCalculator(mockConfigurationService);
 
-        int identityScore = identityScoreCalculator.calculateIdentityScore(fraudCheckResult, false);
-        assertEquals(identityScore, 1);
+        int identityScore =
+                identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(
+                        fraudCheckResult, true);
+        identityScore =
+                identityScoreCalculator.calculateIdentityScoreAfterPEPCheck(identityScore, false);
+        assertEquals(1, identityScore);
     }
 
     @Test
@@ -94,8 +91,12 @@ class IdentityScoreCalculatorTest {
         when(mockConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
         this.identityScoreCalculator = new IdentityScoreCalculator(mockConfigurationService);
 
-        int identityScore = identityScoreCalculator.calculateIdentityScore(fraudCheckResult, false);
-        assertEquals(identityScore, 0);
+        int identityScore =
+                identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(
+                        fraudCheckResult, false);
+        identityScore =
+                identityScoreCalculator.calculateIdentityScoreAfterPEPCheck(identityScore, false);
+        assertEquals(0, identityScore);
     }
 
     @Test
@@ -109,8 +110,12 @@ class IdentityScoreCalculatorTest {
         when(mockConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("U001"));
         when(mockConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
         this.identityScoreCalculator = new IdentityScoreCalculator(mockConfigurationService);
-        int identityScore = identityScoreCalculator.calculateIdentityScore(fraudCheckResult, true);
 
-        assertEquals(identityScore, 0);
+        int identityScore =
+                identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(
+                        fraudCheckResult, false);
+        identityScore =
+                identityScoreCalculator.calculateIdentityScoreAfterPEPCheck(identityScore, true);
+        assertEquals(0, identityScore);
     }
 }
