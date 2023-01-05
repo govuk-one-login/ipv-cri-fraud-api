@@ -146,6 +146,14 @@ Mappings:
       integration: "true"
       production: "true"
 
+  DrivingPermitCriOneLoginEnabledMapping:
+    Environment:
+      dev: "true"
+      build: "true"
+      staging: "true"
+      integration: "true"
+      production: "false"
+
 
 
 Resources:
@@ -388,6 +396,7 @@ Resources:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/contraindicationMappings"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/FraudTableName"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/pepEnabled"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/oneLoginEnabled"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/zeroScoreUcodes"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/noFileFoundThreshold"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/SessionTableName"
@@ -605,6 +614,14 @@ Resources:
       Type: String
       Value: !FindInMap [ FraudCriPepEnabledMapping, Environment, !Ref 'Environment' ]
       Description: The fraud PEP enabled feature toggle
+
+  FraudCriOneLoginEnabledParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/oneLoginEnabled"
+      Type: String
+      Value: !FindInMap [ FraudCriOneLoginEnabledMapping, Environment, !Ref 'Environment' ]
+      Description: The fraud One Login enabled feature toggle
 
   JwtTtlUnitParameter:
     Type: AWS::SSM::Parameter

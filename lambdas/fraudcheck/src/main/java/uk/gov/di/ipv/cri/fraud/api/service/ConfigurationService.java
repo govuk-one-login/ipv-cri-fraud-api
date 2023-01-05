@@ -7,10 +7,14 @@ import software.amazon.lambda.powertools.parameters.SecretsProvider;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import static software.amazon.lambda.powertools.parameters.transform.Transformer.json;
 
 public class ConfigurationService {
+
+    private static final Logger LOGGER = LogManager.getLogger();
 
     static class KeyStoreParams {
         private String keyStore;
@@ -44,6 +48,7 @@ public class ConfigurationService {
     private final String fraudResultTableName;
     private final String contraindicationMappings;
     private final String parameterPrefix;
+    private final String oneLoginEnabled;
     private final boolean pepEnabled;
     private List<String> zeroScoreUcodes;
     private Integer noFileFoundThreshold;
@@ -77,6 +82,16 @@ public class ConfigurationService {
         // *****************************Feature Toggles*******************************
 
         this.pepEnabled = Boolean.valueOf(paramProvider.get(getParameterName("pepEnabled")));
+
+        String oneLoginEnabledFlag;
+        try {
+            // This value will be set in the template, this is only as a fail safe.
+            oneLoginEnabledFlag = paramProvider.get(getParameterName("oneLoginEnabled"));
+        } catch (Exception e) {
+            LOGGER.info("Failed to get oneLoginEnabled parameter in store, defaulting to false");
+            oneLoginEnabledFlag = "false";
+        }
+        this.oneLoginEnabled = oneLoginEnabledFlag;
 
         // *********************************Secrets***********************************
 
