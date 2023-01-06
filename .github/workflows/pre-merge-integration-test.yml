@@ -34,10 +34,6 @@ jobs:
 
       - name: Setup SAM CLI
         uses: aws-actions/setup-sam@v1
-        with:
-          version: 1.65.0
-      - name: sam fix https://github.com/aws/aws-sam-cli/issues/4527
-        run: $(dirname $(readlink $(which sam)))/pip install --force-reinstall "cryptography==38.0.4"
 
       - name: Assume temporary AWS role
         uses: aws-actions/configure-aws-credentials@v1
