@@ -47,7 +47,7 @@ class FraudAuditGeneratorTest {
 
         TPREFraudAuditExtension tprefEXT = new TPREFraudAuditExtension(List.of("u101"));
 
-        AuditEventType evt1 = AuditEventType.THIRD_PARTY_REQUEST_ENDED;
+        AuditEventType evt1 = AuditEventType.RESPONSE_RECEIVED;
         AuditEvent<TPREFraudAuditExtension> ev1 =
                 new AuditEvent<>(000001L, "PREFIX" + "_" + evt1.toString(), "TEST");
 
