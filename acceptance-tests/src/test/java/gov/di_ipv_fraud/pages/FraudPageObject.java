@@ -240,11 +240,7 @@ public class FraudPageObject extends UniversalSteps {
     }
 
     public void userNameInJsonResponse() throws JsonProcessingException {
-        String result = JSONPayload.getText();
-        LOGGER.info("result = " + result);
-        ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode jsonNode = objectMapper.readTree(result);
-        JsonNode vcNode = jsonNode.get("vc");
+        JsonNode vcNode = getVCFromJson("vc");
         JsonNode nameNode = vcNode.get("credentialSubject");
         JsonNode insideName = nameNode.get("name");
         JsonNode nameContent = insideName.get(0);
@@ -253,12 +249,7 @@ public class FraudPageObject extends UniversalSteps {
 
     public void jsonErrorResponse(String testStatusCode) throws JsonProcessingException {
         String testErrorDescription = "general error";
-        String result = JSONPayload.getText();
-        LOGGER.info("result = " + result);
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode jsonNode = objectMapper.readTree(result);
-        JsonNode insideError = jsonNode.get("errorObject");
+        JsonNode insideError = getVCFromJson("errorObject");
         LOGGER.info("insideError = " + insideError);
         JsonNode errorDescription = insideError.get("description");
         JsonNode statusCode = insideError.get("httpstatusCode");
@@ -352,11 +343,7 @@ public class FraudPageObject extends UniversalSteps {
     }
 
     public void ciInVC(String ci) throws IOException {
-        String result = JSONPayload.getText();
-        LOGGER.info("result = " + result);
-        ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode jsonNode = objectMapper.readTree(result);
-        JsonNode vcNode = jsonNode.get("vc");
+        JsonNode vcNode = getVCFromJson("vc");
         JsonNode evidenceNode = vcNode.get("evidence");
 
         ObjectReader objectReader =
@@ -379,11 +366,7 @@ public class FraudPageObject extends UniversalSteps {
     }
 
     public void identityScoreIs(String score) throws IOException {
-        String result = JSONPayload.getText();
-        LOGGER.info("result = " + result);
-        ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode jsonNode = objectMapper.readTree(result);
-        JsonNode vcNode = jsonNode.get("vc");
+        JsonNode vcNode = getVCFromJson("vc");
         JsonNode evidenceNode = vcNode.get("evidence");
 
         ObjectReader objectReader =
@@ -407,11 +390,7 @@ public class FraudPageObject extends UniversalSteps {
     }
 
     private JsonNode userAddressInJsonResponse() throws JsonProcessingException {
-        String result = JSONPayload.getText();
-        LOGGER.info("result = " + result);
-        ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode jsonNode = objectMapper.readTree(result);
-        JsonNode vcNode = jsonNode.get("vc");
+        JsonNode vcNode = getVCFromJson("vc");
         JsonNode addressNode = vcNode.get("credentialSubject");
         JsonNode insideAddress = addressNode.get("address");
         JsonNode addressContent = insideAddress.get(0);
@@ -419,11 +398,7 @@ public class FraudPageObject extends UniversalSteps {
     }
 
     public void documentNumberInVC(String documentNumber) throws IOException {
-        String result = JSONPayload.getText();
-        LOGGER.info("result = " + result);
-        ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode jsonNode = objectMapper.readTree(result);
-        JsonNode vcNode = jsonNode.get("vc");
+        JsonNode vcNode = getVCFromJson("vc");
         JsonNode evidenceNode = vcNode.get("drivingPermit");
 
         ObjectReader objectReader =
@@ -449,5 +424,35 @@ public class FraudPageObject extends UniversalSteps {
         secondAddresssvalidToDayField.sendKeys(day);
         secondAddresssvalidToMonthField.sendKeys(month);
         secondAddresssvalidToYearField.sendKeys(year);
+    }
+
+    public void checkPassedInVC(String checkType) throws IOException {
+        JsonNode vcNode = getVCFromJson("vc");
+        JsonNode evidenceNode = vcNode.get("evidence").get(0);
+        JsonNode checkDetailsNode = evidenceNode.get("checkDetails");
+
+        boolean checkTypeInVC =
+                checkDetailsNode.findValues("fraudCheck").stream()
+                        .anyMatch(x -> x.asText().equals(checkType));
+        assertTrue(checkTypeInVC);
+    }
+
+    public void checkFailedInVC(String checkType) throws JsonProcessingException {
+        JsonNode vcNode = getVCFromJson("vc");
+        JsonNode evidenceNode = vcNode.get("evidence").get(0);
+        JsonNode checkDetailsNode = evidenceNode.get("failedCheckDetails");
+
+        boolean checkTypeInVC =
+                checkDetailsNode.findValues("fraudCheck").stream()
+                        .anyMatch(x -> x.asText().equals(checkType));
+        assertTrue(checkTypeInVC);
+    }
+
+    private JsonNode getVCFromJson(String vc) throws JsonProcessingException {
+        String result = JSONPayload.getText();
+        LOGGER.info("result = " + result);
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode jsonNode = objectMapper.readTree(result);
+        return jsonNode.get(vc);
     }
 }
