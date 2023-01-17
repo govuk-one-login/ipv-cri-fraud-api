@@ -148,7 +148,7 @@ public class IdentityVerificationService {
             LOGGER.info("Final Combined Indicators {}", stringCIs);
 
             auditService.sendAuditEvent(
-                    AuditEventType.THIRD_PARTY_REQUEST_ENDED,
+                    AuditEventType.RESPONSE_RECEIVED,
                     new AuditEventContext(requestHeaders, sessionItem),
                     new TPREFraudAuditExtension(identityVerificationResult.getContraIndicators()));
         }
