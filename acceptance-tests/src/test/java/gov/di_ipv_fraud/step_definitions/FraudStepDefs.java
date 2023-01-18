@@ -176,4 +176,15 @@ public class FraudStepDefs extends FraudPageObject {
     public void enterValidFromDate(String day, String month, String year) {
         addValidFromDate(day, month, year);
     }
+
+    @And("^JSON payload should contain checkDetails (.*)$")
+    public void checkDetailsContains(String checkType) throws IOException {
+        checkPassedInVC(checkType);
+    }
+
+    @And("^JSON payload should contain failedCheckDetails (.*)$")
+    public void jsonPayloadShouldContainFailedCheckDetailsField(String checkDetails)
+            throws JsonProcessingException {
+        checkFailedInVC(checkDetails);
+    }
 }
