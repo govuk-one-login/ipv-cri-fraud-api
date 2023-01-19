@@ -73,7 +73,7 @@ public class ConfigurationService {
         if (null != coreStubUsername && null != coreStubPassword && withAuth) {
             return "https://" + coreStubUsername + ":" + coreStubPassword + "@" + coreStubUrl;
         } else {
-            if (!this.environment.equals("local")) {
+            if (!this.environment.equals("local") && !this.environment.equals("dev")) {
                 return "https://" + coreStubUrl;
             }
             return "http://" + coreStubUrl;
