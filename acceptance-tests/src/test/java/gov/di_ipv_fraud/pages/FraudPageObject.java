@@ -458,6 +458,11 @@ public class FraudPageObject extends UniversalSteps {
     }
 
     public void nbfAndExpiryInVC(long durationInMonths) throws JsonProcessingException {
+        long monthsBetween = vcValidityInMonths();
+        assertEquals(monthsBetween, durationInMonths);
+    }
+
+    private long vcValidityInMonths() throws JsonProcessingException {
         String result = JSONPayload.getText();
         LOGGER.info("result = " + result);
         ObjectMapper objectMapper = new ObjectMapper();
@@ -481,6 +486,6 @@ public class FraudPageObject extends UniversalSteps {
                 ChronoUnit.MONTHS.between(
                         LocalDate.parse(nbfFormattedDate), LocalDate.parse(expFormattedDate));
         LOGGER.info("Duration in months: " + monthsBetween);
-        assertEquals(monthsBetween, durationInMonths);
+        return monthsBetween;
     }
 }
