@@ -38,6 +38,9 @@ public class FraudPageObject extends UniversalSteps {
     @FindBy(xpath = "//*[@value=\"Fraud CRI Build\"]")
     public WebElement fraudCRIBuild;
 
+    @FindBy(xpath = "//*[@value=\"Fraud CRI dev\"]")
+    public WebElement fraudCRIDev;
+
     @FindBy(xpath = "//*[@value=\"Fraud CRI Staging\"]")
     public WebElement fraudCRIStaging;
 
@@ -159,6 +162,8 @@ public class FraudPageObject extends UniversalSteps {
         LOGGER.info("fraudCRITestEnvironment = " + fraudCRITestEnvironment);
         if (fraudCRITestEnvironment.equalsIgnoreCase("Build")) {
             fraudCRIBuild.click();
+        } else if (fraudCRITestEnvironment.equalsIgnoreCase("dev")) {
+            fraudCRIDev.click();
         } else if (fraudCRITestEnvironment.equalsIgnoreCase("Staging")) {
             fraudCRIStaging.click();
         } else if (fraudCRITestEnvironment.equalsIgnoreCase("Integration")) {
@@ -175,6 +180,10 @@ public class FraudPageObject extends UniversalSteps {
         switch (environment) {
             case "Build":
                 fraudCRIBuild.click();
+                break;
+
+            case "dev":
+                fraudCRIDev.click();
                 break;
 
             case "Staging":

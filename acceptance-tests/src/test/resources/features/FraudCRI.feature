@@ -97,7 +97,7 @@ Feature: Fraud CRI
   @pep_test_all_users @build-fraud
   Scenario Outline: Edit User Happy Path with pep CI (STUB)
     Given I navigate to the IPV Core Stub
-    And I click the Fraud CRI for the Build environment
+    And I click the Fraud CRI for the testEnvironment
     And I search for user name LINDA DUFF in the Experian table
     When I click on Edit User link
     And I am on Edit User page
@@ -214,7 +214,7 @@ Feature: Fraud CRI
   @test_PEP_user_with_multiple_addresses @build-fraud
   Scenario Outline: Edit PEP User with multiple addresses (STUB)
     Given I navigate to the IPV Core Stub
-    And I click the Fraud CRI for the Build environment
+    And I click the Fraud CRI for the testEnvironment
     And I search for user name LINDA DUFF in the Experian table
     When I click on Edit User link
     Then I am on Edit User page
@@ -240,7 +240,7 @@ Feature: Fraud CRI
   @build-fraud @test1
   Scenario Outline:Crosscore Authenticate and PEP completed and user is a PEP
     Given I navigate to the IPV Core Stub
-    And I click the Fraud CRI for the Build environment
+    And I click the Fraud CRI for the testEnvironment
     And I search for user name LINDA DUFF in the Experian table
     When I click on Edit User link
     Then I am on Edit User page
@@ -265,7 +265,7 @@ Feature: Fraud CRI
   @build-fraud @test
   Scenario Outline:Crosscore Authenticate and PEP completed and user not PEP
     Given I navigate to the IPV Core Stub
-    And I click the Fraud CRI for the Build environment
+    And I click the Fraud CRI for the testEnvironment
     And I search for user name LINDA DUFF in the Experian table
     When I click on Edit User link
     Then I am on Edit User page
@@ -290,7 +290,7 @@ Feature: Fraud CRI
   @build-fraud @test
   Scenario Outline: Mortality u-code returned
     Given I navigate to the IPV Core Stub
-    And I click the Fraud CRI for the Build environment
+    And I click the Fraud CRI for the testEnvironment
     And I search for user name LINDA DUFF in the Experian table
     When I click on Edit User link
     Then I am on Edit User page
@@ -314,7 +314,7 @@ Feature: Fraud CRI
   @build-fraud @test
   Scenario Outline: Crosscore Authenticate completed and PEP not completed due to error from Experian
     Given I navigate to the IPV Core Stub
-    And I click the Fraud CRI for the Build environment
+    And I click the Fraud CRI for the testEnvironment
     And I search for user name LINDA DUFF in the Experian table
     When I click on Edit User link
     Then I am on Edit User page
@@ -338,7 +338,7 @@ Feature: Fraud CRI
   @build-fraud @test
   Scenario Outline: Crosscore Authenticate completed and PEP not completed due to technical failure
     Given I navigate to the IPV Core Stub
-    And I click the Fraud CRI for the Build environment
+    And I click the Fraud CRI for the testEnvironment
     And I search for user name LINDA DUFF in the Experian table
     When I click on Edit User link
     Then I am on Edit User page
@@ -362,7 +362,7 @@ Feature: Fraud CRI
   @build-fraud @test
   Scenario Outline: Decision score below 35
     Given I navigate to the IPV Core Stub
-    And I click the Fraud CRI for the Build environment
+    And I click the Fraud CRI for the testEnvironment
     And I search for user name LINDA DUFF in the Experian table
     When I click on Edit User link
     Then I am on Edit User page
