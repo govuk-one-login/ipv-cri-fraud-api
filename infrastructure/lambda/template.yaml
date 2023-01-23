@@ -756,10 +756,10 @@ Resources:
             Period: 300
             Stat: Sum
 
-  FraudPepScoreErrors:
+  FraudPepCheckFail:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmDescription: !Sub Fraud ${Environment} Fraud / Pep Score errors
+      AlarmDescription: !Sub Fraud ${Environment} PEP check failed
       ActionsEnabled: true
       AlarmActions:
         - !Ref AlarmTopicFraud
