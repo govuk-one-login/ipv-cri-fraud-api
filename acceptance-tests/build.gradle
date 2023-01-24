@@ -141,6 +141,7 @@ task fraudCriSmokeBuild() {
 			args = [
 				'--plugin',
 				'pretty',
+				'--plugin', 'io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm',
 				'--glue',
 				'gov/di_ipv_fraud/step_definitions',
 				'src/test/resources/features/',
