@@ -51,6 +51,7 @@ jobs:
           allure_results: acceptance-tests/allure-results
           allure_history: acceptance-tests/allure-history
           keep_reports: 5
+          gh_pages: LIME-gh-pages
 
       - name: Deploy report to Github Pages
         if: always()
