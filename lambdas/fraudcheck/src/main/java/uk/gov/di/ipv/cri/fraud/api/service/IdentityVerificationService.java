@@ -45,6 +45,8 @@ public class IdentityVerificationService {
             "Null FraudCheckResult returned when invoking third party API.";
     private static final String ERROR_FRAUD_CHECK_RESULT_NO_ERR_MSG =
             "FraudCheckResult had no error message.";
+    private static final String ERROR_PEP_CHECK_RESULT_NO_ERR_MSG =
+            "PepCheckResult had no error message.";
     private final ThirdPartyFraudGateway thirdPartyGateway;
     private final PersonIdentityValidator personIdentityValidator;
     private final ContraindicationMapper contraindicationMapper;
@@ -114,7 +116,10 @@ public class IdentityVerificationService {
                         ? pepIdentityVerificationResult.getIdentityCheckScore()
                         : fraudIdentityVerificationResult.getIdentityCheckScore();
         identityVerificationResult.setIdentityCheckScore(identityCheckScore);
-        identityVerificationResult.setError(fraudIdentityVerificationResult.getError());
+        identityVerificationResult.setError(
+                fraudIdentityVerificationResult.getError() != null
+                        ? fraudIdentityVerificationResult.getError()
+                        : pepIdentityVerificationResult.getError());
         identityVerificationResult.setSuccess(fraudIdentityVerificationResult.isSuccess());
         identityVerificationResult.setDecisionScore(
                 fraudIdentityVerificationResult.getDecisionScore());
@@ -366,6 +371,13 @@ public class IdentityVerificationService {
 
         LOGGER.warn("Pep check failed");
         eventProbe.counterMetric(PEP_CHECK_REQUEST_FAILED);
+
+        if (null != pepCheckResult && Objects.nonNull(pepCheckResult.getErrorMessage())) {
+            identityVerificationResult.setError(pepCheckResult.getErrorMessage());
+        } else {
+            identityVerificationResult.setError(ERROR_PEP_CHECK_RESULT_NO_ERR_MSG);
+            LOGGER.warn(ERROR_PEP_CHECK_RESULT_NO_ERR_MSG);
+        }
 
         return identityVerificationResult;
     }
