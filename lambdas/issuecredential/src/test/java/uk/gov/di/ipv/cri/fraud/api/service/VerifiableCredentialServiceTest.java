@@ -22,10 +22,10 @@ import uk.gov.di.ipv.cri.common.library.domain.personidentity.*;
 import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.util.SignedJWTFactory;
 import uk.gov.di.ipv.cri.common.library.util.VerifiableCredentialClaimsSetBuilder;
-import uk.gov.di.ipv.cri.fraud.api.persistence.item.FraudResultItem;
 import uk.gov.di.ipv.cri.fraud.api.service.fixtures.TestFixtures;
 import uk.gov.di.ipv.cri.fraud.api.util.FraudPersonIdentityDetailedMapper;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
+import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;

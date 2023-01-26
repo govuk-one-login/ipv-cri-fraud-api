@@ -1,9 +1,8 @@
 package uk.gov.di.ipv.cri.fraud.api.util;
 
-import uk.gov.di.ipv.cri.fraud.api.domain.audit.Evidence;
-import uk.gov.di.ipv.cri.fraud.api.domain.audit.EvidenceType;
+import uk.gov.di.ipv.cri.fraud.api.domain.Evidence;
 import uk.gov.di.ipv.cri.fraud.api.domain.audit.VCISSFraudAuditExtension;
-import uk.gov.di.ipv.cri.fraud.api.persistence.item.FraudResultItem;
+import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,13 +20,7 @@ public class IssueCredentialFraudAuditExtensionUtil {
 
         for (FraudResultItem fraudResultItem : fraudResultItems) {
 
-            Evidence evidence = new Evidence();
-
-            evidence.setType(EvidenceType.IDENTITY_CHECK.toString());
-            evidence.setTxn(fraudResultItem.getTransactionId());
-            evidence.setIdentityFraudScore(fraudResultItem.getIdentityFraudScore());
-            evidence.setCi(fraudResultItem.getContraIndicators());
-            evidence.setDecisionScore(fraudResultItem.getDecisionScore());
+            Evidence evidence = EvidenceHelper.fraudCheckResultItemToEvidence(fraudResultItem);
 
             evidenceList.add(evidence);
         }

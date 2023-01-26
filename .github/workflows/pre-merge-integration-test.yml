@@ -32,7 +32,7 @@ jobs:
           java-version: 11
           distribution: zulu
 
-      - name: Setup SAM
+      - name: Setup SAM CLI
         uses: aws-actions/setup-sam@v1
 
       - name: Assume temporary AWS role

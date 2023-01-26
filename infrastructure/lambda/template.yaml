@@ -756,6 +756,29 @@ Resources:
             Period: 300
             Stat: Sum
 
+  FraudPepCheckFail:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub Fraud ${Environment} PEP check failed
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref AlarmTopicFraud
+      OKActions:
+        - !Ref AlarmTopicFraud
+      InsufficientDataActions: []
+      Namespace: di-ipv-cri-fraud-api
+      MetricName: pep_check_request_failed
+      Statistic: Sum
+      Dimensions:
+        - Name: Service
+          Value: "di-ipv-cri-fraud-api-identitycheck"
+      Period: 300
+      DatapointsToAlarm: 3
+      EvaluationPeriods: 3
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
   ####################################################################
   #                                                                  #
   # Alarm setup                                                      #

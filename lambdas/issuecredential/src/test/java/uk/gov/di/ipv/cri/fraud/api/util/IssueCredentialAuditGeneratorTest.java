@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEvent;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.fraud.api.domain.audit.VCISSFraudAuditExtension;
-import uk.gov.di.ipv.cri.fraud.api.persistence.item.FraudResultItem;
+import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
 
 import java.util.List;
 import java.util.UUID;

@@ -1,4 +1,4 @@
-package uk.gov.di.ipv.cri.fraud.api.persistence.item;
+package uk.gov.di.ipv.cri.fraud.library.persistence.item;
 
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
@@ -12,7 +12,11 @@ public class FraudResultItem {
     private List<String> contraIndicators;
     private Integer identityFraudScore;
     private String transactionId;
+    private String pepTransactionId;
     private String decisionScore;
+
+    private List<String> checkDetails;
+    private List<String> failedCheckDetails;
 
     public FraudResultItem() {}
 
@@ -60,11 +64,35 @@ public class FraudResultItem {
         this.transactionId = transactionId;
     }
 
+    public String getPepTransactionId() {
+        return pepTransactionId;
+    }
+
+    public void setPepTransactionId(String pepTransactionId) {
+        this.pepTransactionId = pepTransactionId;
+    }
+
     public String getDecisionScore() {
         return decisionScore;
     }
 
     public void setDecisionScore(String decisionScore) {
         this.decisionScore = decisionScore;
+    }
+
+    public List<String> getCheckDetails() {
+        return checkDetails;
+    }
+
+    public void setCheckDetails(List<String> checkDetails) {
+        this.checkDetails = checkDetails;
+    }
+
+    public List<String> getFailedCheckDetails() {
+        return failedCheckDetails;
+    }
+
+    public void setFailedCheckDetails(List<String> failedCheckDetails) {
+        this.failedCheckDetails = failedCheckDetails;
     }
 }

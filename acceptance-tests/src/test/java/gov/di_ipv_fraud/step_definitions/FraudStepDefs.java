@@ -177,6 +177,17 @@ public class FraudStepDefs extends FraudPageObject {
         addValidFromDate(day, month, year);
     }
 
+    @And("^JSON payload should contain checkDetails (.*)$")
+    public void checkDetailsContains(String checkType) throws IOException {
+        checkPassedInVC(checkType);
+    }
+
+    @And("^JSON payload should contain failedCheckDetails (.*)$")
+    public void jsonPayloadShouldContainFailedCheckDetailsField(String checkDetails)
+            throws JsonProcessingException {
+        checkFailedInVC(checkDetails);
+    }
+    
     @And("^Expiry time should be (.*) months from the nbf in the JSON payload$")
     public void nbfAndExpiryInJsonResponse(long durationInMonths) throws JsonProcessingException {
         nbfAndExpiryInVC(durationInMonths);

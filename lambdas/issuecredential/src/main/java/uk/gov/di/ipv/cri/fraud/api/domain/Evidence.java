@@ -1,10 +1,13 @@
-package uk.gov.di.ipv.cri.fraud.api.domain.audit;
+package uk.gov.di.ipv.cri.fraud.api.domain;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import uk.gov.di.ipv.cri.fraud.api.domain.checkdetails.Check;
 
 import java.util.List;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({"type", "txn", "identityFraudScore", "ci"})
 public class Evidence {
     @JsonProperty("type")
@@ -21,6 +24,12 @@ public class Evidence {
 
     @JsonProperty("decisionScore")
     private String decisionScore;
+
+    @JsonProperty("checkDetails")
+    private List<Check> checkDetails;
+
+    @JsonProperty("failedCheckDetails")
+    private List<Check> failedCheckDetails;
 
     public String getType() {
         return type;
@@ -60,5 +69,21 @@ public class Evidence {
 
     public void setDecisionScore(String decisionScore) {
         this.decisionScore = decisionScore;
+    }
+
+    public List<Check> getCheckDetails() {
+        return checkDetails;
+    }
+
+    public void setCheckDetails(List<Check> checkDetails) {
+        this.checkDetails = checkDetails;
+    }
+
+    public List<Check> getFailedCheckDetails() {
+        return failedCheckDetails;
+    }
+
+    public void setFailedCheckDetails(List<Check> failedCheckDetails) {
+        this.failedCheckDetails = failedCheckDetails;
     }
 }

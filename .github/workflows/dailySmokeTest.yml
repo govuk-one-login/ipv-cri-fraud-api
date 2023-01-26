@@ -10,7 +10,7 @@ jobs:
   smoke:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
@@ -35,3 +35,29 @@ jobs:
           coreStubPassword: ${{ secrets.CORE_STUB_PASSWORD }}
           orchestratorStubUrl: ${{ secrets.ORCHESTRATOR_STUB_URL }}
         run: cd acceptance-tests && gradle fraudCriSmokeBuild
+
+      - name: Get Allure history
+        uses: actions/checkout@v2
+        if: always()
+        continue-on-error: true
+        with:
+          ref: LIME-gh-pages
+          path: LIME-gh-pages
+
+      - name: Allure Report action
+        uses: simple-elf/allure-report-action@master
+        if: always()
+        with:
+          allure_results: target/allure-results
+          allure_history: target/allure-history
+          keep_reports: 5
+
+      - name: Deploy report to Github Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v2
+        with:
+          deploy_key: ${{ secrets.CS_PA_TOKEN }}
+        env:
+          PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_BRANCH: LIME-gh-pages
+          PUBLISH_DIR: target/allure-history

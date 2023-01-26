@@ -98,7 +98,7 @@ Feature: Fraud CRI
   @pep_test_all_users @build-fraud
   Scenario Outline: Edit User Happy Path with pep CI (STUB)
     Given I navigate to the IPV Core Stub
-    And I click the Fraud CRI for the Build environment
+    And I click the Fraud CRI for the testEnvironment
     And I search for user name LINDA DUFF in the Experian table
     When I click on Edit User link
     And I am on Edit User page
@@ -215,7 +215,7 @@ Feature: Fraud CRI
   @test_PEP_user_with_multiple_addresses @build-fraud
   Scenario Outline: Edit PEP User with multiple addresses (STUB)
     Given I navigate to the IPV Core Stub
-    And I click the Fraud CRI for the Build environment
+    And I click the Fraud CRI for the testEnvironment
     And I search for user name LINDA DUFF in the Experian table
     When I click on Edit User link
     Then I am on Edit User page
@@ -237,3 +237,148 @@ Feature: Fraud CRI
     Examples:
       | name                    | dob            | ci  | score |
       | ANTHONY ROBERTS         | 25/06/1959     |     |   2   |
+
+  @build-fraud @test1
+  Scenario Outline:Crosscore Authenticate and PEP completed and user is a PEP
+    Given I navigate to the IPV Core Stub
+    And I click the Fraud CRI for the testEnvironment
+    And I search for user name LINDA DUFF in the Experian table
+    When I click on Edit User link
+    Then I am on Edit User page
+    And I clear existing Date of Birth
+    Then I enter Date of birth as <dob>
+    And I clear existing first name
+    Then I clear existing surname
+    Then I enter name <name>
+    And I submit user updates
+    Then I navigate to the verifiable issuer to check for a Valid response from experian
+    And JSON payload should contain checkDetails impersonation_risk_check
+    And JSON payload should contain checkDetails mortality_check
+    And JSON payload should contain checkDetails identity_theft_check
+    Then JSON payload should contain checkDetails synthetic_identity_check
+    And JSON payload should contain ci <ci> and score <score>
+    And The test is complete and I close the driver
+    Examples:
+      | name                    | dob            |ci  |score|
+      | JAMALA BROWER           | 27/10/1963     |    |2    |
+
+
+  @build-fraud @test
+  Scenario Outline:Crosscore Authenticate and PEP completed and user not PEP
+    Given I navigate to the IPV Core Stub
+    And I click the Fraud CRI for the testEnvironment
+    And I search for user name LINDA DUFF in the Experian table
+    When I click on Edit User link
+    Then I am on Edit User page
+    And I clear existing Date of Birth
+    Then I enter Date of birth as <dob>
+    And I clear existing first name
+    Then I clear existing surname
+    And I enter name <name>
+    And I submit user updates
+    Then I navigate to the verifiable issuer to check for a Valid response from experian
+    And JSON payload should contain checkDetails impersonation_risk_check
+    And JSON payload should contain checkDetails mortality_check
+    And JSON payload should contain checkDetails identity_theft_check
+    Then JSON payload should contain checkDetails synthetic_identity_check
+    And JSON payload should contain ci <ci> and score <score>
+    And The test is complete and I close the driver
+    Examples:
+      | name                    | dob       | ci| score|
+      | ALBERT PEPS        | 05/10/1943     |P01   | 2     |
+
+
+  @build-fraud @test
+  Scenario Outline: Mortality u-code returned
+    Given I navigate to the IPV Core Stub
+    And I click the Fraud CRI for the testEnvironment
+    And I search for user name LINDA DUFF in the Experian table
+    When I click on Edit User link
+    Then I am on Edit User page
+    And I clear existing Date of Birth
+    Then I enter Date of birth as <dob>
+    And I clear existing first name
+    And I clear existing surname
+    Then I enter name <name>
+    And I submit user updates
+    Then I navigate to the verifiable issuer to check for a Valid response from experian
+    And JSON payload should contain failedCheckDetails mortality_check
+    And JSON payload should contain failedCheckDetails identity_theft_check
+    Then JSON payload should contain failedCheckDetails synthetic_identity_check
+    And JSON payload should contain ci <ci> and score <score>
+    And The test is complete and I close the driver
+    Examples:
+      | name           | dob              | ci   | score  |
+      | ALBERT GILT    | 05/10/1943       | T02  | 0     |
+
+
+  @build-fraud @test
+  Scenario Outline: Crosscore Authenticate completed and PEP not completed due to error from Experian
+    Given I navigate to the IPV Core Stub
+    And I click the Fraud CRI for the testEnvironment
+    And I search for user name LINDA DUFF in the Experian table
+    When I click on Edit User link
+    Then I am on Edit User page
+    And I clear existing Date of Birth
+    Then I enter Date of birth as <dob>
+    And I clear existing first name
+    And I clear existing surname
+    Then I enter name <name>
+    And I submit user updates
+    Then I navigate to the verifiable issuer to check for a Valid response from experian
+    And JSON payload should contain failedCheckDetails impersonation_risk_check
+    And JSON payload should contain checkDetails mortality_check
+    And JSON payload should contain checkDetails identity_theft_check
+    Then JSON payload should contain checkDetails synthetic_identity_check
+    And JSON payload should contain ci <ci> and score <score>
+    And The test is complete and I close the driver
+    Examples:
+      | name                         | dob              | ci   | score  |
+      | ALBERT PEP_ERROR_RESPONSE    | 05/10/1943       |      | 1    |
+
+  @build-fraud @test
+  Scenario Outline: Crosscore Authenticate completed and PEP not completed due to technical failure
+    Given I navigate to the IPV Core Stub
+    And I click the Fraud CRI for the testEnvironment
+    And I search for user name LINDA DUFF in the Experian table
+    When I click on Edit User link
+    Then I am on Edit User page
+    And I clear existing Date of Birth
+    Then I enter Date of birth as <dob>
+    And I clear existing first name
+    And I clear existing surname
+    Then I enter name <name>
+    And I submit user updates
+    Then I navigate to the verifiable issuer to check for a Valid response from experian
+    And JSON payload should contain failedCheckDetails impersonation_risk_check
+    And JSON payload should contain checkDetails mortality_check
+    And JSON payload should contain checkDetails identity_theft_check
+    Then JSON payload should contain checkDetails synthetic_identity_check
+    And JSON payload should contain ci <ci> and score <score>
+    And The test is complete and I close the driver
+    Examples:
+      | name                    | dob              | ci   | score  |
+      | ALBERT PEP_TECH_FAIL    | 05/10/1943       |      | 1    |
+
+  @build-fraud @test
+  Scenario Outline: Decision score below 35
+    Given I navigate to the IPV Core Stub
+    And I click the Fraud CRI for the testEnvironment
+    And I search for user name LINDA DUFF in the Experian table
+    When I click on Edit User link
+    Then I am on Edit User page
+    And I clear existing Date of Birth
+    Then I enter Date of birth as <dob>
+    And I clear existing first name
+    And I clear existing surname
+    Then I enter name <name>
+    And I submit user updates
+    Then I navigate to the verifiable issuer to check for a Valid response from experian
+    And JSON payload should contain failedCheckDetails mortality_check
+    And JSON payload should contain failedCheckDetails identity_theft_check
+    Then JSON payload should contain failedCheckDetails synthetic_identity_check
+    And JSON payload should contain ci <ci> and score <score>
+    And The test is complete and I close the driver
+    Examples:
+      | name                    | dob              | ci   | score  |
+      | ALBERT NO_FILE_35       | 05/10/1943       |      | 1      |

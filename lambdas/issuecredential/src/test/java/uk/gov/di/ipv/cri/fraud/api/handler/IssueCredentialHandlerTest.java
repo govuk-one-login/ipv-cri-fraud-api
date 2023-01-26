@@ -33,11 +33,11 @@ import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.audit.VCISSFraudAuditExtension;
-import uk.gov.di.ipv.cri.fraud.api.persistence.item.FraudResultItem;
 import uk.gov.di.ipv.cri.fraud.api.service.FraudRetrievalService;
 import uk.gov.di.ipv.cri.fraud.api.service.VerifiableCredentialService;
 import uk.gov.di.ipv.cri.fraud.api.util.FraudPersonIdentityDetailedMapper;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
+import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
 
 import java.util.List;
 import java.util.Map;
