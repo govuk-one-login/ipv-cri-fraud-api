@@ -470,7 +470,7 @@ public class FraudPageObject extends UniversalSteps {
         JsonNode jsonNode = objectMapper.readTree(result);
         return jsonNode.get(vc);
     }
-    
+
     public void nbfAndExpiryInVC(long durationInMonths) throws JsonProcessingException {
         long monthsBetween = vcValidityInMonths();
         assertEquals(monthsBetween, durationInMonths);
