@@ -187,4 +187,9 @@ public class FraudStepDefs extends FraudPageObject {
             throws JsonProcessingException {
         checkFailedInVC(checkDetails);
     }
+
+    @And("^Expiry time should be (.*) months from the nbf in the JSON payload$")
+    public void nbfAndExpiryInJsonResponse(long durationInMonths) throws JsonProcessingException {
+        nbfAndExpiryInVC(durationInMonths);
+    }
 }

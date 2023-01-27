@@ -7,6 +7,7 @@ Feature: Fraud CRI
     And I click the Fraud CRI for the testEnvironment
     Then I search for user number 12 in the Experian table
     And I navigate to the verifiable issuer to check for a Valid response from experian
+    And Expiry time should be 6 months from the nbf in the JSON payload
     And The test is complete and I close the driver
 
   @unhappy_path @build-fraud @staging-fraud @integration-fraud
