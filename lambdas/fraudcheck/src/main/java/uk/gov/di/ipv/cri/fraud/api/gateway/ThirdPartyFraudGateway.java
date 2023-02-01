@@ -21,14 +21,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpConnectTimeoutException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Objects;
 
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_CREATED;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_ERROR;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_FAIL;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_MAX_RETRIES;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_OK;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_RETRY;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.*;
 
 public class ThirdPartyFraudGateway {
 
@@ -43,6 +40,7 @@ public class ThirdPartyFraudGateway {
     private final SleepHelper sleepHelper;
 
     private final EventProbe eventProbe;
+    private final Clock clock;
 
     public static final String HTTP_300_REDIRECT_MESSAGE =
             "Redirection Message returned from Fraud Check Response, Status Code - ";
@@ -81,6 +79,7 @@ public class ThirdPartyFraudGateway {
         this.endpointUri = URI.create(endpointUrl);
         this.sleepHelper = new SleepHelper(HTTP_RETRY_WAIT_TIME_LIMIT_MS);
         this.eventProbe = eventProbe;
+        this.clock = Clock.systemUTC();
     }
 
     public ThirdPartyFraudGateway(
@@ -111,10 +110,12 @@ public class ThirdPartyFraudGateway {
         this.endpointUri = URI.create(endpointUrl);
         this.sleepHelper = sleepHelper;
         this.eventProbe = eventProbe;
+        this.clock = Clock.systemUTC();
     }
 
     public FraudCheckResult performFraudCheck(PersonIdentity personIdentity, boolean pepEnabled)
             throws IOException, InterruptedException {
+        var startCheck = clock.instant();
         if (pepEnabled) {
             LOGGER.info("Mapping person to third party PEP request");
             PEPRequest apiRequest = requestMapper.mapPEPPersonIdentity(personIdentity);
@@ -128,6 +129,9 @@ public class ThirdPartyFraudGateway {
             HttpResponse<String> httpResponse = sendHTTPRequestRetryIfAllowed(request);
 
             FraudCheckResult fraudCheckResult = responseHandler(httpResponse, true);
+            eventProbe.counterMetric(
+                    THIRD_PARTY_PEP_RESPONSE_LATENCY,
+                    Duration.between(startCheck, clock.instant()).toMillis());
             return fraudCheckResult;
         } else {
             LOGGER.info("Mapping person to third party Fraud request");
@@ -143,6 +147,8 @@ public class ThirdPartyFraudGateway {
             HttpResponse<String> httpResponse = sendHTTPRequestRetryIfAllowed(request);
 
             FraudCheckResult fraudCheckResult = responseHandler(httpResponse, false);
+            double durationCheck = Duration.between(startCheck, clock.instant()).toMillis();
+            eventProbe.counterMetric(THIRD_PARTY_FRAUD_RESPONSE_LATENCY, durationCheck);
             return fraudCheckResult;
         }
     }
