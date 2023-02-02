@@ -48,9 +48,10 @@ jobs:
         uses: simple-elf/allure-report-action@master
         if: always()
         with:
-          allure_results: target/allure-results
-          allure_history: target/allure-history
+          allure_results: acceptance-tests/allure-results
+          allure_history: acceptance-tests/allure-history
           keep_reports: 5
+          gh_pages: LIME-gh-pages
 
       - name: Deploy report to Github Pages
         if: always()
@@ -60,4 +61,4 @@ jobs:
         env:
           PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_BRANCH: LIME-gh-pages
-          PUBLISH_DIR: target/allure-history
+          PUBLISH_DIR: acceptance-tests/allure-history
