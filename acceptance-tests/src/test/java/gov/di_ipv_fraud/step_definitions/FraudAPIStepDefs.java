@@ -1,6 +1,7 @@
 package gov.di_ipv_fraud.step_definitions;
 
 import gov.di_ipv_fraud.pages.*;
+import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -25,5 +26,16 @@ public class FraudAPIStepDefs extends FraudAPIPage {
     @Then("user gets a session-id")
     public void user_gets_a_session_id() {
         getSessionId();
+    }
+
+    @And("user sends a POST request to Fraud end point")
+    public void user_sends_a_post_request_to_fraud_end_point()
+            throws IOException, InterruptedException {
+        postRequestToFraudEndpoint();
+    }
+
+    @And("user gets authorisation code")
+    public void user_gets_authorisation_code() throws IOException, InterruptedException {
+        getAuthorisationCode();
     }
 }
