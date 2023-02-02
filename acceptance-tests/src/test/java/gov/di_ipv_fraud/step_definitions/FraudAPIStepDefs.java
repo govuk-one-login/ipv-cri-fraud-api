@@ -38,4 +38,10 @@ public class FraudAPIStepDefs extends FraudAPIPage {
     public void user_gets_authorisation_code() throws IOException, InterruptedException {
         getAuthorisationCode();
     }
+
+    @And("user creates access token request for CRI Id (.*)$")
+    public void user_creates_access_token_request(String criId) throws IOException, InterruptedException {
+        createAccessTokenRequest(criId);
+    }
+
 }
