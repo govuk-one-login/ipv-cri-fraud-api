@@ -22,6 +22,8 @@ public class FraudAPIPage {
 
     private static String SESSION_REQUEST_BODY;
     private static String SESSION_ID;
+
+    private static String STATE;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final int LindaDuffExperianRowNumber = 6;
 
@@ -58,6 +60,7 @@ public class FraudAPIPage {
         Map<String, String> deserialisedResponse =
                 objectMapper.readValue(sessionResponse, new TypeReference<>() {});
         SESSION_ID = deserialisedResponse.get("session_id");
+        STATE = deserialisedResponse.get("state");
     }
 
     public void getSessionId() {
@@ -122,5 +125,38 @@ public class FraudAPIPage {
     private static final String getBasicAuthenticationHeader(String username, String password) {
         String valueToEncode = username + ":" + password;
         return "Basic " + Base64.getEncoder().encodeToString(valueToEncode.getBytes());
+    }
+
+    public void postRequestToFraudEndpoint() throws IOException, InterruptedException {
+        String privateApiGatewayUrl = configurationService.getPrivateAPIEndpoint();
+        LOGGER.info("getPrivateAPIEndpoint() ==> " + privateApiGatewayUrl);
+        HttpRequest request =
+                HttpRequest.newBuilder()
+                        .uri(URI.create(privateApiGatewayUrl + "/identity-check"))
+                        .setHeader("Accept", "application/json")
+                        .setHeader("Content-Type", "application/json")
+                        .setHeader("session_id", SESSION_ID)
+                        .POST(HttpRequest.BodyPublishers.ofString(SESSION_REQUEST_BODY))
+                        .build();
+        String sessionResponse = sendHttpRequest(request).body();
+        LOGGER.info("sessionResponse = " + sessionResponse);
+    }
+
+    public void getAuthorisationCode()
+            throws IOException, InterruptedException {
+        String privateApiGatewayUrl = configurationService.getPrivateAPIEndpoint();
+        String coreStubUrl = configurationService.getCoreStubUrl(false);
+
+        HttpRequest request =
+                HttpRequest.newBuilder()
+                        .uri(URI.create(privateApiGatewayUrl + "/authorization?redirect_uri=" +coreStubUrl +"/callback&state=" +STATE +"&scope=openid&response_type=code&client_id=ipv-core-stub"))
+                        .setHeader("Accept", "application/json")
+                        .setHeader("Content-Type", "application/json")
+                        .setHeader("session_id", SESSION_ID)
+                        .GET()
+                        .build();
+        LOGGER.info("request =" +request);
+        String sessionResponse = sendHttpRequest(request).body();
+        LOGGER.info("sessionResponse = " + sessionResponse);
     }
 }
