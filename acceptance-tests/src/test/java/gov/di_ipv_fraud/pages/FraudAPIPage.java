@@ -24,6 +24,9 @@ public class FraudAPIPage {
     private static String SESSION_ID;
 
     private static String STATE;
+
+    private static String AUTHCODE;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final int LindaDuffExperianRowNumber = 6;
 
@@ -152,11 +155,38 @@ public class FraudAPIPage {
                         .uri(URI.create(privateApiGatewayUrl + "/authorization?redirect_uri=" +coreStubUrl +"/callback&state=" +STATE +"&scope=openid&response_type=code&client_id=ipv-core-stub"))
                         .setHeader("Accept", "application/json")
                         .setHeader("Content-Type", "application/json")
-                        .setHeader("session_id", SESSION_ID)
+                        .setHeader("session-id", SESSION_ID)
+                        .GET()
+                        .build();
+        LOGGER.info("request =" +request);
+        String sessionResponse = sendHttpRequest(request).body();
+        LOGGER.info("sessionResponse = " + sessionResponse);
+        Map<String, String> deserialisedResponse =
+                objectMapper.readValue(sessionResponse, new TypeReference<>() {});
+        AUTHCODE = deserialisedResponse.get("authorization_code");
+        LOGGER.info("authorizationCode = " + AUTHCODE);
+    }
+
+    public void createAccessTokenRequest(String criId)
+            throws IOException, InterruptedException {
+//        String privateApiGatewayUrl = configurationService.getPrivateAPIEndpoint();
+        String coreStubUrl = configurationService.getCoreStubUrl(false);
+
+        HttpRequest request =
+                HttpRequest.newBuilder()
+                        .uri(URI.create(coreStubUrl + "/backend/createTokenRequestPrivateKeyJWT?authorization_code=" +AUTHCODE +"&cri=" +criId))
+                        .setHeader("Accept", "application/json")
+                        .setHeader("Content-Type", "application/json")
+                        .setHeader(
+                                "Authorization",
+                                getBasicAuthenticationHeader(
+                                        configurationService.getCoreStubUsername(),
+                                        configurationService.getCoreStubPassword()))
                         .GET()
                         .build();
         LOGGER.info("request =" +request);
         String sessionResponse = sendHttpRequest(request).body();
         LOGGER.info("sessionResponse = " + sessionResponse);
     }
+
 }
