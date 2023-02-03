@@ -38,11 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_CREATED;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_ERROR;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_MAX_RETRIES;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_OK;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_REQUEST_SEND_RETRY;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.*;
 
 @ExtendWith(MockitoExtension.class)
 class ThirdPartyFraudGatewayTest {
@@ -132,6 +128,8 @@ class ThirdPartyFraudGatewayTest {
 
         verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
         verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_OK);
+        verify(mockEventProbe, times(1))
+                .counterMetric(eq(THIRD_PARTY_FRAUD_RESPONSE_LATENCY_MILLIS), anyDouble());
 
         verify(mockRequestMapper).mapPersonIdentity(personIdentity);
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
@@ -631,6 +629,8 @@ class ThirdPartyFraudGatewayTest {
 
         verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
         verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_OK);
+        verify(mockEventProbe, times(1))
+                .counterMetric(eq(THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS), anyDouble());
 
         verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
