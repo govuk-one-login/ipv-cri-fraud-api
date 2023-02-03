@@ -66,9 +66,9 @@ public class Definitions {
             "third_party_pep_response_type_unknown";
 
     // Third Party Response Latency
-    public static final String THIRD_PARTY_FRAUD_RESPONSE_LATENCY =
+    public static final String THIRD_PARTY_FRAUD_RESPONSE_LATENCY_MILLIS =
             "third_party_fraud_response_latency";
-    public static final String THIRD_PARTY_PEP_RESPONSE_LATENCY =
+    public static final String THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS =
             "third_party_pep_response_latency";
 
     // IdentityVerificationInfoResponseValidator Fraud

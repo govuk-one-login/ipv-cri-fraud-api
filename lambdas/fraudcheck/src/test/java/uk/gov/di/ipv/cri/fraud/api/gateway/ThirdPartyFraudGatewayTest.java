@@ -126,11 +126,10 @@ class ThirdPartyFraudGatewayTest {
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity, false);
 
-        InOrder inOrder = inOrder(mockEventProbe);
-        inOrder.verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
-        inOrder.verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_OK);
-        inOrder.verify(mockEventProbe, times(1))
-                .counterMetric(eq(THIRD_PARTY_FRAUD_RESPONSE_LATENCY), anyDouble());
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_OK);
+        verify(mockEventProbe, times(1))
+                .counterMetric(eq(THIRD_PARTY_FRAUD_RESPONSE_LATENCY_MILLIS), anyDouble());
 
         verify(mockRequestMapper).mapPersonIdentity(personIdentity);
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
@@ -628,11 +627,10 @@ class ThirdPartyFraudGatewayTest {
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity, true);
 
-        InOrder inOrder = inOrder(mockEventProbe);
-        inOrder.verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
-        inOrder.verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_OK);
-        inOrder.verify(mockEventProbe, times(1))
-                .counterMetric(eq(THIRD_PARTY_PEP_RESPONSE_LATENCY), anyDouble());
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_CREATED);
+        verify(mockEventProbe, times(1)).counterMetric(THIRD_PARTY_REQUEST_SEND_OK);
+        verify(mockEventProbe, times(1))
+                .counterMetric(eq(THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS), anyDouble());
 
         verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
         verify(mockObjectMapper).writeValueAsString(testApiRequest);

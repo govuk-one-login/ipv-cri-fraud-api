@@ -115,7 +115,6 @@ public class ThirdPartyFraudGateway {
 
     public FraudCheckResult performFraudCheck(PersonIdentity personIdentity, boolean pepEnabled)
             throws IOException, InterruptedException {
-        var startCheck = clock.instant();
         if (pepEnabled) {
             LOGGER.info("Mapping person to third party PEP request");
             PEPRequest apiRequest = requestMapper.mapPEPPersonIdentity(personIdentity);
@@ -125,13 +124,14 @@ public class ThirdPartyFraudGateway {
             HttpRequest request = requestBuilder(requestBody, requestBodyHmac);
             eventProbe.counterMetric(THIRD_PARTY_REQUEST_CREATED);
 
+            var startCheck = clock.instant();
             LOGGER.info("Submitting pep check request to third party...");
             HttpResponse<String> httpResponse = sendHTTPRequestRetryIfAllowed(request);
+            eventProbe.counterMetric(
+                    THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS,
+                    Duration.between(startCheck, clock.instant()).toMillis());
 
             FraudCheckResult fraudCheckResult = responseHandler(httpResponse, true);
-            eventProbe.counterMetric(
-                    THIRD_PARTY_PEP_RESPONSE_LATENCY,
-                    Duration.between(startCheck, clock.instant()).toMillis());
             return fraudCheckResult;
         } else {
             LOGGER.info("Mapping person to third party Fraud request");
@@ -143,12 +143,14 @@ public class ThirdPartyFraudGateway {
             HttpRequest request = requestBuilder(requestBody, requestBodyHmac);
             eventProbe.counterMetric(THIRD_PARTY_REQUEST_CREATED);
 
+            var startCheck = clock.instant();
             LOGGER.info("Submitting fraud check request to third party...");
             HttpResponse<String> httpResponse = sendHTTPRequestRetryIfAllowed(request);
+            eventProbe.counterMetric(
+                    THIRD_PARTY_FRAUD_RESPONSE_LATENCY_MILLIS,
+                    Duration.between(startCheck, clock.instant()).toMillis());
 
             FraudCheckResult fraudCheckResult = responseHandler(httpResponse, false);
-            double durationCheck = Duration.between(startCheck, clock.instant()).toMillis();
-            eventProbe.counterMetric(THIRD_PARTY_FRAUD_RESPONSE_LATENCY, durationCheck);
             return fraudCheckResult;
         }
     }
