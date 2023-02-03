@@ -65,7 +65,7 @@ jobs:
       - name: Run API integration tests
         ### currently failing as were running build on dev stack
         env:
-          ENVIRONMENT: dev
+          ENVIRONMENT: shared-dev
           APIGW_API_KEY: ${{ secrets.API_KEY_CRI_DEV }}
           coreStubUrl: ${{ secrets.CORE_STUB_URL }}
           coreStubUsername: ${{ secrets.CORE_STUB_USERNAME }}

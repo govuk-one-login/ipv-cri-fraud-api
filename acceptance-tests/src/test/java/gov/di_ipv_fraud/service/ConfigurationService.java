@@ -86,7 +86,10 @@ public class ConfigurationService {
             throw new IllegalArgumentException(
                     "Environment variable PRIVATE API endpoint is not set");
         }
-        String stage = this.environment.equals("local") ? "dev" : this.environment;
+        String stage =
+                this.environment.equals("local") || this.environment.equals("shared-dev")
+                        ? "dev"
+                        : this.environment;
         LOGGER.info("privateGatewayId =>" + privateGatewayId);
         return "https://" + privateGatewayId + ".execute-api.eu-west-2.amazonaws.com/" + stage;
     }
