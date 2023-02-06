@@ -2,6 +2,8 @@ package gov.di_ipv_fraud.pages;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.oauth2.sdk.AuthorizationResponse;
+import gov.di_ipv_fraud.model.AuthorisationResponse;
 import gov.di_ipv_fraud.service.ConfigurationService;
 import gov.di_ipv_fraud.step_definitions.FraudAPIStepDefs;
 import org.apache.commons.lang3.StringUtils;
@@ -161,9 +163,9 @@ public class FraudAPIPage {
         LOGGER.info("request =" +request);
         String sessionResponse = sendHttpRequest(request).body();
         LOGGER.info("sessionResponse = " + sessionResponse);
-        Map<String, String> deserialisedResponse =
-                objectMapper.readValue(sessionResponse, new TypeReference<>() {});
-        AUTHCODE = deserialisedResponse.get("authorization_code");
+        AuthorisationResponse deserialisedResponse =
+                objectMapper.readValue(sessionResponse, AuthorisationResponse.class);
+        AUTHCODE = deserialisedResponse.getAuthorizationCode().getValue()  ;
         LOGGER.info("authorizationCode = " + AUTHCODE);
     }
 
