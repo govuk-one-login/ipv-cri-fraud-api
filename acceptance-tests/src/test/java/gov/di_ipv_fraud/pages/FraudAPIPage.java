@@ -2,6 +2,8 @@ package gov.di_ipv_fraud.pages;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.oauth2.sdk.AuthorizationResponse;
+import gov.di_ipv_fraud.model.AuthorisationResponse;
 import gov.di_ipv_fraud.service.ConfigurationService;
 import gov.di_ipv_fraud.step_definitions.FraudAPIStepDefs;
 import org.apache.commons.lang3.StringUtils;
@@ -22,10 +24,12 @@ public class FraudAPIPage {
 
     private static String SESSION_REQUEST_BODY;
     private static String SESSION_ID;
-
     private static String STATE;
-
     private static String AUTHCODE;
+    private static String ACCESS_TOKEN;
+
+    private static String GET_RESPONSE;
+
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final int LindaDuffExperianRowNumber = 6;
@@ -139,6 +143,7 @@ public class FraudAPIPage {
                         .setHeader("Accept", "application/json")
                         .setHeader("Content-Type", "application/json")
                         .setHeader("session_id", SESSION_ID)
+                        //This should have just the request headers as SESSION_ID and no request body. Will the POST call go through without the Request body?
                         .POST(HttpRequest.BodyPublishers.ofString(SESSION_REQUEST_BODY))
                         .build();
         String sessionResponse = sendHttpRequest(request).body();
@@ -152,6 +157,7 @@ public class FraudAPIPage {
 
         HttpRequest request =
                 HttpRequest.newBuilder()
+                        //refactor uri
                         .uri(URI.create(privateApiGatewayUrl + "/authorization?redirect_uri=" +coreStubUrl +"/callback&state=" +STATE +"&scope=openid&response_type=code&client_id=ipv-core-stub"))
                         .setHeader("Accept", "application/json")
                         .setHeader("Content-Type", "application/json")
@@ -161,9 +167,9 @@ public class FraudAPIPage {
         LOGGER.info("request =" +request);
         String sessionResponse = sendHttpRequest(request).body();
         LOGGER.info("sessionResponse = " + sessionResponse);
-        Map<String, String> deserialisedResponse =
-                objectMapper.readValue(sessionResponse, new TypeReference<>() {});
-        AUTHCODE = deserialisedResponse.get("authorization_code");
+        AuthorisationResponse deserialisedResponse =
+                objectMapper.readValue(sessionResponse, AuthorisationResponse.class);
+        AUTHCODE = deserialisedResponse.getAuthorizationCode().getValue()  ;
         LOGGER.info("authorizationCode = " + AUTHCODE);
     }
 
@@ -185,6 +191,75 @@ public class FraudAPIPage {
                         .GET()
                         .build();
         LOGGER.info("request =" +request);
+        //String sessionResponse1 = sendHttpRequest(request).body();
+//        GET_RESPONSE = sendHttpRequest(request).body();
+//        LOGGER.info("sessionResponse GETRESPONSE = " + GET_RESPONSE);
+    }
+
+    public String createAccessTokenRequest1(String criId)
+            throws IOException, InterruptedException {
+//        String privateApiGatewayUrl = configurationService.getPrivateAPIEndpoint();
+        String coreStubUrl = configurationService.getCoreStubUrl(false);
+
+        HttpRequest request =
+                HttpRequest.newBuilder()
+                        .uri(URI.create(coreStubUrl + "/backend/createTokenRequestPrivateKeyJWT?authorization_code=" +AUTHCODE +"&cri=" +criId))
+                        .setHeader("Accept", "application/json")
+                        .setHeader("Content-Type", "application/json")
+                        .setHeader(
+                                "Authorization",
+                                getBasicAuthenticationHeader(
+                                        configurationService.getCoreStubUsername(),
+                                        configurationService.getCoreStubPassword()))
+                        .GET()
+                        .build();
+        LOGGER.info("request =" +request);
+        //String sessionResponse1 = sendHttpRequest(request).body();
+        //GET_RESPONSE = sendHttpRequest(request).body();
+        LOGGER.info("sessionResponse GETRESPONSE = " + GET_RESPONSE);
+        return sendHttpRequest(request).body();
+    }
+
+    public String requestAccessToken(String criId) throws IOException, InterruptedException {
+        //<Public api gateway address> to be used here
+       // LOGGER.info("inside requestaccesstoken GETRESPONSE = " + GET_RESPONSE);
+        String reqObj = createAccessTokenRequest1(criId);
+        LOGGER.info("inside variable GETRESPONSE = " + reqObj);
+
+        String publicApiGatewayUrl = configurationService.getPublicAPIEndpoint();
+        LOGGER.info("getPublicAPIEndpoint() ==> " + publicApiGatewayUrl);
+        HttpRequest request =
+                HttpRequest.newBuilder()
+                        .uri(URI.create(publicApiGatewayUrl + "/token"))
+                        .setHeader("Accept", "application/json")
+                        .setHeader("Content-Type", "application/json")
+                        //jsonString on the SESSION_REQUEST_BODY will be different
+//                        .POST(HttpRequest.BodyPublishers.ofString(SESSION_REQUEST_BODY))
+                        .POST(HttpRequest.BodyPublishers.ofString(reqObj))
+                        .build();
+//        String sessionResponse = sendHttpRequest(request).body();
+//        LOGGER.info("sessionResponse = " + sessionResponse);
+//        Map<String, String> deserialisedResponse =
+//                objectMapper.readValue(sessionResponse, new TypeReference<>() {});
+//        ACCESS_TOKEN = deserialisedResponse.get("access_token");
+        return sendHttpRequest(request).body();
+
+    }
+
+    public void requestFraudCRIVC(String criId) throws IOException, InterruptedException {
+        //<Public api gateway address> to be used here
+        String reqObj1 = requestAccessToken(criId);
+        String publicApiGatewayUrl = configurationService.getPublicAPIEndpoint();
+        LOGGER.info("getPublicAPIEndpoint() ==> " + publicApiGatewayUrl);
+        HttpRequest request =
+                HttpRequest.newBuilder()
+                        .uri(URI.create(publicApiGatewayUrl + "/credential/issue"))
+                        .setHeader("Accept", "application/json")
+                        .setHeader("Content-Type", "application/json")
+                        .setHeader("Authorization", "Bearer" +ACCESS_TOKEN)
+                        //This should have just the request headers as ACCESS_TOKEN and no request body. Will the POST call go through without the Request body?
+                        .POST(HttpRequest.BodyPublishers.ofString(reqObj1))
+                        .build();
         String sessionResponse = sendHttpRequest(request).body();
         LOGGER.info("sessionResponse = " + sessionResponse);
     }

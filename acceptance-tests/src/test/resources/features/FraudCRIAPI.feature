@@ -8,7 +8,11 @@ Feature: Fraud CRI API
     Then user gets a session-id
     And user sends a POST request to Fraud end point
     And user gets authorisation code
-#    And user creates access token request for CRI Id fraud-cri-dev
+    And user creates access token request for CRI Id fraud-cri-dev
+    And user requests access token fraud-cri-dev
+    And user request VC fraud-cri-dev
+
+
 
 
 #  @intialJWT_happy_path

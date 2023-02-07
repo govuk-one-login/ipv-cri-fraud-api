@@ -44,4 +44,14 @@ public class FraudAPIStepDefs extends FraudAPIPage {
         createAccessTokenRequest(criId);
     }
 
+    @And("user requests access token (.*)$")
+    public void user_requests_access_token(String CRIId) throws IOException, InterruptedException {
+        requestAccessToken(CRIId);
+    }
+
+    @And("user request VC (.*)$")
+    public void user_requests_vc(String criId) throws IOException, InterruptedException {
+        requestFraudCRIVC(criId);
+    }
+
 }
