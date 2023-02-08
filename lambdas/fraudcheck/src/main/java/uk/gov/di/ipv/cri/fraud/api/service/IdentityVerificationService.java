@@ -135,10 +135,14 @@ public class IdentityVerificationService {
                         fraudIdentityVerificationResult, pepIdentityVerificationResult);
         List<String> combinedChecksFailed =
                 combineChecksFailed(fraudIdentityVerificationResult, pepIdentityVerificationResult);
+        List<String> combinedThirdPartyFraudCodes =
+                combineThirdPartyFraudCodes(
+                        fraudIdentityVerificationResult, pepIdentityVerificationResult);
 
         identityVerificationResult.setContraIndicators(combinedContraIndicators);
         identityVerificationResult.setChecksFailed(combinedChecksFailed);
         identityVerificationResult.setChecksSucceeded(combinedChecksSucceeded);
+        identityVerificationResult.setThirdPartyFraudCodes(combinedThirdPartyFraudCodes);
 
         if (identityVerificationResult.isSuccess()) {
             LOGGER.info("Final IdentityCheckScore {}", identityCheckScore);
@@ -155,7 +159,8 @@ public class IdentityVerificationService {
             auditService.sendAuditEvent(
                     AuditEventType.RESPONSE_RECEIVED,
                     new AuditEventContext(requestHeaders, sessionItem),
-                    new TPREFraudAuditExtension(identityVerificationResult.getContraIndicators()));
+                    new TPREFraudAuditExtension(
+                            identityVerificationResult.getThirdPartyFraudCodes()));
         }
 
         return identityVerificationResult;
@@ -235,6 +240,8 @@ public class IdentityVerificationService {
         recordCIMetrics(FRAUD_CHECK_CI_PREFIX, fraudContraindications);
 
         identityVerificationResult.setContraIndicators(fraudContraindications);
+        identityVerificationResult.setThirdPartyFraudCodes(
+                List.of(fraudCheckResult.getThirdPartyFraudCodes()));
 
         String thirdPartyFraudCodes = Arrays.toString(fraudCheckResult.getThirdPartyFraudCodes());
         LOGGER.info(
@@ -359,6 +366,8 @@ public class IdentityVerificationService {
 
             identityVerificationResult.setChecksSucceeded(checksSucceeded);
             identityVerificationResult.setContraIndicators(pepContraindications);
+            identityVerificationResult.setThirdPartyFraudCodes(
+                    List.of(pepCheckResult.getThirdPartyFraudCodes()));
 
             eventProbe.counterMetric(PEP_CHECK_REQUEST_SUCCEEDED);
 
@@ -413,5 +422,16 @@ public class IdentityVerificationService {
         combinedContraIndicators.addAll(fraudIdentityVerificationResult.getContraIndicators());
         combinedContraIndicators.addAll(pepIdentityVerificationResult.getContraIndicators());
         return combinedContraIndicators;
+    }
+
+    private List<String> combineThirdPartyFraudCodes(
+            IdentityVerificationResult fraudIdentityVerificationResult,
+            IdentityVerificationResult pepIdentityVerificationResult) {
+        List<String> combinedThirdPartyFraudCodes = new ArrayList<>();
+        combinedThirdPartyFraudCodes.addAll(
+                fraudIdentityVerificationResult.getThirdPartyFraudCodes());
+        combinedThirdPartyFraudCodes.addAll(
+                pepIdentityVerificationResult.getThirdPartyFraudCodes());
+        return combinedThirdPartyFraudCodes;
     }
 }

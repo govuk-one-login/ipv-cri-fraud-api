@@ -3,6 +3,7 @@ package uk.gov.di.ipv.cri.fraud.api.domain.audit;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
+import java.util.Objects;
 
 public class ExperianCrossCoreResponse {
 
@@ -15,5 +16,18 @@ public class ExperianCrossCoreResponse {
 
     public List<String> getuCodes() {
         return uCodes;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ExperianCrossCoreResponse that = (ExperianCrossCoreResponse) o;
+        return Objects.equals(uCodes, that.uCodes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(uCodes);
     }
 }

@@ -120,7 +120,7 @@ class CredentialHandlerTest {
         assertNotNull(responseEvent);
         assertEquals(200, responseEvent.getStatusCode());
         assertEquals(
-                "{\"success\":true,\"validationErrors\":null,\"error\":null,\"contraIndicators\":[\"A01\"],\"identityCheckScore\":1,\"transactionId\":null,\"pepTransactionId\":null,\"decisionScore\":\"90\",\"checksSucceeded\":[\"check_one\",\"check_two\",\"check_three\"],\"checksFailed\":[]}",
+                "{\"success\":true,\"validationErrors\":null,\"error\":null,\"contraIndicators\":[\"A01\"],\"identityCheckScore\":1,\"transactionId\":null,\"pepTransactionId\":null,\"decisionScore\":\"90\",\"thirdPartyFraudCodes\":[],\"checksSucceeded\":[\"check_one\",\"check_two\",\"check_three\"],\"checksFailed\":[]}",
                 responseEvent.getBody());
     }
 
