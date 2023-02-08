@@ -9,6 +9,17 @@ public class OtherData {
     @JsonProperty("response")
     private String response;
 
+    @JsonProperty("authResults")
+    private AuthResults authResults;
+
+    public AuthResults getAuthResults() {
+        return authResults;
+    }
+
+    public void setAuthResults(AuthResults authResults) {
+        this.authResults = authResults;
+    }
+
     public String getResponse() {
         return response;
     }
