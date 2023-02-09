@@ -8,6 +8,7 @@ import io.cucumber.java.en.When;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.text.ParseException;
 
 public class FraudAPIStepDefs extends FraudAPIPage {
 
@@ -17,7 +18,7 @@ public class FraudAPIStepDefs extends FraudAPIPage {
         userIdentityAsJwtString(criId);
     }
 
-    @When("user sends a POST request to session end point")
+    @When("user sends a POST request to session endpoint")
     public void user_sends_a_post_request_to_session_end_point()
             throws IOException, InterruptedException {
         postRequestToSessionEndpoint();
@@ -28,7 +29,7 @@ public class FraudAPIStepDefs extends FraudAPIPage {
         getSessionId();
     }
 
-    @And("user sends a POST request to Fraud end point")
+    @And("user sends a POST request to Fraud endpoint")
     public void user_sends_a_post_request_to_fraud_end_point()
             throws IOException, InterruptedException {
         postRequestToFraudEndpoint();
@@ -39,19 +40,14 @@ public class FraudAPIStepDefs extends FraudAPIPage {
         getAuthorisationCode();
     }
 
-    @And("user creates access token request for CRI Id (.*)$")
-    public void user_creates_access_token_request(String criId) throws IOException, InterruptedException {
-        createAccessTokenRequest(criId);
-    }
-
-    @And("user requests access token (.*)$")
+    @And("user sends a POST request to Access Token endpoint (.*)$")
     public void user_requests_access_token(String CRIId) throws IOException, InterruptedException {
-        requestAccessToken(CRIId);
+        postRequestToAccessTokenEndpoint(CRIId);
     }
 
-    @And("user request VC (.*)$")
-    public void user_requests_vc(String criId) throws IOException, InterruptedException {
-        requestFraudCRIVC(criId);
+    @And("user requests Fraud CRI VC")
+    public void user_requests_vc() throws IOException, InterruptedException, ParseException {
+        requestFraudCRIVC();
     }
 
 }
