@@ -4,12 +4,15 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.AuthorizationResponse;
 import gov.di_ipv_fraud.model.AuthorisationResponse;
 import gov.di_ipv_fraud.service.ConfigurationService;
 import gov.di_ipv_fraud.step_definitions.FraudAPIStepDefs;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.Assert;
 
 import java.io.IOException;
 import java.net.URI;
@@ -47,33 +50,82 @@ public class FraudAPIPage {
 //        }
 //
 //        String jsonString = getClaimsForUser(coreStubUrl, criId, LindaDuffExperianRowNumber);
+//        LOGGER.info("jsonString = " + jsonString);
+
+//        JsonNode jsonNode = objectMapper.readTree((jsonString));
+////        JsonNode nameNode = jsonNode.get("shared_claims").get("name");
+//        ArrayNode nameNode = (ArrayNode) jsonNode.get("shared_claims").get("name");
+//        JsonNode nameParts = nameNode.get(0);
+//        ArrayNode firstNamePart = (ArrayNode) nameParts.get("nameParts");
+//
+//        if (firstNamePart != null)
+//        {
+//            JsonNode firstelementArray = firstNamePart.get(0);
+//            ((ObjectNode) firstelementArray).put("value", "JAMALA");
+//            LOGGER.info("firstelementArray = " + firstelementArray);
+//            JsonNode secondElementArray = firstNamePart.get(1);
+//            ((ObjectNode) secondElementArray).put("value", "BROWER");
+//            LOGGER.info("secondElementArray = " + secondElementArray);
+//        }
+
+//        JsonNode jsonNode = objectMapper.readTree((jsonString));
+//        JsonNode nameArray = jsonNode.get("shared_claims").get("name");
+//        JsonNode firstItemInNameArray = nameArray.get(0);
+//        JsonNode namePartsNode = firstItemInNameArray.get("nameParts");
+//        JsonNode firstItemInNamePartsArray = namePartsNode.get(0);
+//        ((ObjectNode) firstItemInNamePartsArray).put("value", "JAMALA");
+//        JsonNode secondItemInNamePartsArray = namePartsNode.get(1);
+//        ((ObjectNode) secondItemInNamePartsArray).put("value", "BROWER");
+
+
+//        ArrayNode nameNode = (ArrayNode) jsonNode.get("shared_claims").get("name");
+//        JsonNode nameParts = nameNode.get(0);
+//        ArrayNode firstNamePart = (ArrayNode) nameParts.get("nameParts");
+
+//       String claimsJsonString = jsonNode.toString();
+//       LOGGER.info("claimsJsonString = " + claimsJsonString);
+//        //LOGGER.info("nameNode = " + nameNode);
+////        LOGGER.info(jsonNode.toString());
 //        SESSION_REQUEST_BODY = createRequest(coreStubUrl, criId, jsonString);
 //        LOGGER.info("SESSION_REQUEST_BODY = " + SESSION_REQUEST_BODY);
+//
 //    }
 
-    public void userIdentityAsJwtString(String criId)
+    public String getAuthorisationJwtFromStub(String criId)
             throws URISyntaxException, IOException, InterruptedException {
         String coreStubUrl = configurationService.getCoreStubUrl(false);
-
         if (coreStubUrl == null) {
             throw new IllegalArgumentException("Environment variable IPV_CORE_STUB_URL is not set");
         }
+        return getClaimsForUser(coreStubUrl, criId, LindaDuffExperianRowNumber);
+    }
 
-        String jsonString = getClaimsForUser(coreStubUrl, criId, LindaDuffExperianRowNumber);
+    public void userIdentityAsJwtString(String criId)
+            throws URISyntaxException, IOException, InterruptedException {
+        String jsonString = getAuthorisationJwtFromStub(criId);
         LOGGER.info("jsonString = " + jsonString);
-        Map<String, String> deserialisedResponse =
-                objectMapper.readValue(jsonString, new TypeReference<>() {});
-        JsonNode jsonNode = objectMapper.readTree((JsonParser) deserialisedResponse);
-        JsonNode nameNode = jsonNode.get(0);
-//        JsonNode jsonNode = objectMapper.readTree(jsonString);
-//        String claimsJsonString = jsonNode.toString();
-//        LOGGER.info("claimsJsonString = " + claimsJsonString);
-//        JsonNode nameNode = jsonNode.get(0);
-//        LOGGER.info("nameNode = " + nameNode);
-//        LOGGER.info(jsonNode.toString());
+        String coreStubUrl = configurationService.getCoreStubUrl(false);
         SESSION_REQUEST_BODY = createRequest(coreStubUrl, criId, jsonString);
         LOGGER.info("SESSION_REQUEST_BODY = " + SESSION_REQUEST_BODY);
+    }
 
+    public void userIdentityAsJwtStringForupdatedUser(String givenName, String familyName, String criId)
+            throws URISyntaxException, IOException, InterruptedException {
+        String jsonString = getAuthorisationJwtFromStub(criId);
+        LOGGER.info("jsonString = " + jsonString);
+        String coreStubUrl = configurationService.getCoreStubUrl(false);
+        JsonNode jsonNode = objectMapper.readTree((jsonString));
+        JsonNode nameArray = jsonNode.get("shared_claims").get("name");
+        JsonNode firstItemInNameArray = nameArray.get(0);
+        JsonNode namePartsNode = firstItemInNameArray.get("nameParts");
+        JsonNode firstItemInNamePartsArray = namePartsNode.get(0);
+        ((ObjectNode) firstItemInNamePartsArray).put("value", givenName);
+        JsonNode secondItemInNamePartsArray = namePartsNode.get(1);
+        ((ObjectNode) secondItemInNamePartsArray).put("value", familyName);
+        String updatedJsonString = jsonNode.toString();
+        LOGGER.info("updatedJsonString = " + updatedJsonString);
+        SESSION_REQUEST_BODY = createRequest(coreStubUrl, criId, updatedJsonString);
+        LOGGER.info("SESSION_REQUEST_BODY = " + SESSION_REQUEST_BODY);
     }
 
     public void postRequestToSessionEndpoint() throws IOException, InterruptedException {
@@ -154,7 +206,7 @@ public class FraudAPIPage {
         ACCESS_TOKEN = deserialisedResponse.get("access_token");
     }
 
-    public void requestFraudCRIVC() throws IOException, InterruptedException, ParseException {
+    public String requestFraudCRIVC() throws IOException, InterruptedException, ParseException {
         String publicApiGatewayUrl = configurationService.getPublicAPIEndpoint();
         HttpRequest request =
                 HttpRequest.newBuilder()
@@ -167,8 +219,20 @@ public class FraudAPIPage {
         String requestFraudVCResponse = sendHttpRequest(request).body();
         LOGGER.info("requestFraudVCResponse = " + requestFraudVCResponse);
         SignedJWT signedJWT = SignedJWT.parse(requestFraudVCResponse);
-        String fraudCRIVC = signedJWT.getJWTClaimsSet().toString();
+        return signedJWT.getJWTClaimsSet().toString();
+    }
+
+    public void identityFraudScoreInVC(Integer identityFraudScore)
+            throws URISyntaxException, IOException, InterruptedException, ParseException {
+        String fraudCRIVC = requestFraudCRIVC();
         LOGGER.info("fraudCRIVC = " + fraudCRIVC);
+        JsonNode jsonNode = objectMapper.readTree((fraudCRIVC));
+        JsonNode evidenceArray = jsonNode.get("vc").get("evidence");
+        JsonNode firstItemInEvidenceArray = evidenceArray.get(0);
+        LOGGER.info("firstItemInEvidenceArray = " + firstItemInEvidenceArray);
+        Integer actualIdentityFraudScore = firstItemInEvidenceArray.get("identityFraudScore").asInt();
+        LOGGER.info("actualIdentityFraudScore = " + actualIdentityFraudScore);
+        Assert.assertEquals(identityFraudScore, actualIdentityFraudScore);
     }
 
     private String getClaimsForUser(String baseUrl, String criId, int userDataRowNumber)
