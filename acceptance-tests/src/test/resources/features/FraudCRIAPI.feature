@@ -1,85 +1,115 @@
 @fraud_CRI_API
 Feature: Fraud CRI API
 
-  @intialJWT_happy_path @pre-merge @dev
-  Scenario: Acquire initial JWT (STUB)
-    Given user has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
-    When user sends a POST request to session endpoint
-    Then user gets a session-id
-    And user sends a POST request to Fraud endpoint
+#  PASS
+  @intialJWT_happy_path @fraudCRI_API @pre-merge @dev
+  Scenario: Acquire initial JWT and Fraud Check with PEP error response failure(STUB)
+    Given user ALBERT PEP_ERROR_RESPONSE has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
+    And user sends a POST request to session endpoint
+    And user gets a session-id
+    When user sends a POST request to Fraud endpoint
     And user gets authorisation code
     And user sends a POST request to Access Token endpoint fraud-cri-dev
-    And user requests Fraud CRI VC
-    And VC should contain identityFraudScore 1
+    Then user requests Fraud CRI VC
+    And VC should contain ci  and identityFraudScore 1
 
-  @intialJWT_happy_path @pre-merge @dev
+#    PASS
+  @fraudCRI_API @pre-merge @dev
+  Scenario: Acquire initial JWT and Fraud Check with PEP tech failure(STUB)
+    Given user ALBERT PEP_TECH_FAIL has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
+    And user sends a POST request to session endpoint
+    And user gets a session-id
+    When user sends a POST request to Fraud endpoint
+    And user gets authorisation code
+    And user sends a POST request to Access Token endpoint fraud-cri-dev
+    Then user requests Fraud CRI VC
+    And VC should contain ci  and identityFraudScore 1
+
+  @fraudCRI_API @pre-merge @dev
+  Scenario: Fraud Check Succeeds and PEP Succeeds but is not PEP (HOLLINGDALU)
+    Given user ALBERT HOLLINGDALU has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
+    And user sends a POST request to session endpoint
+    And user gets a session-id
+    When user sends a POST request to Fraud endpoint
+    And user gets authorisation code
+    And user sends a POST request to Access Token endpoint fraud-cri-dev
+    Then user requests Fraud CRI VC
+    And VC should contain ci  and identityFraudScore 2
+
+#    FAIL
+  @fraudCRI_API @pre-merge @dev
   Scenario: Fraud Check and PEP check complete(STUB)
-#    First test step has to be changed to use a PEP user
-    Given user MICHELLE NO_FILE_99 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
-    When user sends a POST request to session endpoint
-    Then user gets a session-id
-    And user sends a POST request to Fraud endpoint
+#    VC for Fraud Succeeds and PEP Succeeds but is PEP (PEPS)
+    Given user ALBERT PEPS has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
+    And user sends a POST request to session endpoint
+    And user gets a session-id
+    When user sends a POST request to Fraud endpoint
     And user gets authorisation code
     And user sends a POST request to Access Token endpoint fraud-cri-dev
-    And user requests Fraud CRI VC
-    And VC should contain identityFraudScore 1
+    Then user requests Fraud CRI VC
+    And VC should contain ci P01 and identityFraudScore 2
 
-  @intialJWT_happy_path @pre-merge @dev
+#    PASS
+  @fraudCRI_API @pre-merge @dev
   Scenario: Fraud Happy path for user with decision score below 35(STUB)
     Given user ALBERT NO_FILE_35 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
-    When user sends a POST request to session endpoint
-    Then user gets a session-id
-    And user sends a POST request to Fraud endpoint
+    And user sends a POST request to session endpoint
+    And user gets a session-id
+    When user sends a POST request to Fraud endpoint
     And user gets authorisation code
     And user sends a POST request to Access Token endpoint fraud-cri-dev
-    And user requests Fraud CRI VC
-#    And VC should contain identityFraudScore 1
-#    AND the PEP check is not completed
+    Then user requests Fraud CRI VC
+    And VC should contain ci  and identityFraudScore 1
 
-  @intialJWT_happy_path @pre-merge @dev
-  Scenario: User found on mortality record(STUB)
-    Given user on a mortality record has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
-    When user sends a POST request to session endpoint
-    Then user gets a session-id
-    And user sends a POST request to Fraud endpoint
-#    AND one of the following U-codes is returned
+#    FAIL
+  @fraudCRI_API @pre-merge @dev
+  Scenario: Fraud Check for user found on mortality record(STUB)
+    Given user ALBERT GILT has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
+    And user sends a POST request to session endpoint
+    And user gets a session-id
+    When user sends a POST request to Fraud endpoint
     And user gets authorisation code
     And user sends a POST request to Access Token endpoint fraud-cri-dev
-    And user requests Fraud CRI VC
-    And VC should contain identityFraudScore 0
-#  AND the PEP check is not completed
+    Then user requests Fraud CRI VC
+    And VC should contain ci T02 and identityFraudScore 0
 
-  @intialJWT_happy_path @pre-merge @dev
-#    not clear
+#    What should the ci be?
+  @fraudCRI_API @pre-merge @dev
   Scenario: Fraud check and PEP check complete but Name and DoB of user matches the record of a PEP
-#    Given PEP user has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
-    When user sends a POST request to session endpoint
-    Then user gets a session-id
-    And user sends a POST request to Fraud endpoint
-#    AND the PEP check is completed
-#    AND the U-code: U134 is returned
+    Given user ROBERT U134 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
+    And user sends a POST request to session endpoint
+    And user gets a session-id
+    When user sends a POST request to Fraud endpoint
     And user gets authorisation code
     And user sends a POST request to Access Token endpoint fraud-cri-dev
-    And user requests Fraud CRI VC
-    And VC should contain identityFraudScore 2
+    Then user requests Fraud CRI VC
+    And VC should contain ci (.*) and identityFraudScore 2
 
-  @intialJWT_happy_path @pre-merge @dev
-  Scenario: Users address possibly belongs to someone else / Home telephone supplied does not match database / Potential developed identity
-#    (Users address possibly belongs to someone else / Home telephone supplied does not match database / Potential developed identity)
-#    Given user has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
-    When user sends a POST request to session endpoint
-    Then user gets a session-id
-    And user sends a POST request to Fraud endpoint
-#    AND one of the following U-codes is returned
-#    AND the PEP check is completed
+#    FAIL
+  @fraudCRI_API @pre-merge @dev
+  Scenario Outline: Fraud Check for users with address possibly belongs to someone else / Home telephone supplied does not match database / Potential developed identity
+    Given user <givenName> <familyName> has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
+    And user sends a POST request to session endpoint
+    And user gets a session-id
+    When user sends a POST request to Fraud endpoint
     And user gets authorisation code
     And user sends a POST request to Access Token endpoint fraud-cri-dev
-    And user requests Fraud CRI VC
-    And VC should contain identityFraudScore 2
-
-
-#  @intialJWT_happy_path
-#  Scenario: Acquire initial JWT (STUB)
-#    Given user has the user identity in the form of a signed JWT string for CRI Id fraud-cri-build
-#    When user sends a POST request to session end point
-#    Then user gets a session-id
+    Then user requests Fraud CRI VC
+    And VC should contain ci <ci> and identityFraudScore 2
+    Examples:
+      | givenName| familyName | ci  |
+      | Albert   | U150       | CI1 |
+      | Anthony  | U007       | CI2 |
+      | Linda    | U156       | CI2 |
+      | Albert   | U018       | CI2 |
+      | Anthony  | U001       | CI3 |
+      | Linda    | U141       | CI3 |
+      | Albert   | U142       | CI4 |
+      | Anthony  | U143       | CI4 |
+      | Linda    | U144       | CI4 |
+      | Albert   | U145       | CI4 |
+      | Anthony  | U146       | CI4 |
+      | Linda    | U147       | CI4 |
+      | Albert   | U163       | CI4 |
+      | Anthony  | U160       | CI5 |
+      | Linda    | U161       | CI5 |

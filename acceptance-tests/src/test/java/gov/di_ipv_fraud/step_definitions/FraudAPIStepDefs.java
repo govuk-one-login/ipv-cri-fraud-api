@@ -24,18 +24,18 @@ public class FraudAPIStepDefs extends FraudAPIPage {
         userIdentityAsJwtStringForupdatedUser(GivenName, FamilyName, criId);
     }
 
-    @When("user sends a POST request to session endpoint")
+    @And("user sends a POST request to session endpoint")
     public void user_sends_a_post_request_to_session_end_point()
             throws IOException, InterruptedException {
         postRequestToSessionEndpoint();
     }
 
-    @Then("user gets a session-id")
+    @And("user gets a session-id")
     public void user_gets_a_session_id() {
         getSessionId();
     }
 
-    @And("user sends a POST request to Fraud endpoint")
+    @When("user sends a POST request to Fraud endpoint")
     public void user_sends_a_post_request_to_fraud_end_point()
             throws IOException, InterruptedException {
         postRequestToFraudEndpoint();
@@ -51,14 +51,14 @@ public class FraudAPIStepDefs extends FraudAPIPage {
         postRequestToAccessTokenEndpoint(CRIId);
     }
 
-    @And("user requests Fraud CRI VC")
+    @Then("user requests Fraud CRI VC")
     public void user_requests_vc() throws IOException, InterruptedException, ParseException {
         requestFraudCRIVC();
     }
 
-    @And("VC should contain identityFraudScore (.*)$")
-    public void vc_should_contain_identityFraudScore(Integer identityFraudScore) throws IOException, InterruptedException, ParseException, URISyntaxException {
-        identityFraudScoreInVC(identityFraudScore);
+    @And("VC should contain ci (.*) and identityFraudScore (.*)$")
+    public void vc_should_contain_ci_and_identityFraudScore(String ci, Integer identityFraudScore) throws IOException, InterruptedException, ParseException, URISyntaxException {
+        ciAndIdentityFraudScoreInVC(ci, identityFraudScore);
     }
 
 }
