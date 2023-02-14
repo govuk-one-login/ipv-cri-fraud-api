@@ -178,11 +178,21 @@ public class FraudAPIPage {
         JsonNode evidenceArray = jsonNode.get("vc").get("evidence");
         JsonNode firstItemInEvidenceArray = evidenceArray.get(0);
         LOGGER.info("firstItemInEvidenceArray = " + firstItemInEvidenceArray);
-        String actualCI = firstItemInEvidenceArray.get("ci").asText();
-        LOGGER.info("actualCI = " + actualCI);
+        JsonNode ciNode = firstItemInEvidenceArray.get("ci");
+        if (ciNode.isArray() && ciNode.size()>0){
+            JsonNode firstItemInCIArray = firstItemInEvidenceArray.get("ci").get(0);
+            String actualCI = firstItemInCIArray.asText();
+            LOGGER.info("actualCI = " + actualCI);
+            Assert.assertEquals(ci, actualCI);
+        }
+        else {
+            String actualCI = ciNode.asText();
+            LOGGER.info("CI when Empty = " + actualCI);
+            Assert.assertEquals(ci, actualCI);
+        }
+
         Integer actualIdentityFraudScore = firstItemInEvidenceArray.get("identityFraudScore").asInt();
         LOGGER.info("actualIdentityFraudScore = " + actualIdentityFraudScore);
-        Assert.assertEquals(ci, actualCI);
         Assert.assertEquals(identityFraudScore, actualIdentityFraudScore);
     }
 
