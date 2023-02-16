@@ -9,6 +9,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import uk.gov.di.ipv.cri.common.library.domain.AuditEventContext;
+import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.common.library.exception.SqsException;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
@@ -17,6 +19,7 @@ import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.ValidationResult;
+import uk.gov.di.ipv.cri.fraud.api.domain.audit.TPREFraudAuditExtension;
 import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyFraudGateway;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 
@@ -28,6 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -330,6 +335,12 @@ class IdentityVerificationServiceTest {
             assertAllFraudChecksFailAndPepNotPresent(
                     result.getChecksSucceeded(), result.getChecksFailed());
         }
+
+        verify(mockAuditService)
+                .sendAuditEvent(
+                        eq(AuditEventType.RESPONSE_RECEIVED),
+                        any(AuditEventContext.class),
+                        eq(new TPREFraudAuditExtension(result.getThirdPartyFraudCodes())));
 
         assertEquals(expectedIdentityFraudScore, result.getIdentityCheckScore());
     }

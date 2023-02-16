@@ -12,6 +12,7 @@ public class IdentityVerificationResult {
     private String transactionId;
     private String pepTransactionId;
     private String decisionScore;
+    private List<String> thirdPartyFraudCodes = new ArrayList<>();
 
     // These checks have specific meanings and appear in the VC
     private List<String> checksSucceeded = new ArrayList<>();
@@ -95,5 +96,13 @@ public class IdentityVerificationResult {
 
     public void setChecksFailed(List<String> checksFailed) {
         this.checksFailed = checksFailed;
+    }
+
+    public List<String> getThirdPartyFraudCodes() {
+        return thirdPartyFraudCodes;
+    }
+
+    public void setThirdPartyFraudCodes(List<String> thirdPartyFraudCodes) {
+        this.thirdPartyFraudCodes = thirdPartyFraudCodes;
     }
 }
