@@ -27,3 +27,15 @@ When running in the pipeline these will be taken from AWS
 Run tests with `./gradlew cucumber -P tags=@fraud_CRI`
 or if its your first time running these tests `./run-local-tests.sh` will help you setup
 and run the tests
+
+If running local test using `./run-local-tests.sh` these are the recommended parameters:
+
+`What environment are you running against? dev`
+
+`Are your running locally? yes`
+
+`Are you including E2E tests? no`
+
+`Are you including Backend tests? no`
+
+`Which tag would you like to run (include the @ in the name)? @build-fraud`

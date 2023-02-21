@@ -69,7 +69,7 @@ public class FraudPageObject extends UniversalSteps {
     public WebElement whoWeCheckLink;
 
     @FindBy(xpath = "//*[@id=\"main-content\"]/div/div/form/details/div/p[1]/a")
-    public WebElement experianLink;
+    public WebElement thirdPartyLink;
 
     @FindBy(xpath = "//*[@id=\"main-content\"]/div/div/form/details/div/p[3]/a")
     public WebElement privacyPolicyLink;
@@ -226,8 +226,8 @@ public class FraudPageObject extends UniversalSteps {
         waitForTextToAppear(CHECKING_YOUR_DETAILS);
         whoWeCheckLink.click();
 
-        if ("Experian".equalsIgnoreCase(page)) {
-            experianLink.click();
+        if ("ThirdParty".equalsIgnoreCase(page)) {
+            thirdPartyLink.click();
             ArrayList<String> newTb = new ArrayList<String>(Driver.get().getWindowHandles());
             Driver.get().switchTo().window(newTb.get(1));
             assertURLContains("https://www.experian.co.uk/");

@@ -30,22 +30,22 @@ public class FraudStepDefs extends FraudPageObject {
         navigateToFraudCRIOnTestEnv();
     }
 
-    @Then("^I search for user number (.*) in the Experian table$")
+    @Then("^I search for user number (.*) in the ThirdParty table$")
     public void userSearch(String number) {
         searchForUATUser(number);
     }
 
-    @And("^I navigate to the verifiable issuer to check for a (.*) response from experian$")
+    @And("^I navigate to the verifiable issuer to check for a (.*) response from thirdParty")
     public void navigateToVerifiableIssuer(String validOrInvalid) {
         navigateToResponse(validOrInvalid);
     }
 
     @Then("^I navigate to (.*) and assert I have been directed correctly$")
-    public void experianOrPrivacyPolicy(String page) {
+    public void thirdPartyOrPrivacyPolicy(String page) {
         whoWeCheckDetailsWith(page);
     }
 
-    @When("^I search for user name (.*) in the Experian table$")
+    @When("^I search for user name (.*) in the ThirdParty table$")
     public void userSearchByUserName(String username) {
         userSearchByName(username);
     }
@@ -80,7 +80,7 @@ public class FraudStepDefs extends FraudPageObject {
         goToVerifiableCredentialsPage();
     }
 
-    @And("^I check for a (.*) response from experian")
+    @And("^I check for a (.*) response from thirdParty")
     public void navigateToVerifiableCredentials(String validOrInvalid) {
         goToResponse(validOrInvalid);
     }

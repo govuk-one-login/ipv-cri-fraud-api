@@ -5,8 +5,8 @@ Feature: Fraud CRI
   Scenario: User Journey Happy Path (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
-    Then I search for user number 12 in the Experian table
-    And I navigate to the verifiable issuer to check for a Valid response from experian
+    Then I search for user number 12 in the ThirdParty table
+    And I navigate to the verifiable issuer to check for a Valid response from thirdParty
     And Expiry time should be 6 months from the nbf in the JSON payload
     And The test is complete and I close the driver
 
@@ -14,29 +14,29 @@ Feature: Fraud CRI
   Scenario: User Journey Unhappy Path (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
-    Then I search for user number 14 in the Experian table
-    And I navigate to the verifiable issuer to check for a Invalid response from experian
+    Then I search for user number 14 in the ThirdParty table
+    And I navigate to the verifiable issuer to check for a Invalid response from thirdParty
     And The test is complete and I close the driver
 
   @external_links @build-fraud @staging-fraud @integration-fraud
-  Scenario Outline: User Navigates To Experian/Privacy Policy
+  Scenario Outline: User Navigates To ThirdParty/Privacy Policy
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
-    Then I search for user number 12 in the Experian table
+    Then I search for user number 12 in the ThirdParty table
     Then I navigate to <page> and assert I have been directed correctly
     And The test is complete and I close the driver
     Examples:
       | page           |
-      | Experian       |
+      | ThirdParty       |
       | Privacy Policy |
 
   @userSearch_by_userName_happyPath @build-fraud @staging-fraud @integration-fraud
   Scenario: User Search By UserName User Journey Happy Path (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
-    When I search for user name Linda Duff in the Experian table
+    When I search for user name Linda Duff in the ThirdParty table
     And I click on Go to Fraud CRI link
-    Then I navigate to the verifiable issuer to check for a Valid response from experian
+    Then I navigate to the verifiable issuer to check for a Valid response from thirdParty
     And JSON payload should contain user's name
     And The test is complete and I close the driver
 
@@ -44,20 +44,20 @@ Feature: Fraud CRI
   Scenario: User is presented with a spinner when clicking on the Continue button in the Fraud CRI screen (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
-    And I search for user number 12 in the Experian table
+    And I search for user number 12 in the ThirdParty table
     And I navigate to the page We need to check your details
     When I check Continue button is enabled and click on the Continue button
     Then I navigate to Verifiable Credentials page
-    And I check for a Valid response from experian
+    And I check for a Valid response from thirdParty
     And The test is complete and I close the driver
 
   @userSearch_by_invalid_userName @staging-fraud
   Scenario: User Search By Invalid UserName(STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the Staging environment
-    When I search for user name Debra Kiritharnathan in the Experian table
+    When I search for user name Debra Kiritharnathan in the ThirdParty table
     And I click on Go to Fraud CRI link
-    Then I navigate to the verifiable issuer to check for a Invalid response from experian
+    Then I navigate to the verifiable issuer to check for a Invalid response from thirdParty
     And JSON response should contain error details and status code as 302
     And The test is complete and I close the driver
 
@@ -65,9 +65,9 @@ Feature: Fraud CRI
   Scenario: User Search By Invalid UserName(STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the Integration environment
-    When I search for user name Debra Kiritharnathan in the Experian table
+    When I search for user name Debra Kiritharnathan in the ThirdParty table
     And I click on Go to Fraud CRI link
-    Then I navigate to the verifiable issuer to check for a Invalid response from experian
+    Then I navigate to the verifiable issuer to check for a Invalid response from thirdParty
     And JSON response should contain error details and status code as 302
     And The test is complete and I close the driver
 
@@ -75,13 +75,13 @@ Feature: Fraud CRI
   Scenario: Edit User Happy Path (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
-    And I search for user name Linda Duff in the Experian table
+    And I search for user name Linda Duff in the ThirdParty table
     When I click on Edit User link
     And I am on Edit User page
     And I enter Test 45 in the House name field
     And I clear existing House number
     And I enter 455 in the House number field
-    Then I navigate to the verifiable issuer to check for a Valid response from experian
+    Then I navigate to the verifiable issuer to check for a Valid response from thirdParty
     And JSON payload should contain user's House name as Test 45 and House number as 455
     And The test is complete and I close the driver
 
@@ -89,8 +89,8 @@ Feature: Fraud CRI
   Scenario: User Journey Happy Path with A01 CI (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the Staging environment
-    Then I search for user number 34 in the Experian table
-    And I navigate to the verifiable issuer to check for a Valid response from experian
+    Then I search for user number 34 in the ThirdParty table
+    And I navigate to the verifiable issuer to check for a Valid response from thirdParty
     And JSON payload should contain ci A01 and score 2
     And The test is complete and I close the driver
 
@@ -98,7 +98,7 @@ Feature: Fraud CRI
   Scenario Outline: Edit User Happy Path with pep CI (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
-    And I search for user name LINDA DUFF in the Experian table
+    And I search for user name LINDA DUFF in the ThirdParty table
     When I click on Edit User link
     And I am on Edit User page
     And I clear existing Date of Birth
@@ -107,7 +107,7 @@ Feature: Fraud CRI
     And I clear existing surname
     And I enter name <name>
     And I submit user updates
-    And I navigate to the verifiable issuer to check for a Valid response from experian
+    And I navigate to the verifiable issuer to check for a Valid response from thirdParty
     And JSON payload should contain ci <ci> and score <score>
     And The test is complete and I close the driver
 
@@ -121,7 +121,7 @@ Feature: Fraud CRI
   Scenario Outline: Edit User Happy Path with pep CI (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the Staging environment
-    And I search for user name LINDA DUFF in the Experian table
+    And I search for user name LINDA DUFF in the ThirdParty table
     When I click on Edit User link
     And I am on Edit User page
     And I clear existing Date of Birth
@@ -130,7 +130,7 @@ Feature: Fraud CRI
     And I clear existing surname
     And I enter name <name>
     And I submit user updates
-    And I navigate to the verifiable issuer to check for a Valid response from experian
+    And I navigate to the verifiable issuer to check for a Valid response from thirdParty
     And JSON payload should contain ci <ci> and score <score>
     And The test is complete and I close the driver
 
@@ -168,12 +168,12 @@ Feature: Fraud CRI
 #  Scenario Outline: Search for user with missing details and edit user UnHappy Path (STUB)'
 #    Given I navigate to the IPV Core Stub
 #    And I click the Fraud CRI for the <environment> environment
-#    And I search for user name Richard Gillis in the Experian table
+#    And I search for user name Richard Gillis in the ThirdParty table
 #    When I click on Edit User link
 #    And I clear the postcode
 #    And I clear existing House number
 #    And I click on Go to Fraud CRI link after Edit
-#    Then I navigate to the verifiable issuer to check for a Invalid response from experian
+#    Then I navigate to the verifiable issuer to check for a Invalid response from thirdParty
 #    And JSON response should contain error details and status code as 302
 #    And Validate User navigation back to core for invalid users
 #    And The test is complete and I close the driver
@@ -188,7 +188,7 @@ Feature: Fraud CRI
   Scenario Outline: Edit PEP User with multiple addresses (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the Staging environment
-    And I search for user name LINDA DUFF in the Experian table
+    And I search for user name LINDA DUFF in the ThirdParty table
     When I click on Edit User link
     Then I am on Edit User page
     And I clear existing Date of Birth
@@ -202,7 +202,7 @@ Feature: Fraud CRI
       | 285         | HIGH STREET| WESTBURY   | BA13 3BN  |
     And I enter valid to date as 01/01/2021
     And I submit user updates
-    Then I navigate to the verifiable issuer to check for a Valid response from experian
+    Then I navigate to the verifiable issuer to check for a Valid response from thirdParty
     And JSON payload should contain ci <ci> and score <score>
     And The test is complete and I close the driver
 
@@ -215,7 +215,7 @@ Feature: Fraud CRI
   Scenario Outline: Edit PEP User with multiple addresses (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
-    And I search for user name LINDA DUFF in the Experian table
+    And I search for user name LINDA DUFF in the ThirdParty table
     When I click on Edit User link
     Then I am on Edit User page
     And I clear existing Date of Birth
@@ -229,7 +229,7 @@ Feature: Fraud CRI
       | 285         | HIGH STREET| WESTBURY   | BA13 3BN  |
     And I enter valid to date as 01/01/2021
     And I submit user updates
-    Then I navigate to the verifiable issuer to check for a Valid response from experian
+    Then I navigate to the verifiable issuer to check for a Valid response from thirdParty
     And JSON payload should contain ci <ci> and score <score>
     And The test is complete and I close the driver
 
@@ -241,7 +241,7 @@ Feature: Fraud CRI
   Scenario Outline:Crosscore Authenticate and PEP completed and user is a PEP
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
-    And I search for user name LINDA DUFF in the Experian table
+    And I search for user name LINDA DUFF in the ThirdParty table
     When I click on Edit User link
     Then I am on Edit User page
     And I clear existing Date of Birth
@@ -250,7 +250,7 @@ Feature: Fraud CRI
     Then I clear existing surname
     Then I enter name <name>
     And I submit user updates
-    Then I navigate to the verifiable issuer to check for a Valid response from experian
+    Then I navigate to the verifiable issuer to check for a Valid response from thirdParty
     And JSON payload should contain checkDetails impersonation_risk_check
     And JSON payload should contain checkDetails mortality_check
     And JSON payload should contain checkDetails identity_theft_check
@@ -266,7 +266,7 @@ Feature: Fraud CRI
   Scenario Outline:Crosscore Authenticate and PEP completed and user not PEP
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
-    And I search for user name LINDA DUFF in the Experian table
+    And I search for user name LINDA DUFF in the ThirdParty table
     When I click on Edit User link
     Then I am on Edit User page
     And I clear existing Date of Birth
@@ -275,7 +275,7 @@ Feature: Fraud CRI
     Then I clear existing surname
     And I enter name <name>
     And I submit user updates
-    Then I navigate to the verifiable issuer to check for a Valid response from experian
+    Then I navigate to the verifiable issuer to check for a Valid response from thirdParty
     And JSON payload should contain checkDetails impersonation_risk_check
     And JSON payload should contain checkDetails mortality_check
     And JSON payload should contain checkDetails identity_theft_check
@@ -291,7 +291,7 @@ Feature: Fraud CRI
   Scenario Outline: Mortality u-code returned
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
-    And I search for user name LINDA DUFF in the Experian table
+    And I search for user name LINDA DUFF in the ThirdParty table
     When I click on Edit User link
     Then I am on Edit User page
     And I clear existing Date of Birth
@@ -300,7 +300,7 @@ Feature: Fraud CRI
     And I clear existing surname
     Then I enter name <name>
     And I submit user updates
-    Then I navigate to the verifiable issuer to check for a Valid response from experian
+    Then I navigate to the verifiable issuer to check for a Valid response from thirdParty
     And JSON payload should contain failedCheckDetails mortality_check
     And JSON payload should contain failedCheckDetails identity_theft_check
     Then JSON payload should contain failedCheckDetails synthetic_identity_check
@@ -312,10 +312,10 @@ Feature: Fraud CRI
 
 
   @build-fraud @test
-  Scenario Outline: Crosscore Authenticate completed and PEP not completed due to error from Experian
+  Scenario Outline: Crosscore Authenticate completed and PEP not completed due to error from ThirdParty
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
-    And I search for user name LINDA DUFF in the Experian table
+    And I search for user name LINDA DUFF in the ThirdParty table
     When I click on Edit User link
     Then I am on Edit User page
     And I clear existing Date of Birth
@@ -324,7 +324,7 @@ Feature: Fraud CRI
     And I clear existing surname
     Then I enter name <name>
     And I submit user updates
-    Then I navigate to the verifiable issuer to check for a Valid response from experian
+    Then I navigate to the verifiable issuer to check for a Valid response from thirdParty
     And JSON payload should contain failedCheckDetails impersonation_risk_check
     And JSON payload should contain checkDetails mortality_check
     And JSON payload should contain checkDetails identity_theft_check
@@ -339,7 +339,7 @@ Feature: Fraud CRI
   Scenario Outline: Crosscore Authenticate completed and PEP not completed due to technical failure
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
-    And I search for user name LINDA DUFF in the Experian table
+    And I search for user name LINDA DUFF in the ThirdParty table
     When I click on Edit User link
     Then I am on Edit User page
     And I clear existing Date of Birth
@@ -348,7 +348,7 @@ Feature: Fraud CRI
     And I clear existing surname
     Then I enter name <name>
     And I submit user updates
-    Then I navigate to the verifiable issuer to check for a Valid response from experian
+    Then I navigate to the verifiable issuer to check for a Valid response from thirdParty
     And JSON payload should contain failedCheckDetails impersonation_risk_check
     And JSON payload should contain checkDetails mortality_check
     And JSON payload should contain checkDetails identity_theft_check
@@ -363,7 +363,7 @@ Feature: Fraud CRI
   Scenario Outline: Decision score below 35
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
-    And I search for user name LINDA DUFF in the Experian table
+    And I search for user name LINDA DUFF in the ThirdParty table
     When I click on Edit User link
     Then I am on Edit User page
     And I clear existing Date of Birth
@@ -372,7 +372,7 @@ Feature: Fraud CRI
     And I clear existing surname
     Then I enter name <name>
     And I submit user updates
-    Then I navigate to the verifiable issuer to check for a Valid response from experian
+    Then I navigate to the verifiable issuer to check for a Valid response from thirdParty
     And JSON payload should contain failedCheckDetails mortality_check
     And JSON payload should contain failedCheckDetails identity_theft_check
     Then JSON payload should contain failedCheckDetails synthetic_identity_check
