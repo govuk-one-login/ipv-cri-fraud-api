@@ -26,6 +26,10 @@ jobs:
           server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
           settings-path: ${{ github.workspace }} # location for the settings.xml file
 
+      - uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: 7.3
+
       - name: Run Fraud Smoke test against build environment
         env:
           BROWSER: chrome-headless

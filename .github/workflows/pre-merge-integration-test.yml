@@ -32,6 +32,10 @@ jobs:
           java-version: 11
           distribution: zulu
 
+      - uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: 7.3
+
       - name: Setup SAM CLI
         uses: aws-actions/setup-sam@v1
 
