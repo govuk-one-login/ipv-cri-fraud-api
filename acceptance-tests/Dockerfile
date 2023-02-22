@@ -1,4 +1,4 @@
-FROM gradle:jdk11
+FROM gradle:7.6.0-jdk11
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip awscliv2.zip && ./aws/install
 
 RUN apt-get update
