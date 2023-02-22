@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@JsonIgnoreProperties(value = "originalRequestData")
+@JsonIgnoreProperties(ignoreUnknown = true, value = "originalRequestData")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class IdentityVerificationResponse {
     @JsonProperty("responseHeader")
