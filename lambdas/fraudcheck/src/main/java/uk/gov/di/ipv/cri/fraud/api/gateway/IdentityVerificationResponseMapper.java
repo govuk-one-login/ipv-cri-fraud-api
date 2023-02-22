@@ -9,6 +9,9 @@ import uk.gov.di.ipv.cri.fraud.api.domain.ValidationResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.*;
 import uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationInfoResponseValidator;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -99,6 +102,42 @@ public class IdentityVerificationResponseMapper {
                         .filter(StringUtils::isNotBlank)
                         .sequential()
                         .collect(Collectors.toCollection(() -> fraudCodes));
+
+                OtherData otherData = decisionElement.getOtherData();
+                Boolean isOtherDataNull = isOtherDataNull(otherData);
+
+                if (!isOtherDataNull) {
+                    AuthConsumer authConsumer =
+                            otherData.getAuthResults().getAuthPlusResults().getAuthConsumer();
+                    if (null != authConsumer.getLocDataOnlyAtCLoc()
+                            && null
+                                    != authConsumer
+                                            .getLocDataOnlyAtCLoc()
+                                            .getStartDateOldestPrim()) {
+                        calculateOldestDataRecordDate(
+                                authConsumer.getLocDataOnlyAtCLoc().getStartDateOldestPrim(),
+                                "LocDataOnlyAtCLoc_StartDate0ldestPrim");
+                    }
+
+                    if (null != authConsumer.getIdandLocDataAtCL()
+                            && null
+                                    != authConsumer
+                                            .getIdandLocDataAtCL()
+                                            .getStartDateOldestPrim()) {
+                        calculateOldestDataRecordDate(
+                                authConsumer.getIdandLocDataAtCL().getStartDateOldestPrim(),
+                                "idAndLocDataAtCL_StartDateOldestPrim");
+                    }
+
+                    if (null != authConsumer.getIdandLocDataAtCL()
+                            && null != authConsumer.getIdandLocDataAtCL().getStartDateOldestSec()) {
+                        calculateOldestDataRecordDate(
+                                authConsumer.getIdandLocDataAtCL().getStartDateOldestSec(),
+                                "idAndLocDataAtCL_StartDateOldestSec");
+                    }
+                } else {
+                    LOGGER.info("No value found for Activity History score related fields ");
+                }
             }
 
             Integer decisionScore = getDecisionScore(decisionElements, "Fraud");
@@ -142,6 +181,42 @@ public class IdentityVerificationResponseMapper {
                         .filter(StringUtils::isNotBlank)
                         .sequential()
                         .collect(Collectors.toCollection(() -> fraudCodes));
+
+                OtherData otherData = decisionElement.getOtherData();
+                Boolean isOtherDataNull = isOtherDataNull(otherData);
+
+                if (!isOtherDataNull) {
+                    AuthConsumer authConsumer =
+                            otherData.getAuthResults().getAuthPlusResults().getAuthConsumer();
+                    if (null != authConsumer.getLocDataOnlyAtCLoc()
+                            && null
+                                    != authConsumer
+                                            .getLocDataOnlyAtCLoc()
+                                            .getStartDateOldestPrim()) {
+                        calculateOldestDataRecordDate(
+                                authConsumer.getLocDataOnlyAtCLoc().getStartDateOldestPrim(),
+                                "LocDataOnlyAtCLoc_StartDate0ldestPrim");
+                    }
+
+                    if (null != authConsumer.getIdandLocDataAtCL()
+                            && null
+                                    != authConsumer
+                                            .getIdandLocDataAtCL()
+                                            .getStartDateOldestPrim()) {
+                        calculateOldestDataRecordDate(
+                                authConsumer.getIdandLocDataAtCL().getStartDateOldestPrim(),
+                                "idAndLocDataAtCL_StartDateOldestPrim");
+                    }
+
+                    if (null != authConsumer.getIdandLocDataAtCL()
+                            && null != authConsumer.getIdandLocDataAtCL().getStartDateOldestSec()) {
+                        calculateOldestDataRecordDate(
+                                authConsumer.getIdandLocDataAtCL().getStartDateOldestSec(),
+                                "idAndLocDataAtCL_StartDateOldestSec");
+                    }
+                } else {
+                    LOGGER.info("No value found for Activity History score related fields ");
+                }
             }
 
             getDecisionScore(decisionElements, "PEP");
@@ -189,5 +264,48 @@ public class IdentityVerificationResponseMapper {
             LOGGER.info("No decision elements");
         }
         return null;
+    }
+
+    // TODO: Uncomment for score calculation ticket
+    private String calculateOldestDataRecordDate(String fieldDate, String fieldName) {
+        String LocDataOnlyAtCLoc_StartDate0ldestPrim = "No value present";
+        LocalDate date = LocalDate.parse(fieldDate, DateTimeFormatter.ofPattern("yyddMM"));
+        Duration diff = Duration.between(LocalDate.now().atStartOfDay(), date.atStartOfDay());
+        long diffDays = diff.toDays();
+        long dateInYears = diffDays / 365;
+        String approxDateInYears = "None";
+        if (dateInYears > 1) {
+            approxDateInYears = "Greater than 1";
+        }
+        if (dateInYears > 3) {
+            approxDateInYears = "Greater than 3";
+        }
+        LocDataOnlyAtCLoc_StartDate0ldestPrim = approxDateInYears;
+
+        // TODO: remove activity history score field logging after calculator is made and
+        // score
+        // added to VC
+
+        LOGGER.info(
+                "Logging activity history score related value in response {} {}",
+                fieldName,
+                LocDataOnlyAtCLoc_StartDate0ldestPrim);
+        return LocDataOnlyAtCLoc_StartDate0ldestPrim;
+    }
+
+    private Boolean isOtherDataNull(OtherData otherData) {
+        if (null != otherData) {
+            AuthResults authResults = otherData.getAuthResults();
+            if (null != authResults) {
+                AuthPlusResults authPlusResults = authResults.getAuthPlusResults();
+                if (null != authPlusResults) {
+                    AuthConsumer authConsumer = authPlusResults.getAuthConsumer();
+                    if (null != authConsumer) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 }
