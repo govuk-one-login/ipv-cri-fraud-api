@@ -18,5 +18,4 @@ public class OtherData {
     public void setAuthResults(AuthResults authResults) {
         this.authResults = authResults;
     }
-
 }
