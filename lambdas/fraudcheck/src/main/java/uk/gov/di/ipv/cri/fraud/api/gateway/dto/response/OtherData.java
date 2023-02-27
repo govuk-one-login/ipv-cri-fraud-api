@@ -8,9 +8,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class OtherData {
 
-    @JsonProperty("response")
-    private String response;
-
     @JsonProperty("authResults")
     private AuthResults authResults;
 
@@ -20,13 +17,5 @@ public class OtherData {
 
     public void setAuthResults(AuthResults authResults) {
         this.authResults = authResults;
-    }
-
-    public String getResponse() {
-        return response;
-    }
-
-    public void setResponse(String response) {
-        this.response = response;
     }
 }
