@@ -13,9 +13,11 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static java.lang.Math.toIntExact;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_FRAUD_RESPONSE_TYPE_ERROR;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO_VALIDATION_FAIL;
@@ -109,14 +111,20 @@ public class IdentityVerificationResponseMapper {
                 if (!isOtherDataNull) {
                     AuthConsumer authConsumer =
                             otherData.getAuthResults().getAuthPlusResults().getAuthConsumer();
+                    String LocDataOldestPrim = null;
+                    String idAndLocDataOldestPrim = null;
+                    String idAndLocDataOldestSec = null;
                     if (null != authConsumer.getLocDataOnlyAtCLoc()
                             && null
                                     != authConsumer
                                             .getLocDataOnlyAtCLoc()
                                             .getStartDateOldestPrim()) {
-                        calculateOldestDataRecordDate(
-                                authConsumer.getLocDataOnlyAtCLoc().getStartDateOldestPrim(),
-                                "LocDataOnlyAtCLoc_StartDate0ldestPrim");
+                        LocDataOldestPrim =
+                                calculateOldestDataRecordDate(
+                                        authConsumer
+                                                .getLocDataOnlyAtCLoc()
+                                                .getStartDateOldestPrim(),
+                                        "LocDataOnlyAtCLoc_StartDate0ldestPrim");
                     }
 
                     if (null != authConsumer.getIdandLocDataAtCL()
@@ -124,17 +132,25 @@ public class IdentityVerificationResponseMapper {
                                     != authConsumer
                                             .getIdandLocDataAtCL()
                                             .getStartDateOldestPrim()) {
-                        calculateOldestDataRecordDate(
-                                authConsumer.getIdandLocDataAtCL().getStartDateOldestPrim(),
-                                "idAndLocDataAtCL_StartDateOldestPrim");
+                        idAndLocDataOldestPrim =
+                                calculateOldestDataRecordDate(
+                                        authConsumer.getIdandLocDataAtCL().getStartDateOldestPrim(),
+                                        "idAndLocDataAtCL_StartDateOldestPrim");
                     }
 
                     if (null != authConsumer.getIdandLocDataAtCL()
                             && null != authConsumer.getIdandLocDataAtCL().getStartDateOldestSec()) {
-                        calculateOldestDataRecordDate(
-                                authConsumer.getIdandLocDataAtCL().getStartDateOldestSec(),
-                                "idAndLocDataAtCL_StartDateOldestSec");
+                        idAndLocDataOldestSec =
+                                calculateOldestDataRecordDate(
+                                        authConsumer.getIdandLocDataAtCL().getStartDateOldestSec(),
+                                        "idAndLocDataAtCL_StartDateOldestSec");
                     }
+                    String oldestRecord =
+                            calculateOldestDateCount(
+                                    LocDataOldestPrim,
+                                    idAndLocDataOldestPrim,
+                                    idAndLocDataOldestSec);
+                    fraudCheckResult.setOldestRecordDate(oldestRecord);
                 } else {
                     LOGGER.info("No value found for Activity History score related fields ");
                 }
@@ -188,14 +204,20 @@ public class IdentityVerificationResponseMapper {
                 if (!isOtherDataNull) {
                     AuthConsumer authConsumer =
                             otherData.getAuthResults().getAuthPlusResults().getAuthConsumer();
+                    String LocDataOldestPrim = null;
+                    String idAndLocDataOldestPrim = null;
+                    String idAndLocDataOldestSec = null;
                     if (null != authConsumer.getLocDataOnlyAtCLoc()
                             && null
                                     != authConsumer
                                             .getLocDataOnlyAtCLoc()
                                             .getStartDateOldestPrim()) {
-                        calculateOldestDataRecordDate(
-                                authConsumer.getLocDataOnlyAtCLoc().getStartDateOldestPrim(),
-                                "LocDataOnlyAtCLoc_StartDate0ldestPrim");
+                        LocDataOldestPrim =
+                                calculateOldestDataRecordDate(
+                                        authConsumer
+                                                .getLocDataOnlyAtCLoc()
+                                                .getStartDateOldestPrim(),
+                                        "LocDataOnlyAtCLoc_StartDate0ldestPrim");
                     }
 
                     if (null != authConsumer.getIdandLocDataAtCL()
@@ -203,17 +225,25 @@ public class IdentityVerificationResponseMapper {
                                     != authConsumer
                                             .getIdandLocDataAtCL()
                                             .getStartDateOldestPrim()) {
-                        calculateOldestDataRecordDate(
-                                authConsumer.getIdandLocDataAtCL().getStartDateOldestPrim(),
-                                "idAndLocDataAtCL_StartDateOldestPrim");
+                        idAndLocDataOldestPrim =
+                                calculateOldestDataRecordDate(
+                                        authConsumer.getIdandLocDataAtCL().getStartDateOldestPrim(),
+                                        "idAndLocDataAtCL_StartDateOldestPrim");
                     }
 
                     if (null != authConsumer.getIdandLocDataAtCL()
                             && null != authConsumer.getIdandLocDataAtCL().getStartDateOldestSec()) {
-                        calculateOldestDataRecordDate(
-                                authConsumer.getIdandLocDataAtCL().getStartDateOldestSec(),
-                                "idAndLocDataAtCL_StartDateOldestSec");
+                        idAndLocDataOldestSec =
+                                calculateOldestDataRecordDate(
+                                        authConsumer.getIdandLocDataAtCL().getStartDateOldestSec(),
+                                        "idAndLocDataAtCL_StartDateOldestSec");
                     }
+                    String oldestRecord =
+                            calculateOldestDateCount(
+                                    LocDataOldestPrim,
+                                    idAndLocDataOldestPrim,
+                                    idAndLocDataOldestSec);
+                    fraudCheckResult.setOldestRecordDate(oldestRecord);
                 } else {
                     LOGGER.info("No value found for Activity History score related fields ");
                 }
@@ -273,7 +303,7 @@ public class IdentityVerificationResponseMapper {
         Duration diff = Duration.between(LocalDate.now().atStartOfDay(), date.atStartOfDay());
         long diffDays = diff.toDays();
         long dateInYears = diffDays / 365;
-        String approxDateInYears = "None";
+        String approxDateInYears = null;
         if (dateInYears > 1) {
             approxDateInYears = "Greater than 1";
         }
@@ -307,5 +337,74 @@ public class IdentityVerificationResponseMapper {
             }
         }
         return true;
+    }
+
+    private String calculateOldestDateCount(
+            String iDAndLocDataAtCL_StartDateOldestPrim,
+            String iDAndLocDataAtCL_StartDateOldestSec,
+            String LocDataOnlyAtCLoc_StartDateOldestPrim) {
+
+        List<Integer> dataCounts = new ArrayList<>();
+        int idAndLocOldestPrimeDayDifferenceAsInt = 0;
+        int idAndLocOldestSecDayDifferenceAsInt = 0;
+        int LocOnlyOldestPrimeDayDifferenceAsInt = 0;
+
+        if (null != iDAndLocDataAtCL_StartDateOldestPrim) {
+            LocalDate iDAndLocDataAtCL_StartDateOldestPrimAsDate =
+                    LocalDate.parse(
+                            iDAndLocDataAtCL_StartDateOldestPrim,
+                            DateTimeFormatter.ofPattern("yyddMM"));
+            Duration diff1 =
+                    Duration.between(
+                            LocalDate.now().atStartOfDay(),
+                            iDAndLocDataAtCL_StartDateOldestPrimAsDate.atStartOfDay());
+            long diff1Days = diff1.toDays();
+            idAndLocOldestPrimeDayDifferenceAsInt = toIntExact(diff1Days);
+            dataCounts.add(idAndLocOldestPrimeDayDifferenceAsInt);
+        }
+        if (null != iDAndLocDataAtCL_StartDateOldestSec) {
+            LocalDate iDAndLocDataAtCL_StartDateOldestSecAsDate =
+                    LocalDate.parse(
+                            iDAndLocDataAtCL_StartDateOldestSec,
+                            DateTimeFormatter.ofPattern("yyddMM"));
+            Duration diff2 =
+                    Duration.between(
+                            LocalDate.now().atStartOfDay(),
+                            iDAndLocDataAtCL_StartDateOldestSecAsDate.atStartOfDay());
+            long diff2Days = diff2.toDays();
+            idAndLocOldestSecDayDifferenceAsInt = toIntExact(diff2Days);
+            dataCounts.add(idAndLocOldestSecDayDifferenceAsInt);
+        }
+        if (null != LocDataOnlyAtCLoc_StartDateOldestPrim) {
+            LocalDate LocDataOnlyAtCLoc_StartDateOldestPrimAsDate =
+                    LocalDate.parse(
+                            LocDataOnlyAtCLoc_StartDateOldestPrim,
+                            DateTimeFormatter.ofPattern("yyddMM"));
+            Duration diff3 =
+                    Duration.between(
+                            LocalDate.now().atStartOfDay(),
+                            LocDataOnlyAtCLoc_StartDateOldestPrimAsDate.atStartOfDay());
+            long diff3Days = diff3.toDays();
+
+            LocOnlyOldestPrimeDayDifferenceAsInt = toIntExact(diff3Days);
+            dataCounts.add(LocOnlyOldestPrimeDayDifferenceAsInt);
+        }
+        int oldestDate =
+                1; // Setting oldestDate default value to 1 so that there are no matches in below if
+        // statement
+        // if all values are null
+        if (dataCounts.size() > 0) {
+            oldestDate = Collections.max(dataCounts);
+        }
+        if (oldestDate == idAndLocOldestPrimeDayDifferenceAsInt) {
+            return iDAndLocDataAtCL_StartDateOldestPrim;
+
+        } else if (oldestDate == idAndLocOldestSecDayDifferenceAsInt) {
+            return iDAndLocDataAtCL_StartDateOldestSec;
+
+        } else if (oldestDate == LocOnlyOldestPrimeDayDifferenceAsInt) {
+            return LocDataOnlyAtCLoc_StartDateOldestPrim;
+        }
+        return null;
     }
 }

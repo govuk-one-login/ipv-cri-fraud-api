@@ -97,11 +97,14 @@ public class ServiceFactory {
 
         final IdentityScoreCalculator identityScoreCalculator =
                 new IdentityScoreCalculator(configurationService);
+        final ActivityHistoryScoreCalculator activityHistoryScoreCalculator =
+                new ActivityHistoryScoreCalculator();
         return new IdentityVerificationService(
                 thirdPartyGateway,
                 personIdentityValidator,
                 contraindicationMapper,
                 identityScoreCalculator,
+                activityHistoryScoreCalculator,
                 auditService,
                 configurationService,
                 eventProbe);

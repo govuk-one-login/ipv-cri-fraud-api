@@ -74,6 +74,7 @@ class IdentityVerificationServiceTest {
                         personIdentityValidator,
                         mockContraindicationMapper,
                         new IdentityScoreCalculator(mockConfigurationService),
+                        new ActivityHistoryScoreCalculator(),
                         mockAuditService,
                         mockConfigurationService,
                         mockEventProbe);
