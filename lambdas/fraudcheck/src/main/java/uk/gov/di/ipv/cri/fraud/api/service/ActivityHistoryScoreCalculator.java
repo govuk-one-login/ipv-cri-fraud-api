@@ -11,7 +11,7 @@ public class ActivityHistoryScoreCalculator {
     public int calculateActivityHistoryScore(String oldestDate) {
         if (oldestDate != null) {
             LocalDate date = LocalDate.parse(oldestDate, DateTimeFormatter.ofPattern("yyddMM"));
-            Duration diff = Duration.between(LocalDate.now().atStartOfDay(), date.atStartOfDay());
+            Duration diff = Duration.between(date.atStartOfDay(), LocalDate.now().atStartOfDay());
             long diffDays = diff.toDays();
             long dateInYears = diffDays / 365;
             if (dateInYears > 0.5 && dateInYears < 2) {
