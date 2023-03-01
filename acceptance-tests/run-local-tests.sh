@@ -66,6 +66,10 @@ if [[ "${BACKEND}" =~ "yes" ]]; then
   API_GATEWAY_ID_PRIVATE=$([ -z "$API_GATEWAY_ID_PRIVATE_NEW" ] && echo "$API_GATEWAY_ID_PRIVATE" || echo "$API_GATEWAY_ID_PRIVATE_NEW")
   export API_GATEWAY_ID_PRIVATE=$API_GATEWAY_ID_PRIVATE
 
+  read -p "Enter the public gateway id? [previous=$API_GATEWAY_ID_PUBLIC] " API_GATEWAY_ID_PUBLIC_NEW
+
+  API_GATEWAY_ID_PUBLIC=$([ -z "$API_GATEWAY_ID_PUBLIC_NEW" ] && echo "$API_GATEWAY_ID_PUBLIC" || echo "$API_GATEWAY_ID_PUBLIC_NEW")
+  export API_GATEWAY_ID_PUBLIC=$API_GATEWAY_ID_PUBLIC
 fi
 
 ###### Remove previous config and set with new values
@@ -82,6 +86,7 @@ echo "LOCAL=${LOCAL}" >> test-args.conf
 echo "E2E=${E2E}" >> test-args.conf
 echo "BACKEND=${BACKEND}" >> test-args.conf
 echo "API_GATEWAY_ID_PRIVATE=${API_GATEWAY_ID_PRIVATE}" >> test-args.conf
+echo "API_GATEWAY_ID_PUBLIC=${API_GATEWAY_ID_PUBLIC}" >> test-args.conf
 echo "TAG=${TAG}" >> test-args.conf
 
 

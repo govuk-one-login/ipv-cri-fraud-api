@@ -56,10 +56,13 @@ jobs:
       - name: SAM deploy integration test stack
         run: |
           STACK_NAME=${{ env.STACK_NAME_PREFIX }}-${{ steps.vars.outputs.sha_short }}
+          aws ssm put-parameter --name "/${STACK_NAME}/contraindicationMappings" --type "String" --value "${{ secrets.SENSTIVE_PARAM_CI_MAPPINGS }}" 2>&1 > /dev/null
+          aws ssm put-parameter --name "/${STACK_NAME}/zeroScoreUcodes" --type "String" --value "${{ secrets.SENSTIVE_PARAM_ZERO_SCORE_CODES }}" 2>&1 > /dev/null
+          aws ssm put-parameter --name "/${STACK_NAME}/noFileFoundThreshold" --type "String" --value "${{ secrets.SENSTIVE_PARAM_FILE_NOT_FOUND_THRESHOLD }}" 2>&1 > /dev/null
           sam deploy \
             --no-fail-on-empty-changeset \
             --no-confirm-changeset \
-            --parameter-overrides "Environment=${{ env.ENVIRONMENT }} CodeSigningEnabled=false AuditEventNamePrefix=/common-cri-parameters/FraudAuditEventNamePrefix CriIdentifier=/common-cri-parameters/FraudCriIdentifier CommonStackName=fraud-common-cri-api" \
+            --parameter-overrides "Environment=${{ secrets.SHARED_DEV_ENVIRONMENT }} CodeSigningEnabled=false AuditEventNamePrefix=/common-cri-parameters/FraudAuditEventNamePrefix CriIdentifier=/common-cri-parameters/FraudCriIdentifier CommonStackName=fraud-common-cri-api" \
             --stack-name $STACK_NAME \
             --s3-bucket ${{ secrets.AWS_CONFIG_BUCKET }} \
             --s3-prefix $STACK_NAME \
@@ -87,5 +90,8 @@ jobs:
         if: always()
         run: |
           STACK_NAME=${{ env.STACK_NAME_PREFIX }}-${{ steps.vars.outputs.sha_short }}
+          aws ssm delete-parameter --name "/${STACK_NAME}/contraindicationMappings" 2>&1 > /dev/null
+          aws ssm delete-parameter --name "/${STACK_NAME}/zeroScoreUcodes" 2>&1 > /dev/null
+          aws ssm delete-parameter --name "/${STACK_NAME}/noFileFoundThreshold" 2>&1 > /dev/null
           aws cloudformation delete-stack --region ${{ env.AWS_REGION }} --stack-name $STACK_NAME
 
