@@ -16,11 +16,8 @@ public class ActivityHistoryScoreCalculator {
             long dateInYears = diffDays / 365;
             if (dateInYears > 0.5 && dateInYears < 2) {
                 return 1;
-            } else {
-                return 0;
             }
-        } else {
-            return 0;
         }
+        return 0;
     }
 }
