@@ -10,7 +10,8 @@ import java.util.List;
 
 import static uk.gov.di.ipv.cri.fraud.library.domain.CheckType.IMPERSONATION_RISK_CHECK;
 
-public class EvidenceHelper {
+public class
+EvidenceHelper {
 
     private EvidenceHelper() {
         throw new IllegalStateException("Instantiation is not valid for this class.");
@@ -25,6 +26,7 @@ public class EvidenceHelper {
         evidence.setIdentityFraudScore(fraudResultItem.getIdentityFraudScore());
         evidence.setCi(fraudResultItem.getContraIndicators());
         evidence.setDecisionScore(fraudResultItem.getDecisionScore());
+        evidence.setActivityHistoryScore(fraudResultItem.getActivityHistoryScore());
 
         List<String> stringCheckDetails = fraudResultItem.getCheckDetails();
         if (stringCheckDetails != null && !stringCheckDetails.isEmpty()) {
