@@ -32,7 +32,7 @@ public class FraudAPIPage {
     private static String AUTHCODE;
     private static String ACCESS_TOKEN;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final int LindaDuffExperianRowNumber = 6;
+    private final int LindaDuffThirdPartyRowNumber = 6;
 
     private final ConfigurationService configurationService =
             new ConfigurationService(System.getenv("ENVIRONMENT"));
@@ -44,7 +44,7 @@ public class FraudAPIPage {
         if (coreStubUrl == null) {
             throw new IllegalArgumentException("Environment variable IPV_CORE_STUB_URL is not set");
         }
-        return getClaimsForUser(coreStubUrl, criId, LindaDuffExperianRowNumber);
+        return getClaimsForUser(coreStubUrl, criId, LindaDuffThirdPartyRowNumber);
     }
 
     public void userIdentityAsJwtString(String criId)
