@@ -25,6 +25,7 @@ public class EvidenceHelper {
         evidence.setIdentityFraudScore(fraudResultItem.getIdentityFraudScore());
         evidence.setCi(fraudResultItem.getContraIndicators());
         evidence.setDecisionScore(fraudResultItem.getDecisionScore());
+        evidence.setActivityHistoryScore(fraudResultItem.getActivityHistoryScore());
 
         List<String> stringCheckDetails = fraudResultItem.getCheckDetails();
         if (stringCheckDetails != null && !stringCheckDetails.isEmpty()) {

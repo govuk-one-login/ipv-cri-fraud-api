@@ -11,6 +11,7 @@ public class FraudResultItem {
     private UUID sessionId;
     private List<String> contraIndicators;
     private Integer identityFraudScore;
+    private Integer activityHistoryScore;
     private String transactionId;
     private String pepTransactionId;
     private String decisionScore;
@@ -24,10 +25,12 @@ public class FraudResultItem {
             UUID sessionId,
             List<String> contraIndicators,
             Integer identityFraudScore,
+            Integer activityHistoryScore,
             String decisionScore) {
         this.sessionId = sessionId;
         this.contraIndicators = contraIndicators;
         this.identityFraudScore = identityFraudScore;
+        this.activityHistoryScore = activityHistoryScore;
         this.decisionScore = decisionScore;
     }
 
@@ -94,5 +97,13 @@ public class FraudResultItem {
 
     public void setFailedCheckDetails(List<String> failedCheckDetails) {
         this.failedCheckDetails = failedCheckDetails;
+    }
+
+    public Integer getActivityHistoryScore() {
+        return activityHistoryScore;
+    }
+
+    public void setActivityHistoryScore(Integer activityHistoryScore) {
+        this.activityHistoryScore = activityHistoryScore;
     }
 }
