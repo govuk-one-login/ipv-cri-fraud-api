@@ -11,6 +11,7 @@ import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.*;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -692,5 +693,217 @@ class IdentityVerificationResponseMapperTest {
         assertFalse(fraudCheckResult.isExecutedSuccessfully());
         assertEquals(EXPECTED_ERROR, fraudCheckResult.getErrorMessage());
         assertEquals(0, fraudCheckResult.getThirdPartyFraudCodes().length);
+    }
+
+    @Test
+    void mapIdentityVerificationResponseWithEmptyDataCountsShouldReturnInfoResponse() {
+        IdentityVerificationResponse testIdentityVerificationResponse =
+                TestDataCreator.createTestVerificationResponse(ResponseType.INFO);
+
+        DecisionElement decisionElement =
+                testIdentityVerificationResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0);
+        Rule rule = new Rule();
+        rule.setRuleName("");
+        rule.setRuleId("rule01");
+        rule.setRuleText("Test Rule");
+        List<Rule> rules = List.of(rule);
+        decisionElement.setRules(rules);
+
+        List<DataCount> dataCounts = new ArrayList<>();
+        decisionElement.setDataCounts(dataCounts);
+
+        FraudCheckResult fraudCheckResult =
+                this.responseMapper.mapIdentityVerificationResponse(
+                        testIdentityVerificationResponse);
+
+        InOrder inOrder = inOrder(mockEventProbe);
+        inOrder.verify(mockEventProbe).counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO);
+        inOrder.verify(mockEventProbe)
+                .counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO_VALIDATION_PASS);
+
+        assertNotNull(fraudCheckResult);
+        assertTrue(fraudCheckResult.isExecutedSuccessfully());
+        assertNull(fraudCheckResult.getErrorMessage());
+        assertEquals(1, fraudCheckResult.getThirdPartyFraudCodes().length);
+        assertEquals("90", fraudCheckResult.getDecisionScore());
+        assertEquals(rule.getRuleId(), fraudCheckResult.getThirdPartyFraudCodes()[0]);
+
+        // TODO: add line to assert ahs is 0 in lime 545
+        assertEquals(
+                dataCounts,
+                testIdentityVerificationResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .getDataCounts());
+    }
+
+    @Test
+    void mapIdentityVerificationResponseWithNullDataCountsShouldReturnInfoResponse() {
+        IdentityVerificationResponse testIdentityVerificationResponse =
+                TestDataCreator.createTestVerificationResponse(ResponseType.INFO);
+
+        DecisionElement decisionElement =
+                testIdentityVerificationResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0);
+        Rule rule = new Rule();
+        rule.setRuleName("");
+        rule.setRuleId("rule01");
+        rule.setRuleText("Test Rule");
+        List<Rule> rules = List.of(rule);
+        decisionElement.setRules(rules);
+
+        List<DataCount> dataCounts = null;
+        decisionElement.setDataCounts(dataCounts);
+
+        FraudCheckResult fraudCheckResult =
+                this.responseMapper.mapIdentityVerificationResponse(
+                        testIdentityVerificationResponse);
+
+        InOrder inOrder = inOrder(mockEventProbe);
+        inOrder.verify(mockEventProbe).counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO);
+        inOrder.verify(mockEventProbe)
+                .counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO_VALIDATION_PASS);
+
+        assertNotNull(fraudCheckResult);
+        assertTrue(fraudCheckResult.isExecutedSuccessfully());
+        assertNull(fraudCheckResult.getErrorMessage());
+        assertEquals(1, fraudCheckResult.getThirdPartyFraudCodes().length);
+        assertEquals("90", fraudCheckResult.getDecisionScore());
+        assertEquals(rule.getRuleId(), fraudCheckResult.getThirdPartyFraudCodes()[0]);
+
+        // TODO: add line to assert ahs is 0 in lime 545
+        assertEquals(
+                dataCounts,
+                testIdentityVerificationResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .getDataCounts());
+    }
+
+    @Test
+    void mapIdentityVerificationResponseWithInvalidDataCountsShouldReturnInfoResponse() {
+        IdentityVerificationResponse testIdentityVerificationResponse =
+                TestDataCreator.createTestVerificationResponse(ResponseType.INFO);
+
+        DecisionElement decisionElement =
+                testIdentityVerificationResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0);
+        Rule rule = new Rule();
+        rule.setRuleName("");
+        rule.setRuleId("rule01");
+        rule.setRuleText("Test Rule");
+        List<Rule> rules = List.of(rule);
+        decisionElement.setRules(rules);
+
+        List<DataCount> dataCounts = new ArrayList<>();
+        DataCount IDandLocDataAtCL_StartDateOldestPrim = new DataCount();
+        DataCount IDandLocDataAtCL_StartDate0ldestSec = new DataCount();
+        DataCount LocDataOnlyAtCLoc_StartDate0ldestPrim = new DataCount();
+
+        IDandLocDataAtCL_StartDateOldestPrim.setName("IDandLocDataAtCL_StartDateOldestPrim");
+        IDandLocDataAtCL_StartDateOldestPrim.setValue(203212);
+        IDandLocDataAtCL_StartDate0ldestSec.setName("IDandLocDataAtCL_StartDate0ldestSec");
+        IDandLocDataAtCL_StartDate0ldestSec.setValue(301212);
+        LocDataOnlyAtCLoc_StartDate0ldestPrim.setName("LocDataOnlyAtCLoc_StartDate0ldestPrim");
+        LocDataOnlyAtCLoc_StartDate0ldestPrim.setValue(201512);
+
+        dataCounts.add(IDandLocDataAtCL_StartDateOldestPrim);
+        dataCounts.add(IDandLocDataAtCL_StartDate0ldestSec);
+        dataCounts.add(LocDataOnlyAtCLoc_StartDate0ldestPrim);
+        decisionElement.setDataCounts(dataCounts);
+
+        FraudCheckResult fraudCheckResult =
+                this.responseMapper.mapIdentityVerificationResponse(
+                        testIdentityVerificationResponse);
+
+        InOrder inOrder = inOrder(mockEventProbe);
+        inOrder.verify(mockEventProbe).counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO);
+        inOrder.verify(mockEventProbe)
+                .counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO_VALIDATION_PASS);
+
+        assertNotNull(fraudCheckResult);
+        assertTrue(fraudCheckResult.isExecutedSuccessfully());
+        assertNull(fraudCheckResult.getErrorMessage());
+        assertEquals(1, fraudCheckResult.getThirdPartyFraudCodes().length);
+        assertEquals("90", fraudCheckResult.getDecisionScore());
+        assertEquals(rule.getRuleId(), fraudCheckResult.getThirdPartyFraudCodes()[0]);
+
+        // TODO: add line to assert ahs is 0 in lime 545
+        assertEquals(
+                dataCounts,
+                testIdentityVerificationResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .getDataCounts());
+    }
+
+    @Test
+    void mapIdentityVerificationResponseWithValidDataCountValuesShouldReturnInfoResponse() {
+        IdentityVerificationResponse testIdentityVerificationResponse =
+                TestDataCreator.createTestVerificationResponse(ResponseType.INFO);
+
+        DecisionElement decisionElement =
+                testIdentityVerificationResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0);
+        Rule rule = new Rule();
+        rule.setRuleName("");
+        rule.setRuleId("rule01");
+        rule.setRuleText("Test Rule");
+        List<Rule> rules = List.of(rule);
+        decisionElement.setRules(rules);
+
+        List<DataCount> dataCounts = new ArrayList<>();
+        DataCount IDandLocDataAtCL_StartDateOldestPrim = new DataCount();
+        DataCount IDandLocDataAtCL_StartDate0ldestSec = new DataCount();
+        DataCount LocDataOnlyAtCLoc_StartDate0ldestPrim = new DataCount();
+
+        IDandLocDataAtCL_StartDateOldestPrim.setName("IDandLocDataAtCL_StartDateOldestPrim");
+        IDandLocDataAtCL_StartDateOldestPrim.setValue(201212);
+        IDandLocDataAtCL_StartDate0ldestSec.setName("IDandLocDataAtCL_StartDate0ldestSec");
+        IDandLocDataAtCL_StartDate0ldestSec.setValue(201512);
+        LocDataOnlyAtCLoc_StartDate0ldestPrim.setName("LocDataOnlyAtCLoc_StartDate0ldestPrim");
+        LocDataOnlyAtCLoc_StartDate0ldestPrim.setValue(201510);
+
+        dataCounts.add(IDandLocDataAtCL_StartDateOldestPrim);
+        dataCounts.add(IDandLocDataAtCL_StartDate0ldestSec);
+        dataCounts.add(LocDataOnlyAtCLoc_StartDate0ldestPrim);
+        decisionElement.setDataCounts(dataCounts);
+
+        FraudCheckResult fraudCheckResult =
+                this.responseMapper.mapIdentityVerificationResponse(
+                        testIdentityVerificationResponse);
+
+        InOrder inOrder = inOrder(mockEventProbe);
+        inOrder.verify(mockEventProbe).counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO);
+        inOrder.verify(mockEventProbe)
+                .counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO_VALIDATION_PASS);
+
+        assertNotNull(fraudCheckResult);
+        assertTrue(fraudCheckResult.isExecutedSuccessfully());
+        assertNull(fraudCheckResult.getErrorMessage());
+        assertEquals(1, fraudCheckResult.getThirdPartyFraudCodes().length);
+        assertEquals("90", fraudCheckResult.getDecisionScore());
+        assertEquals(rule.getRuleId(), fraudCheckResult.getThirdPartyFraudCodes()[0]);
+
+        // TODO: add line to assert ahs is 1 in lime 545
+        assertEquals(
+                dataCounts,
+                testIdentityVerificationResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .getDataCounts());
     }
 }
