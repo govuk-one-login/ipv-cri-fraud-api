@@ -206,23 +206,6 @@ public class TestDataCreator {
         decisionElement1.setDecisionReason("TEST");
         decisionElement1.setAppReference("UNIT_TEST");
 
-        OtherData otherData = new OtherData();
-        AuthResults authResults = new AuthResults();
-        AuthPlusResults authPlusResults = new AuthPlusResults();
-        AuthConsumer authConsumer = new AuthConsumer();
-        IDandLocDataAtCL iDandLocDataAtCL = new IDandLocDataAtCL();
-        LocDataOnlyAtCLoc locDataOnlyAtCLoc = new LocDataOnlyAtCLoc();
-
-        locDataOnlyAtCLoc.setStartDateOldestPrim("201510");
-        iDandLocDataAtCL.setStartDateOldestSec("201512");
-        iDandLocDataAtCL.setStartDateOldestPrim("201212");
-
-        authConsumer.setIdandLocDataAtCL(iDandLocDataAtCL);
-        authConsumer.setLocDataOnlyAtCLoc(locDataOnlyAtCLoc);
-        authPlusResults.setAuthConsumer(authConsumer);
-        authResults.setAuthPlusResults(authPlusResults);
-        otherData.setAuthResults(authResults);
-
         List<Rule> rules = new ArrayList<>();
         Rule rule1 = new Rule();
         rule1.setRuleName("AUTP_IDCONFLEVEL");
@@ -232,7 +215,6 @@ public class TestDataCreator {
 
         rules.add(rule1);
         decisionElement1.setRules(rules);
-        decisionElement1.setOtherData(otherData);
 
         decisionElements.add(decisionElement1);
         payload.setDecisionElements(decisionElements);
@@ -294,23 +276,6 @@ public class TestDataCreator {
         decisionElement1.setDecisionReason("TEST");
         decisionElement1.setAppReference("UNIT_TEST");
 
-        OtherData otherData = new OtherData();
-        AuthResults authResults = new AuthResults();
-        AuthPlusResults authPlusResults = new AuthPlusResults();
-        AuthConsumer authConsumer = new AuthConsumer();
-        IDandLocDataAtCL iDandLocDataAtCL = new IDandLocDataAtCL();
-        LocDataOnlyAtCLoc locDataOnlyAtCLoc = new LocDataOnlyAtCLoc();
-
-        locDataOnlyAtCLoc.setStartDateOldestPrim("201510");
-        iDandLocDataAtCL.setStartDateOldestSec("201512");
-        iDandLocDataAtCL.setStartDateOldestPrim("201212");
-
-        authConsumer.setIdandLocDataAtCL(iDandLocDataAtCL);
-        authConsumer.setLocDataOnlyAtCLoc(locDataOnlyAtCLoc);
-        authPlusResults.setAuthConsumer(authConsumer);
-        authResults.setAuthPlusResults(authPlusResults);
-        otherData.setAuthResults(authResults);
-
         List<Rule> rules = new ArrayList<>();
         Rule rule1 = new Rule();
         rule1.setRuleName("AUTP_IDCONFLEVEL");
@@ -320,7 +285,6 @@ public class TestDataCreator {
 
         rules.add(rule1);
         decisionElement1.setRules(rules);
-        decisionElement1.setOtherData(otherData);
 
         decisionElements.add(decisionElement1);
         payload.setDecisionElements(decisionElements);
