@@ -806,19 +806,19 @@ class IdentityVerificationResponseMapperTest {
 
         List<DataCount> dataCounts = new ArrayList<>();
         DataCount IDandLocDataAtCL_StartDateOldestPrim = new DataCount();
-        DataCount IDandLocDataAtCL_StartDate0ldestSec = new DataCount();
-        DataCount LocDataOnlyAtCLoc_StartDate0ldestPrim = new DataCount();
+        DataCount IDandLocDataAtCL_StartDateOldestSec = new DataCount();
+        DataCount LocDataOnlyAtCLoc_StartDateOldestPrim = new DataCount();
 
         IDandLocDataAtCL_StartDateOldestPrim.setName("IDandLocDataAtCL_StartDateOldestPrim");
         IDandLocDataAtCL_StartDateOldestPrim.setValue(203212);
-        IDandLocDataAtCL_StartDate0ldestSec.setName("IDandLocDataAtCL_StartDate0ldestSec");
-        IDandLocDataAtCL_StartDate0ldestSec.setValue(301212);
-        LocDataOnlyAtCLoc_StartDate0ldestPrim.setName("LocDataOnlyAtCLoc_StartDate0ldestPrim");
-        LocDataOnlyAtCLoc_StartDate0ldestPrim.setValue(201512);
+        IDandLocDataAtCL_StartDateOldestSec.setName("IDandLocDataAtCL_StartDateOldestSec");
+        IDandLocDataAtCL_StartDateOldestSec.setValue(301212);
+        LocDataOnlyAtCLoc_StartDateOldestPrim.setName("LocDataOnlyAtCLoc_StartDateOldestPrim");
+        LocDataOnlyAtCLoc_StartDateOldestPrim.setValue(201512);
 
         dataCounts.add(IDandLocDataAtCL_StartDateOldestPrim);
-        dataCounts.add(IDandLocDataAtCL_StartDate0ldestSec);
-        dataCounts.add(LocDataOnlyAtCLoc_StartDate0ldestPrim);
+        dataCounts.add(IDandLocDataAtCL_StartDateOldestSec);
+        dataCounts.add(LocDataOnlyAtCLoc_StartDateOldestPrim);
         decisionElement.setDataCounts(dataCounts);
 
         FraudCheckResult fraudCheckResult =
@@ -866,19 +866,19 @@ class IdentityVerificationResponseMapperTest {
 
         List<DataCount> dataCounts = new ArrayList<>();
         DataCount IDandLocDataAtCL_StartDateOldestPrim = new DataCount();
-        DataCount IDandLocDataAtCL_StartDate0ldestSec = new DataCount();
-        DataCount LocDataOnlyAtCLoc_StartDate0ldestPrim = new DataCount();
+        DataCount IDandLocDataAtCL_StartDateOldestSec = new DataCount();
+        DataCount LocDataOnlyAtCLoc_StartDateOldestPrim = new DataCount();
 
         IDandLocDataAtCL_StartDateOldestPrim.setName("IDandLocDataAtCL_StartDateOldestPrim");
         IDandLocDataAtCL_StartDateOldestPrim.setValue(201212);
-        IDandLocDataAtCL_StartDate0ldestSec.setName("IDandLocDataAtCL_StartDate0ldestSec");
-        IDandLocDataAtCL_StartDate0ldestSec.setValue(201512);
-        LocDataOnlyAtCLoc_StartDate0ldestPrim.setName("LocDataOnlyAtCLoc_StartDate0ldestPrim");
-        LocDataOnlyAtCLoc_StartDate0ldestPrim.setValue(201510);
+        IDandLocDataAtCL_StartDateOldestSec.setName("IDandLocDataAtCL_StartDateOldestSec");
+        IDandLocDataAtCL_StartDateOldestSec.setValue(201512);
+        LocDataOnlyAtCLoc_StartDateOldestPrim.setName("LocDataOnlyAtCLoc_StartDateOldestPrim");
+        LocDataOnlyAtCLoc_StartDateOldestPrim.setValue(201510);
 
         dataCounts.add(IDandLocDataAtCL_StartDateOldestPrim);
-        dataCounts.add(IDandLocDataAtCL_StartDate0ldestSec);
-        dataCounts.add(LocDataOnlyAtCLoc_StartDate0ldestPrim);
+        dataCounts.add(IDandLocDataAtCL_StartDateOldestSec);
+        dataCounts.add(LocDataOnlyAtCLoc_StartDateOldestPrim);
         decisionElement.setDataCounts(dataCounts);
 
         FraudCheckResult fraudCheckResult =
