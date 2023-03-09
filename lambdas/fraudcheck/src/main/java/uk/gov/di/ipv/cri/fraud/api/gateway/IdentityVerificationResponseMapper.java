@@ -105,8 +105,8 @@ public class IdentityVerificationResponseMapper {
                 List<DataCount> dataCounts = decisionElement.getDataCounts();
 
                 String IDandLocDataAtCL_StartDateOldestPrim = null;
-                String IDandLocDataAtCL_StartDate0ldestSec = null;
-                String LocDataOnlyAtCLoc_StartDate0ldestPrim = null;
+                String IDandLocDataAtCL_StartDateOldestSec = null;
+                String LocDataOnlyAtCLoc_StartDateOldestPrim = null;
 
                 if (null != dataCounts) {
                     for (DataCount dataCountObject : dataCounts) {
@@ -133,31 +133,31 @@ public class IdentityVerificationResponseMapper {
                         if (dataCountObjectNotNull
                                 && dataCountObject
                                         .getName()
-                                        .equals("IDandLocDataAtCL_StartDate0ldestSec")) {
+                                        .equals("IDandLocDataAtCL_StartDateOldestSec")) {
                             Integer dateValue = dataCountObject.getValue();
 
-                            IDandLocDataAtCL_StartDate0ldestSec = dateValue.toString();
+                            IDandLocDataAtCL_StartDateOldestSec = dateValue.toString();
 
                             try {
                                 calculateRecordAge(
-                                        IDandLocDataAtCL_StartDate0ldestSec,
-                                        "IDandLocDataAtCL_StartDate0ldestSec");
+                                        IDandLocDataAtCL_StartDateOldestSec,
+                                        "IDandLocDataAtCL_StartDateOldestSec");
                             } catch (Exception e) {
                                 LOGGER.info(
-                                        "Invalid value in reponse for IDandLocDataAtCL_StartDate0ldestSec");
+                                        "Invalid value in reponse for IDandLocDataAtCL_StartDateOldestSec");
                             }
                         }
                         if (dataCountObjectNotNull
                                 && dataCountObject
                                         .getName()
-                                        .equals("LocDataOnlyAtCLoc_StartDate0ldestPrim")) {
+                                        .equals("LocDataOnlyAtCLoc_StartDateOldestPrim")) {
                             Integer dateValue = dataCountObject.getValue();
 
-                            LocDataOnlyAtCLoc_StartDate0ldestPrim = dateValue.toString();
+                            LocDataOnlyAtCLoc_StartDateOldestPrim = dateValue.toString();
 
                             try {
                                 calculateRecordAge(
-                                        LocDataOnlyAtCLoc_StartDate0ldestPrim,
+                                        LocDataOnlyAtCLoc_StartDateOldestPrim,
                                         "LocDataOnlyAtCLoc_StartDate0ldestPrim");
                             } catch (Exception e) {
                                 LOGGER.info(
@@ -167,8 +167,8 @@ public class IdentityVerificationResponseMapper {
                     }
                 }
                 if (null == IDandLocDataAtCL_StartDateOldestPrim
-                        && null == IDandLocDataAtCL_StartDate0ldestSec
-                        && null == LocDataOnlyAtCLoc_StartDate0ldestPrim) {
+                        && null == IDandLocDataAtCL_StartDateOldestSec
+                        && null == LocDataOnlyAtCLoc_StartDateOldestPrim) {
                     LOGGER.info("No value found for Activity History score related fields ");
                 }
             }
@@ -264,7 +264,7 @@ public class IdentityVerificationResponseMapper {
     }
 
     private String calculateRecordAge(String fieldDate, String fieldName) {
-        LocalDate date = LocalDate.parse(fieldDate, DateTimeFormatter.ofPattern("yyddMM"));
+        LocalDate date = LocalDate.parse(fieldDate, DateTimeFormatter.ofPattern("yyyyMM"));
         Duration diff = Duration.between(date.atStartOfDay(), LocalDate.now().atStartOfDay());
         long diffDays = diff.toDays();
         long dateInMonths = diffDays / 12;
