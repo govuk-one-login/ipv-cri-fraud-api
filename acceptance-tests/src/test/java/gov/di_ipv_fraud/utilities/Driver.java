@@ -45,6 +45,7 @@ public class Driver {
                         chromeOptions.addArguments("--whitelisted-ips= ");
                         chromeOptions.addArguments("--disable-dev-shm-usage");
                         chromeOptions.addArguments("--remote-debugging-port=9222");
+                        chromeOptions.addArguments("--remote-allow-origins=*");
 
                         chromeOptions.addArguments("start-maximized");
                         chromeOptions.addArguments("disable-infobars");
