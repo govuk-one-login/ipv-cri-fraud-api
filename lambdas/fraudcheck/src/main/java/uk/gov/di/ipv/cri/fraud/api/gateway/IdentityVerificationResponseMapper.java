@@ -9,9 +9,10 @@ import uk.gov.di.ipv.cri.fraud.api.domain.ValidationResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.*;
 import uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationInfoResponseValidator;
 
-import java.time.Duration;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -264,19 +265,21 @@ public class IdentityVerificationResponseMapper {
     }
 
     private String calculateRecordAge(String fieldDate, String fieldName) {
-        LocalDate date = LocalDate.parse(fieldDate, DateTimeFormatter.ofPattern("yyyyMM"));
-        Duration diff = Duration.between(date.atStartOfDay(), LocalDate.now().atStartOfDay());
-        long diffDays = diff.toDays();
-        long dateInMonths = diffDays / 12;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMM");
+        String date = YearMonth.parse(fieldDate, formatter).toString();
+        String dateToday = YearMonth.parse(LocalDate.now().format(formatter), formatter).toString();
+        long monthsBetween =
+                ChronoUnit.MONTHS.between(YearMonth.parse(date), YearMonth.parse(dateToday));
+
         String approxDateInYears = "No value present";
 
-        if (dateInMonths >= 24) {
+        if (monthsBetween >= 24) {
             approxDateInYears = "Greater than 2";
         }
-        if (dateInMonths >= 6 && dateInMonths < 24) {
+        if (monthsBetween >= 6 && monthsBetween < 24) {
             approxDateInYears = "Greater than minimum and less than 2";
         }
-        if (dateInMonths < 6) {
+        if (monthsBetween < 6) {
             approxDateInYears = "Less than minimum";
         }
 
