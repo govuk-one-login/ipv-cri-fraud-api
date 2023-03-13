@@ -40,6 +40,32 @@ jobs:
           orchestratorStubUrl: ${{ secrets.ORCHESTRATOR_STUB_URL }}
         run: cd acceptance-tests && gradle fraudCriSmokeBuild
 
+      - name: Get test results history
+        uses: actions/checkout@v3
+        if: always()
+        continue-on-error: true
+        with:
+          ref: LIME-Cucumber-gh-pages
+          path: LIME-Cucumber-gh-pages
+
+      - name: Cucumber HTML Report action
+        uses: PavanMudigonda/html-reporter-github-pages@v1.0
+        id: test-report
+        if: always()
+        with:
+          test_results: target/cucumber-report
+          gh_pages: LIME-Cucumber-gh-pages
+          results_history: acceptance-tests/results-history
+
+      - name: Publish Github Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v3.8.0
+        with:
+           github_token: ${{ secrets.GITHUB_TOKEN }}
+           publish_branch: LIME-Cucumber-gh-pages
+           publish_dir: acceptance-tests/results-history
+           keep_files: true
+
 #      - name: Get Allure history
 #        uses: actions/checkout@v2
 #        if: always()
