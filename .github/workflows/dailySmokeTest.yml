@@ -54,7 +54,7 @@ jobs:
         id: test-report
         if: always()
         with:
-          test_results: target/cucumber-report
+          test_results: acceptance-tests/target/cucumber-report
           gh_pages: LIME-Cucumber-gh-pages
           results_history: acceptance-tests/results-history
 
