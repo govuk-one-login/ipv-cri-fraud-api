@@ -8,7 +8,7 @@ Feature: Driving Licence Test
     And I click on DVLA radio button and Continue
     And I should be on `Enter your details exactly as they appear on your UK driving licence` page
 
-  @DVLADrivingLicence_test @build @tmsLink=LIME-165
+  @DVLADrivingLicence_test @build
   Scenario Outline:  DVLA Driving Licence details page happy path
     Given User enters data as a <DrivingLicenceSubject>
     When User clicks on continue
@@ -20,7 +20,7 @@ Feature: Driving Licence Test
       |DrivingLicenceSubject             |
       |DrivingLicenceSubjectHappyPeter   |
 
-  @DVLADrivingLicence_test @build @tmsLink=LIME-165
+  @DVLADrivingLicence_test @build
   Scenario Outline: DVLA Driving Licence details page unhappy path with IncorrectDrivingLicenceNumber
     Given User enters data as a <DrivingLicenceSubject>
     When User clicks on continue
@@ -34,7 +34,7 @@ Feature: Driving Licence Test
       |DrivingLicenceSubject      |
       |IncorrectDrivingLicenceNumber |
 
-  @DVLADrivingLicence_test @build @tmsLink=LIME-165
+  @DVLADrivingLicence_test @build
   Scenario Outline: DVLA Driving Licence details page unhappy path when licence number date format does not match with User's Date Of Birth
     Given User enters data as a <DrivingLicenceSubject>
     When User clicks on continue
@@ -45,7 +45,7 @@ Feature: Driving Licence Test
       |DrivingLicenceSubject      |
       |InvalidDrivingLicenceNumber |
 
-  @DVLADrivingLicence_test @build @tmsLink=LIME-165
+  @DVLADrivingLicence_test @build
   Scenario Outline: DVLA Driving Licence details page unhappy path with IncorrectDateOfBirth
     Given User enters data as a <DrivingLicenceSubject>
     When User clicks on continue
@@ -56,7 +56,7 @@ Feature: Driving Licence Test
       |DrivingLicenceSubject |
       |IncorrectDateOfBirth |
 
-  @DVLADrivingLicence_test @build @tmsLink=LIME-165
+  @DVLADrivingLicence_test @build
   Scenario Outline: DVLA Driving Licence details page unhappy path with IncorrectFirstName
     Given User enters data as a <DrivingLicenceSubject>
     When User clicks on continue
@@ -69,7 +69,7 @@ Feature: Driving Licence Test
       |DrivingLicenceSubject |
       |IncorrectFirstName|
 
-  @DVLADrivingLicence_test @build @tmsLink=LIME-165
+  @DVLADrivingLicence_test @build
   Scenario Outline: DVLA Driving Licence details page unhappy path with IncorrectLastName
     Given User enters data as a <DrivingLicenceSubject>
     When User clicks on continue
@@ -82,7 +82,7 @@ Feature: Driving Licence Test
       |DrivingLicenceSubject      |
       |IncorrectLastName|
 
-  @DVLADrivingLicence_test @build @tmsLink=LIME-165
+  @DVLADrivingLicence_test @build
   Scenario Outline: DVLA Driving Licence details page unhappy path with IncorrectIssueDate
     Given User enters data as a <DrivingLicenceSubject>
     When User clicks on continue
@@ -95,7 +95,7 @@ Feature: Driving Licence Test
       |DrivingLicenceSubject |
       |IncorrectIssueDate|
 
-  @DVLADrivingLicence_test @build @tmsLink=LIME-165
+  @DVLADrivingLicence_test @build
   Scenario Outline: DVLA Driving Licence details page unhappy path with IncorrectValidToDate
     Given User enters data as a <DrivingLicenceSubject>
     When User clicks on continue
@@ -108,7 +108,7 @@ Feature: Driving Licence Test
       |DrivingLicenceSubject |
       |IncorrectValidToDate|
 
-  @DVLADrivingLicence_test @build @tmsLink=LIME-165
+  @DVLADrivingLicence_test @build
   Scenario Outline: DVLA Driving Licence details page unhappy path with IncorrectIssueNumber
     Given User enters data as a <DrivingLicenceSubject>
     When User clicks on continue
@@ -121,7 +121,7 @@ Feature: Driving Licence Test
       |DrivingLicenceSubject |
       |IncorrectIssueNumber|
 
-  @DVLADrivingLicence_test @build @tmsLink=LIME-165
+  @DVLADrivingLicence_test @build
   Scenario Outline: DVLA Driving Licence details page unhappy path with IncorrectPostcode
     Given User enters data as a <DrivingLicenceSubject>
     When User clicks on continue
@@ -134,7 +134,7 @@ Feature: Driving Licence Test
       |DrivingLicenceSubject |
       |IncorrectPostcode|
 
-  @DVLADrivingLicence_test @build @tmsLink=LIME-167
+  @DVLADrivingLicence_test @build
   Scenario Outline: DVLA Driving Licence Retry Test Happy Path
     Given User enters invalid Driving Licence DVLA details
     When User clicks on continue
@@ -148,7 +148,7 @@ Feature: Driving Licence Test
       |DrivingLicenceSubject             |
       |DrivingLicenceSubjectHappyPeter |
 
-  @DVLADrivingLicence_test @build @tmsLink=LIME-167
+  @DVLADrivingLicence_test @build
   Scenario Outline: DVLA Driving Licence User failed second attempt
     Given User enters invalid Driving Licence DVLA details
     When User clicks on continue
@@ -162,7 +162,7 @@ Feature: Driving Licence Test
       |DrivingLicenceSubject |
       |IncorrectDrivingLicenceNumber |
 
-  @DVLADrivingLicence_test @build @tmsLink=LIME-167
+  @DVLADrivingLicence_test @build
   Scenario: DVLA Driving Licence User cancels after failed first attempt
     Given User enters invalid Driving Licence DVLA details
     When User clicks on continue
@@ -172,14 +172,14 @@ Feature: Driving Licence Test
     And JSON payload should contain ci DO2, validity score 0 and strength score 3
     And The test is complete and I close the driver
 
-  @DVLADrivingLicence_test @build @tmsLink=LIME-167
+  @DVLADrivingLicence_test @build
   Scenario: DVLA Driving Licence User cancels before first attempt via prove your identity another way route
     Given User click on ‘prove your identity another way' Link
     Then I navigate to the Driving Licence verifiable issuer to check for a Invalid response
     And JSON response should contain error description Authorization permission denied and status code as 302
     And The test is complete and I close the driver
 
-  @DVLADrivingLicence_test @build @tmsLink=LIME-167
+  @DVLADrivingLicence_test @build
   Scenario: DVLA Driving Licence User cancels before first attempt via I do not have a UK driving licence route
     Given User click on ‘Back' Link
     When User click on I do not have a UK driving licence radio button
