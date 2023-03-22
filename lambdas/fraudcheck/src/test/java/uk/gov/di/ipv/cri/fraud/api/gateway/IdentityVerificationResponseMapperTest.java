@@ -731,7 +731,6 @@ class IdentityVerificationResponseMapperTest {
         assertEquals("90", fraudCheckResult.getDecisionScore());
         assertEquals(rule.getRuleId(), fraudCheckResult.getThirdPartyFraudCodes()[0]);
 
-        // TODO: add line to assert ahs is 0 in lime 545
         assertEquals(
                 dataCounts,
                 testIdentityVerificationResponse
@@ -777,7 +776,6 @@ class IdentityVerificationResponseMapperTest {
         assertEquals("90", fraudCheckResult.getDecisionScore());
         assertEquals(rule.getRuleId(), fraudCheckResult.getThirdPartyFraudCodes()[0]);
 
-        // TODO: add line to assert ahs is 0 in lime 545
         assertEquals(
                 dataCounts,
                 testIdentityVerificationResponse
@@ -837,7 +835,6 @@ class IdentityVerificationResponseMapperTest {
         assertEquals("90", fraudCheckResult.getDecisionScore());
         assertEquals(rule.getRuleId(), fraudCheckResult.getThirdPartyFraudCodes()[0]);
 
-        // TODO: add line to assert ahs is 0 in lime 545
         assertEquals(
                 dataCounts,
                 testIdentityVerificationResponse
@@ -897,7 +894,6 @@ class IdentityVerificationResponseMapperTest {
         assertEquals("90", fraudCheckResult.getDecisionScore());
         assertEquals(rule.getRuleId(), fraudCheckResult.getThirdPartyFraudCodes()[0]);
 
-        // TODO: add line to assert ahs is 1 in lime 545
         assertEquals(
                 dataCounts,
                 testIdentityVerificationResponse

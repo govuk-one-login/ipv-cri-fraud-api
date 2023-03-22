@@ -154,6 +154,7 @@ public class FraudHandler
                             UUID.fromString(sessionId),
                             result.getContraIndicators(),
                             result.getIdentityCheckScore(),
+                            result.getActivityHistoryScore(),
                             result.getDecisionScore());
             fraudResultItem.setTransactionId(result.getTransactionId());
             fraudResultItem.setPepTransactionId(result.getPepTransactionId());

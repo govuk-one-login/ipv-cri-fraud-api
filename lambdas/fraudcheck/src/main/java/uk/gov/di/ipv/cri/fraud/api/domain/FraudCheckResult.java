@@ -6,6 +6,7 @@ public class FraudCheckResult {
     private String errorMessage;
     private String transactionId;
     private String decisionScore;
+    private Integer oldestRecordDateInMonths;
 
     public FraudCheckResult() {
         this.thirdPartyFraudCodes = new String[] {};
@@ -49,5 +50,13 @@ public class FraudCheckResult {
 
     public void setDecisionScore(String decisionScore) {
         this.decisionScore = decisionScore;
+    }
+
+    public Integer getOldestRecordDateInMonths() {
+        return oldestRecordDateInMonths;
+    }
+
+    public void setOldestRecordDateInMonths(Integer oldestRecordDateInMonths) {
+        this.oldestRecordDateInMonths = oldestRecordDateInMonths;
     }
 }
