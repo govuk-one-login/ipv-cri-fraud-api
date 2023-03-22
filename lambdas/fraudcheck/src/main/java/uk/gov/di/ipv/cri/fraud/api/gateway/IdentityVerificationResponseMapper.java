@@ -96,6 +96,14 @@ public class IdentityVerificationResponseMapper {
 
             List<String> fraudCodes = new ArrayList<>();
 
+            List<String> recordHistoryfields =
+                    List.of(
+                            "IDandLocDataAtCL_StartDateOldestPrim",
+                            "IDandLocDataAtCL_StartDateOldestSec",
+                            "LocDataOnlyAtCLoc_StartDateOldestPrim");
+            Map<String, Integer> activityHistoryRecords = new HashMap<>();
+            Integer oldestDateInMonths = null;
+
             for (DecisionElement decisionElement : decisionElements) {
                 decisionElement.getRules().stream()
                         .map(Rule::getRuleId)
@@ -105,71 +113,25 @@ public class IdentityVerificationResponseMapper {
 
                 List<DataCount> dataCounts = decisionElement.getDataCounts();
 
-                String IDandLocDataAtCL_StartDateOldestPrim = null;
-                String IDandLocDataAtCL_StartDateOldestSec = null;
-                String LocDataOnlyAtCLoc_StartDateOldestPrim = null;
-
                 if (null != dataCounts) {
-                    for (DataCount dataCountObject : dataCounts) {
-                        boolean dataCountObjectNotNull =
-                                null != dataCountObject.getValue()
-                                        && null != dataCountObject.getName();
-                        if (dataCountObjectNotNull
-                                && dataCountObject
-                                        .getName()
-                                        .equals("IDandLocDataAtCL_StartDateOldestPrim")) {
-                            Integer dateValue = dataCountObject.getValue();
-
-                            IDandLocDataAtCL_StartDateOldestPrim = dateValue.toString();
-
-                            try {
-                                calculateRecordAge(
-                                        IDandLocDataAtCL_StartDateOldestPrim,
-                                        "IDandLocDataAtCL_StartDateOldestPrim");
-                            } catch (Exception e) {
-                                LOGGER.info(
-                                        "Invalid value in reponse for IDandLocDataAtCL_StartDateOldestPrim");
-                            }
-                        }
-                        if (dataCountObjectNotNull
-                                && dataCountObject
-                                        .getName()
-                                        .equals("IDandLocDataAtCL_StartDateOldestSec")) {
-                            Integer dateValue = dataCountObject.getValue();
-
-                            IDandLocDataAtCL_StartDateOldestSec = dateValue.toString();
-
-                            try {
-                                calculateRecordAge(
-                                        IDandLocDataAtCL_StartDateOldestSec,
-                                        "IDandLocDataAtCL_StartDateOldestSec");
-                            } catch (Exception e) {
-                                LOGGER.info(
-                                        "Invalid value in reponse for IDandLocDataAtCL_StartDateOldestSec");
-                            }
-                        }
-                        if (dataCountObjectNotNull
-                                && dataCountObject
-                                        .getName()
-                                        .equals("LocDataOnlyAtCLoc_StartDateOldestPrim")) {
-                            Integer dateValue = dataCountObject.getValue();
-
-                            LocDataOnlyAtCLoc_StartDateOldestPrim = dateValue.toString();
-
-                            try {
-                                calculateRecordAge(
-                                        LocDataOnlyAtCLoc_StartDateOldestPrim,
-                                        "LocDataOnlyAtCLoc_StartDate0ldestPrim");
-                            } catch (Exception e) {
-                                LOGGER.info(
-                                        "Invalid value in reponse for LocDataOnlyAtCLoc_StartDate0ldestPrim");
-                            }
-                        }
+                    activityHistoryRecords =
+                            dataCounts.stream()
+                                    .filter(x -> recordHistoryfields.contains(x.getName()))
+                                    .collect(
+                                            Collectors.toMap(
+                                                    DataCount::getName, DataCount::getValue));
+                    for (var entry : activityHistoryRecords.entrySet()) {
+                        logRecordAge(entry.getValue().toString(), entry.getKey());
                     }
+
+                    Integer[] activityHistoryRecordValues =
+                            activityHistoryRecords
+                                    .values()
+                                    .toArray(new Integer[activityHistoryRecords.values().size()]);
+                    oldestDateInMonths = calculateOldestDateInMonths(activityHistoryRecordValues);
+                    fraudCheckResult.setOldestRecordDateInMonths(oldestDateInMonths);
                 }
-                if (null == IDandLocDataAtCL_StartDateOldestPrim
-                        && null == IDandLocDataAtCL_StartDateOldestSec
-                        && null == LocDataOnlyAtCLoc_StartDateOldestPrim) {
+                if (activityHistoryRecords.values().isEmpty()) {
                     LOGGER.info("No value found for Activity History score related fields ");
                 }
             }
@@ -264,29 +226,61 @@ public class IdentityVerificationResponseMapper {
         return null;
     }
 
-    private String calculateRecordAge(String fieldDate, String fieldName) {
+    private void logRecordAge(String fieldDate, String fieldName) {
+        try {
+            YearMonth date = YearMonth.parse(fieldDate, DateTimeFormatter.ofPattern("yyyyMM"));
+
+            int dateInMonths =
+                    Math.toIntExact(
+                            ChronoUnit.MONTHS.between(
+                                    YearMonth.parse(date.toString()), YearMonth.now()));
+
+            String approxDateInYears = "No value present";
+
+            if (dateInMonths >= 24) {
+                approxDateInYears = "Greater than 2";
+            }
+            if (dateInMonths >= 6 && dateInMonths < 24) {
+                approxDateInYears = "Greater than minimum and less than 2";
+            }
+            if (dateInMonths < 6) {
+                approxDateInYears = "Less than minimum";
+            }
+
+            LOGGER.info(
+                    "Logging activity history score related value in response {} {}",
+                    fieldName,
+                    approxDateInYears);
+        } catch (Exception e) {
+            LOGGER.warn("Invalid value in reponse for {}", fieldName);
+        }
+    }
+
+    private Integer calculateOldestDateInMonths(Integer... recordDateValues) {
+
+        List<Integer> dataCounts = new ArrayList<>();
+
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMM");
-        String date = YearMonth.parse(fieldDate, formatter).toString();
-        String dateToday = YearMonth.parse(LocalDate.now().format(formatter), formatter).toString();
-        long monthsBetween =
-                ChronoUnit.MONTHS.between(YearMonth.parse(date), YearMonth.parse(dateToday));
+        try {
+            String dateToday =
+                    YearMonth.parse(LocalDate.now().format(formatter), formatter).toString();
+            dataCounts =
+                    Arrays.stream(recordDateValues)
+                            .map(x -> YearMonth.parse(x.toString(), formatter).toString())
+                            .map(
+                                    x ->
+                                            ChronoUnit.MONTHS.between(
+                                                    YearMonth.parse(x), YearMonth.parse(dateToday)))
+                            .map(Math::toIntExact)
+                            .collect(Collectors.toList());
 
-        String approxDateInYears = "No value present";
-
-        if (monthsBetween >= 24) {
-            approxDateInYears = "Greater than 2";
+        } catch (Exception e) {
+            LOGGER.warn("Invalid value in response for activity history score date");
         }
-        if (monthsBetween >= 6 && monthsBetween < 24) {
-            approxDateInYears = "Greater than minimum and less than 2";
+        int oldestDate = 0; // Set to 0, if all dates are null then this will make the score 0
+        if (dataCounts.size() > 0) {
+            oldestDate = Collections.max(dataCounts);
         }
-        if (monthsBetween < 6) {
-            approxDateInYears = "Less than minimum";
-        }
-
-        LOGGER.info(
-                "Logging activity history score related value in response {} {}",
-                fieldName,
-                approxDateInYears);
-        return approxDateInYears;
+        return oldestDate;
     }
 }

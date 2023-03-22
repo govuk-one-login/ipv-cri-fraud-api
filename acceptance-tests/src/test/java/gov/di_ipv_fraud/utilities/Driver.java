@@ -37,6 +37,7 @@ public class Driver {
                 case "chrome-headless":
                     WebDriverManager.chromedriver().setup();
                     ChromeOptions chromeOptions = new ChromeOptions().setHeadless(true);
+                    chromeOptions.addArguments("--remote-allow-origins=*");
                     if (ConfigurationReader.noChromeSandbox()) {
                         // no-sandbox is needed for chrome-headless when running in a container due
                         // to restricted syscalls
@@ -45,7 +46,6 @@ public class Driver {
                         chromeOptions.addArguments("--whitelisted-ips= ");
                         chromeOptions.addArguments("--disable-dev-shm-usage");
                         chromeOptions.addArguments("--remote-debugging-port=9222");
-                        chromeOptions.addArguments("--remote-allow-origins=*");
 
                         chromeOptions.addArguments("start-maximized");
                         chromeOptions.addArguments("disable-infobars");

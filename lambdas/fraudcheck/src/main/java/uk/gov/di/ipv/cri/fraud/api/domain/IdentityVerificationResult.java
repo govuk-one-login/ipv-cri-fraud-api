@@ -9,6 +9,7 @@ public class IdentityVerificationResult {
     private String error;
     private List<String> contraIndicators = new ArrayList<>();
     private int identityCheckScore;
+    private int activityHistoryScore;
     private String transactionId;
     private String pepTransactionId;
     private String decisionScore;
@@ -104,5 +105,13 @@ public class IdentityVerificationResult {
 
     public void setThirdPartyFraudCodes(List<String> thirdPartyFraudCodes) {
         this.thirdPartyFraudCodes = thirdPartyFraudCodes;
+    }
+
+    public int getActivityHistoryScore() {
+        return activityHistoryScore;
+    }
+
+    public void setActivityHistoryScore(int activityHistoryScore) {
+        this.activityHistoryScore = activityHistoryScore;
     }
 }

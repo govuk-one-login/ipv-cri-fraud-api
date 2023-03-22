@@ -51,6 +51,7 @@ public class IdentityVerificationService {
     private final PersonIdentityValidator personIdentityValidator;
     private final ContraindicationMapper contraindicationMapper;
     private final IdentityScoreCalculator identityScoreCalculator;
+    private final ActivityHistoryScoreCalculator activityHistoryScoreCalculator;
     private final ConfigurationService configurationService;
     private final AuditService auditService;
 
@@ -63,6 +64,7 @@ public class IdentityVerificationService {
             PersonIdentityValidator personIdentityValidator,
             ContraindicationMapper contraindicationMapper,
             IdentityScoreCalculator identityScoreCalculator,
+            ActivityHistoryScoreCalculator activityHistoryScoreCalculator,
             AuditService auditService,
             ConfigurationService configurationService,
             EventProbe eventProbe) {
@@ -70,6 +72,7 @@ public class IdentityVerificationService {
         this.personIdentityValidator = personIdentityValidator;
         this.contraindicationMapper = contraindicationMapper;
         this.identityScoreCalculator = identityScoreCalculator;
+        this.activityHistoryScoreCalculator = activityHistoryScoreCalculator;
         this.auditService = auditService;
         this.configurationService = configurationService;
         this.eventProbe = eventProbe;
@@ -116,6 +119,10 @@ public class IdentityVerificationService {
                         ? pepIdentityVerificationResult.getIdentityCheckScore()
                         : fraudIdentityVerificationResult.getIdentityCheckScore();
         identityVerificationResult.setIdentityCheckScore(identityCheckScore);
+
+        int activityHistoryScore = fraudIdentityVerificationResult.getActivityHistoryScore();
+        identityVerificationResult.setActivityHistoryScore(activityHistoryScore);
+
         identityVerificationResult.setError(
                 fraudIdentityVerificationResult.getError() != null
                         ? fraudIdentityVerificationResult.getError()
@@ -252,6 +259,11 @@ public class IdentityVerificationService {
         int fraudIdentityCheckScore =
                 identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(
                         fraudCheckResult, true);
+        int activityHistoryScore =
+                activityHistoryScoreCalculator.calculateActivityHistoryScore(
+                        fraudCheckResult.getOldestRecordDateInMonths());
+
+        LOGGER.info("Activity history score {}", String.valueOf(activityHistoryScore));
 
         // For deciding if a pepCheck should be done
         int decisionScore = Integer.parseInt(fraudCheckResult.getDecisionScore());
@@ -259,6 +271,7 @@ public class IdentityVerificationService {
 
         LOGGER.info("IdentityCheckScore after Fraud {}", fraudIdentityCheckScore);
         identityVerificationResult.setIdentityCheckScore(fraudIdentityCheckScore);
+        identityVerificationResult.setActivityHistoryScore(activityHistoryScore);
 
         String stringFraudContraindications = String.join(", ", fraudContraindications);
         LOGGER.info(

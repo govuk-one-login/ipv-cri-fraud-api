@@ -54,6 +54,7 @@ class IdentityVerificationServiceTest {
     @Mock private ThirdPartyFraudGateway mockThirdPartyGateway;
     @Mock private PersonIdentityValidator personIdentityValidator;
     @Mock private ContraindicationMapper mockContraindicationMapper;
+    @Mock private ActivityHistoryScoreCalculator mockActivityHistoryScoreCalculator;
     @Mock private AuditService mockAuditService;
     @Mock private SessionItem sessionItem;
     @Mock private Map<String, String> requestHeaders;
@@ -74,6 +75,7 @@ class IdentityVerificationServiceTest {
                         personIdentityValidator,
                         mockContraindicationMapper,
                         new IdentityScoreCalculator(mockConfigurationService),
+                        mockActivityHistoryScoreCalculator,
                         mockAuditService,
                         mockConfigurationService,
                         mockEventProbe);
