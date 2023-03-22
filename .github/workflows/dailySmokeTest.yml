@@ -34,35 +34,35 @@ jobs:
         env:
           BROWSER: chrome-headless
           ENVIRONMENT: ${{ secrets.TEST_ENVIRONMENT }}
+          CUCUMBER_PUBLISH_ENABLED: true
           coreStubUrl: ${{ secrets.CORE_STUB_URL }}
           coreStubUsername: ${{ secrets.CORE_STUB_USERNAME }}
           coreStubPassword: ${{ secrets.CORE_STUB_PASSWORD }}
           orchestratorStubUrl: ${{ secrets.ORCHESTRATOR_STUB_URL }}
         run: cd acceptance-tests && gradle fraudCriSmokeBuild
 
-#      - name: Get Allure history
-#        uses: actions/checkout@v2
-#        if: always()
-#        continue-on-error: true
-#        with:
-#          ref: LIME-gh-pages
-#          path: LIME-gh-pages
-#
-#      - name: Allure Report action
-#        uses: simple-elf/allure-report-action@master
-#        if: always()
-#        with:
-#          allure_results: acceptance-tests/allure-results
-#          allure_history: acceptance-tests/allure-history
-#          keep_reports: 5
-#          gh_pages: LIME-gh-pages
-#
-#      - name: Deploy report to Github Pages
-#        if: always()
-#        uses: peaceiris/actions-gh-pages@v2
-#        with:
-#          deploy_key: ${{ secrets.CS_PA_TOKEN }}
-#        env:
-#          PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#          PUBLISH_BRANCH: LIME-gh-pages
-#          PUBLISH_DIR: acceptance-tests/allure-history
+      - name: Get test results history
+        uses: actions/checkout@v3
+        if: always()
+        continue-on-error: true
+        with:
+          ref: LIME-Cucumber-gh-pages
+          path: LIME-Cucumber-gh-pages
+
+      - name: Cucumber HTML Report action
+        uses: PavanMudigonda/html-reporter-github-pages@v1.0
+        id: test-report
+        if: always()
+        with:
+          test_results: acceptance-tests/target/cucumber-report
+          gh_pages: LIME-Cucumber-gh-pages
+          results_history: acceptance-tests/results-history
+
+      - name: Publish Github Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v3.8.0
+        with:
+           github_token: ${{ secrets.GITHUB_TOKEN }}
+           publish_branch: LIME-Cucumber-gh-pages
+           publish_dir: acceptance-tests/results-history
+           keep_files: true

@@ -1,7 +1,6 @@
 plugins {
 	id 'java'
 	id "io.freefair.aspectj.post-compile-weaving" version "6.3.0"
-	id "io.qameta.allure" version "2.10.0"
 }
 
 defaultTasks 'clean', 'build'
@@ -44,10 +43,6 @@ repositories {
 dependencies {
 	aws platform('software.amazon.awssdk:bom:2.17.191')
 	kms "software.amazon.awssdk:kms"
-
-	implementation 'io.qameta.allure:allure-maven:2.11.2'
-	implementation group: 'io.qameta.allure', name: 'allure-cucumber7-jvm', version: '2.18.1'
-	implementation 'com.github.automatedowl:allure-environment-writer:1.0.0'
 
 	implementation "com.fasterxml.jackson.core:jackson-core:${dependencyVersions.jackson_version}"
 	implementation "com.fasterxml.jackson.core:jackson-databind:${dependencyVersions.jackson_version}"
@@ -117,7 +112,7 @@ task cucumber() {
 				'--plugin',
 				'pretty',
 				'--plugin',
-				'io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm',
+				'html:target/cucumber-report/index.html',
 				'--tags',
 				"${tags}",
 				'--glue',
@@ -142,10 +137,10 @@ task fraudCriSmokeBuild() {
 				'--plugin',
 				'pretty',
 				'--plugin',
-				'io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm',
+				'html:target/cucumber-report/index.html',
 				'--glue',
 				'gov/di_ipv_fraud/step_definitions',
-				'src/test/resources/features/',
+				'src/test/resources/features/FraudCRI.feature',
 				'--tags',
 				'@build-fraud'
 			]

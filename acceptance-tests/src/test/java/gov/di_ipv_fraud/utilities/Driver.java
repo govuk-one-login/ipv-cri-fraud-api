@@ -32,7 +32,9 @@ public class Driver {
             switch (browser) {
                 case "chrome":
                     WebDriverManager.chromedriver().setup();
-                    driverPool.set(new ChromeDriver());
+                    ChromeOptions chromeOptionsLocal = new ChromeOptions();
+                    chromeOptionsLocal.addArguments("--remote-allow-origins=*");
+                    driverPool.set(new ChromeDriver(chromeOptionsLocal));
                     break;
                 case "chrome-headless":
                     WebDriverManager.chromedriver().setup();
