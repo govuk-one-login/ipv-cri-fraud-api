@@ -467,6 +467,7 @@ Resources:
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/SessionTableName"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/verifiable-credential/issuer"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/PersonIdentityTableName"
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/release-flags/vc-expiry-removed"
         - Statement:
             Effect: Allow
             Action:
@@ -573,6 +574,17 @@ Resources:
 # Parameters                                                       #
 #                                                                  #
 ####################################################################
+
+  ParameterReleaseFlagsVcExpiryRemoved:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !If
+        - IsDevEnvironment
+        - !Sub "/${AWS::StackName}/release-flags-vc-expiry-removed-not-used-in-dev"
+        - !Sub "/release-flags/vc-expiry-removed"
+      Value: "true"
+      Type: String
+      Description: Expiry date release toggle
 
   ParameterFraudItemTableName:
     Type: AWS::SSM::Parameter
