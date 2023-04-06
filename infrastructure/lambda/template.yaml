@@ -127,7 +127,7 @@ Mappings:
       build: "true"
       staging: "true"
       integration: "true"
-      production: "false"
+      production: "true"
 
   # Permitted values: SECONDS,MINUTES,HOURS,DAYS,MONTHS,YEARS
   JwtTtlUnitMapping:
