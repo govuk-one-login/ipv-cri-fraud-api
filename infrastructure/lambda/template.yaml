@@ -121,6 +121,14 @@ Mappings:
       integration: "6"
       production: "6"
 
+  VcExpiryRemoved:
+    Environment:
+      dev: "true"
+      build: "true"
+      staging: "true"
+      integration: "true"
+      production: "false"
+
   # Permitted values: SECONDS,MINUTES,HOURS,DAYS,MONTHS,YEARS
   JwtTtlUnitMapping:
     Environment:
@@ -467,6 +475,7 @@ Resources:
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/SessionTableName"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/verifiable-credential/issuer"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/PersonIdentityTableName"
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/release-flags/vc-expiry-removed"
         - Statement:
             Effect: Allow
             Action:
@@ -573,6 +582,17 @@ Resources:
 # Parameters                                                       #
 #                                                                  #
 ####################################################################
+
+  ParameterReleaseFlagsVcExpiryRemoved:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !If
+        - IsDevEnvironment
+        - !Sub "/${AWS::StackName}/release-flags-vc-expiry-removed-not-used-in-dev"
+        - !Sub "/release-flags/vc-expiry-removed"
+      Value: !FindInMap [ VcExpiryRemoved, Environment, !Ref Environment ]
+      Type: String
+      Description: Expiry date release toggle
 
   ParameterFraudItemTableName:
     Type: AWS::SSM::Parameter
