@@ -52,7 +52,7 @@ public class ThirdPartyFraudGateway {
     public static final String HTTP_UNHANDLED_ERROR =
             "Unhandled HTTP Response from Fraud Check Response, Status Code - ";
     public static final int MAX_HTTP_RETRIES = 7;
-    public static final long HTTP_RETRY_WAIT_TIME_LIMIT_MS = 12800L;
+    public static final long HTTP_RETRY_WAIT_TIME_LIMIT_MS = 6400L;
 
     public ThirdPartyFraudGateway(
             HttpClient httpClient,
@@ -218,7 +218,9 @@ public class ThirdPartyFraudGateway {
             }
 
             // Wait before sending request (0ms for first try)
-            sleepHelper.sleepWithExponentialBackOff(tryCount);
+            long waitTime = sleepHelper.busyWaitWithExponentialBackOff(tryCount);
+
+            LOGGER.info("Waited {}ms", waitTime);
 
             try {
                 httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());

@@ -82,7 +82,9 @@ class ThirdPartyFraudGatewayTest {
     @Mock private IdentityVerificationResponseMapper mockResponseMapper;
     @Mock private ObjectMapper mockObjectMapper;
     @Mock private HmacGenerator mockHmacGenerator;
+    // Real-sleep helper not used due to prolonging unit tests
     @Mock private SleepHelper sleepHelper;
+    // private SleepHelper sleepHelper = new SleepHelper(HTTP_RETRY_WAIT_TIME_LIMIT_MS);
     @Mock private EventProbe mockEventProbe;
 
     @BeforeEach
