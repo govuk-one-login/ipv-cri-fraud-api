@@ -45,7 +45,7 @@ Feature: Fraud CRI
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
     And I search for user number 12 in the ThirdParty table
-    And I navigate to the page We need to check your details
+    And I confirm the current page is the fraud check page
     When I check Continue button is enabled and click on the Continue button
     Then I navigate to Verifiable Credentials page
     And I check for a Valid response from thirdParty

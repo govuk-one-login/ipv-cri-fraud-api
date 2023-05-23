@@ -7,6 +7,7 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -50,6 +51,12 @@ public class ProveYourIdentityFullJourneyStepDefs extends ProveYourIdentityFullJ
     public void the_user_chooses_their_address_from_dropdown_and_click_Choose_address(
             String address) {
         selectAddressFromDropdown(address);
+    }
+
+    @When("the user enters the current year as the date they moved into their current address$")
+    public void
+            the_user_enters_the_current_year_as_the_date_they_moved_into_their_current_address() {
+        enterAddressExpiry(String.valueOf(LocalDate.now().getYear()));
     }
 
     @When("the user enters the date (.*) they moved into their current address$")

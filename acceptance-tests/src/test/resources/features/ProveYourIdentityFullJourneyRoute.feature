@@ -9,13 +9,13 @@ Feature: Prove Your Identity Full Journey
     And I enter Passport Details
       | Passport number | Surname | First name |
       | 321654987       | DECERQUEIRA | KENNETH |
-    And I enter Date of birth as 23/08/1959
+    And I enter Date of birth as 08/07/1965
     And I enter Passport Expiry date as 01/01/2030 and Continue
     And I enter BA2 5AA in the Postcode field and find address
     And the user chooses their address 8 HADLEY ROAD, BATH, BA2 5AA from dropdown and click `Choose address`
     And the user enters the date 2014 they moved into their current address
     And the user clicks `I confirm my details are correct`
-    And I navigate to the page We need to check your details
+    And I confirm the current page is the fraud check page
     When I check Continue button is enabled and click on the Continue button
     And the user clicks `Answer security questions`
     And kenneth answers the first question correctly
@@ -34,18 +34,18 @@ Feature: Prove Your Identity Full Journey
     And I enter Passport Details
       | Passport number | Surname | First name |
       | 321654987       | DECERQUEIRA | KENNETH |
-    And I enter Date of birth as 23/08/1959
+    And I enter Date of birth as 08/07/1965
     And I enter Passport Expiry date as 01/01/2030 and Continue
     And I enter BA2 5AA in the Postcode field and find address
     And the user chooses their address 8 HADLEY ROAD, BATH, BA2 5AA from dropdown and click `Choose address`
-    And the user enters the date 2022 they moved into their current address
+    And the user enters the current year as the date they moved into their current address
     And they select `NO` for `Have you lived here for more than 3 months?` and click on `Continue`
     Then they should be on `What is your previous home address?`
     And I enter LS7 4JZ in the Postcode field and find address
     And the user chooses their address 16 NEWTON GARTH, LEEDS, LS7 4JZ from dropdown and click `Choose address`
     And the user clicks `I confirm my details are correct`
     And the user clicks `I confirm my details are correct`
-    And I navigate to the page We need to check your details
+    And I confirm the current page is the fraud check page
     When I check Continue button is enabled and click on the Continue button
     And the user clicks `Answer security questions`
     And kenneth answers the first question correctly

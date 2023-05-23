@@ -2,7 +2,10 @@ package gov.di_ipv_fraud.pages;
 
 public class Headers {
 
-    public static final String CHECKING_YOUR_DETAILS = "We need to check your details";
+    public static final String SERVICE_NAME = "Prove your identity";
+    public static final String GOV_UK = "GOV.UK";
+    public static final String CHECK_PAGE_TITLE =
+            String.format("We need to check your details – %s – %s", SERVICE_NAME, GOV_UK);
     public static final String IPV_CORE_STUB = "IPV Core Stub";
     public static final String CREDENTIAL_ISSUERS = "Visit Credential Issuers";
     public static final String PROBLEM_WITH_THE_SERVICE =

@@ -65,9 +65,9 @@ public class FraudStepDefs extends FraudPageObject {
         jsonErrorResponse(testStatusCode);
     }
 
-    @And("^I navigate to the page (.*)$")
-    public void navigateToPage(String page) {
-        goToPage(page);
+    @And("^I confirm the current page is the fraud check page")
+    public void confirmCurrentPageIsFraudCheckPage() {
+        assertCurrentPageIsFraudCheckPage();
     }
 
     @When("^I check Continue button is enabled and click on the Continue button$")
