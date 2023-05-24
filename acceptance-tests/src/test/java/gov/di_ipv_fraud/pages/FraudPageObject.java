@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import static gov.di_ipv_fraud.pages.Headers.CHECKING_YOUR_DETAILS;
+import static gov.di_ipv_fraud.pages.Headers.CHECK_PAGE_TITLE;
 import static gov.di_ipv_fraud.pages.Headers.IPV_CORE_STUB;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
@@ -209,7 +209,7 @@ public class FraudPageObject extends UniversalSteps {
     }
 
     public void navigateToResponse(String validOrInvalid) {
-        waitForTextToAppear(CHECKING_YOUR_DETAILS);
+        waitForTextToAppear(CHECK_PAGE_TITLE);
         checkYourDetailsContinue.click();
         assertURLContains("callback");
         if ("Invalid".equalsIgnoreCase(validOrInvalid)) {
@@ -220,7 +220,7 @@ public class FraudPageObject extends UniversalSteps {
     }
 
     public void whoWeCheckDetailsWith(String page) {
-        waitForTextToAppear(CHECKING_YOUR_DETAILS);
+        waitForTextToAppear(CHECK_PAGE_TITLE);
         whoWeCheckLink.click();
 
         if ("ThirdParty".equalsIgnoreCase(page)) {
@@ -273,10 +273,6 @@ public class FraudPageObject extends UniversalSteps {
         LOGGER.info("testStatusCode = " + testStatusCode);
         Assert.assertEquals(testErrorDescription, ActualErrorDescription);
         Assert.assertEquals(testStatusCode, ActualStatusCode);
-    }
-
-    public void goToPage(String page) {
-        waitForTextToAppear(page);
     }
 
     public void clickContinue() {
@@ -470,6 +466,10 @@ public class FraudPageObject extends UniversalSteps {
 
     public void expiryAbsentFromVC() throws JsonProcessingException {
         assertNbfIsRecentAndExpiryIsNull();
+    }
+
+    public void assertCurrentPageIsFraudCheckPage() {
+        waitForTextToAppear(CHECK_PAGE_TITLE);
     }
 
     private void assertNbfIsRecentAndExpiryIsNull() throws JsonProcessingException {

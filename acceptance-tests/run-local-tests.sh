@@ -9,7 +9,7 @@ fi
 ##### Ask fundamental test questions
 read -p "What environment are you running against? [previous=$ENVIRONMENT] " ENVIRONMENT_NEW
 
-read -p "Are your running locally? [previous=$LOCAL] " LOCAL_NEW
+read -p "Are you using a local stub? [previous=$LOCAL] " LOCAL_NEW
 
 read -p "Are you including E2E tests? [previous=$E2E] " E2E_NEW
 
