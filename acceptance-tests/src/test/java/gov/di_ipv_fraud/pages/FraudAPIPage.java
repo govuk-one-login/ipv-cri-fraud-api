@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nimbusds.jwt.SignedJWT;
 import gov.di_ipv_fraud.model.AuthorisationResponse;
+import gov.di_ipv_fraud.model.Check;
 import gov.di_ipv_fraud.service.ConfigurationService;
 import gov.di_ipv_fraud.step_definitions.FraudAPIStepDefs;
 import org.apache.commons.lang3.StringUtils;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FraudAPIPage {
@@ -39,18 +41,25 @@ public class FraudAPIPage {
             new ConfigurationService(System.getenv("ENVIRONMENT"));
     private static final Logger LOGGER = Logger.getLogger(FraudAPIStepDefs.class.getName());
 
-    public String getAuthorisationJwtFromStub(String criId)
+    public String getAuthorisationJwtFromStub(String criId, String rowNumberString)
             throws URISyntaxException, IOException, InterruptedException {
         String coreStubUrl = configurationService.getCoreStubUrl(false);
         if (coreStubUrl == null) {
             throw new IllegalArgumentException("Environment variable IPV_CORE_STUB_URL is not set");
         }
-        return getClaimsForUser(coreStubUrl, criId, LindaDuffThirdPartyRowNumber);
+
+        int rowNumber;
+        if (rowNumberString != null) {
+            rowNumber = Integer.parseInt(rowNumberString);
+        } else {
+            rowNumber = LindaDuffThirdPartyRowNumber;
+        }
+        return getClaimsForUser(coreStubUrl, criId, rowNumber);
     }
 
     public void userIdentityAsJwtString(String criId)
             throws URISyntaxException, IOException, InterruptedException {
-        String jsonString = getAuthorisationJwtFromStub(criId);
+        String jsonString = getAuthorisationJwtFromStub(criId, null);
         LOGGER.info("jsonString = " + jsonString);
         String coreStubUrl = configurationService.getCoreStubUrl(false);
         SESSION_REQUEST_BODY = createRequest(coreStubUrl, criId, jsonString);
@@ -58,12 +67,11 @@ public class FraudAPIPage {
     }
 
     public void userIdentityAsJwtStringForupdatedUser(
-            String givenName, String familyName, String criId)
+            String givenName, String familyName, String criId, String rowNumber)
             throws URISyntaxException, IOException, InterruptedException {
-        String jsonString = getAuthorisationJwtFromStub(criId);
-        LOGGER.info("jsonString = " + jsonString);
         String coreStubUrl = configurationService.getCoreStubUrl(false);
-        JsonNode jsonNode = objectMapper.readTree((jsonString));
+
+        JsonNode jsonNode = getSessionJwtAsJson(criId, rowNumber);
         JsonNode nameArray = jsonNode.get("shared_claims").get("name");
         JsonNode firstItemInNameArray = nameArray.get(0);
         JsonNode namePartsNode = firstItemInNameArray.get("nameParts");
@@ -77,9 +85,25 @@ public class FraudAPIPage {
         LOGGER.info("SESSION_REQUEST_BODY = " + SESSION_REQUEST_BODY);
     }
 
-    public void updateSessionRequestFieldWithValue(String fieldName, String fieldValue)
+    public void updateSessionRequestFieldWithValue(
+            String fieldName, String fieldValue, String criId)
             throws URISyntaxException, IOException, InterruptedException {
+        String coreStubUrl = configurationService.getCoreStubUrl(false);
 
+        JsonNode jsonNode = getSessionJwtAsJson(criId, null);
+
+        if (fieldName.equals("lastName")) {
+            JsonNode nameArray = jsonNode.get("shared_claims").get("name");
+            JsonNode firstItemInNameArray = nameArray.get(0);
+            JsonNode namePartsNode = firstItemInNameArray.get("nameParts");
+
+            JsonNode secondItemInNamePartsArray = namePartsNode.get(1);
+            ((ObjectNode) secondItemInNamePartsArray).put("value", fieldValue);
+        }
+
+        String updatedJsonString = jsonNode.toString();
+        LOGGER.info("updatedJsonString = " + updatedJsonString);
+        SESSION_REQUEST_BODY = createRequest(coreStubUrl, criId, updatedJsonString);
         LOGGER.info("SESSION_REQUEST_BODY = " + SESSION_REQUEST_BODY);
     }
 
@@ -224,31 +248,44 @@ public class FraudAPIPage {
         Assert.assertEquals(activityHistoryScore, actualActivityHistoryScore);
     }
 
-    public void evidenceChecksInVC(List<String> evidenceChecks)
-            throws URISyntaxException, IOException, InterruptedException, ParseException {
+    public void evidenceChecksInVC(List<String> evidenceChecks, String... activityFrom)
+            throws IOException, InterruptedException, ParseException {
         String fraudCRIVC = requestFraudCRIVC();
         LOGGER.info("fraudCRIVC = " + fraudCRIVC);
         JsonNode jsonNode = objectMapper.readTree((fraudCRIVC));
         JsonNode evidenceArray = jsonNode.get("vc").get("evidence");
         JsonNode firstItemInEvidenceArray = evidenceArray.get(0);
 
-        List<String> checkStrings =
-                firstItemInEvidenceArray.findValuesAsText("checkDetails");
+        JsonNode checkDetailsNode = firstItemInEvidenceArray.get("checkDetails");
 
         int checkFound = 0;
-        for (String check : checkStrings) {
-            for (String evidenceCheck : evidenceChecks) {
-                if (check.contains(evidenceCheck)) {
-                    LOGGER.info("Check " + evidenceCheck + " found");
-                    checkFound++;
-                }
-                if (evidenceCheck.equals("activity_history_check") && check.contains("identityCheckPolicy")) {
-                    LOGGER.info("Activity history check found");
-                    checkFound++;
+
+        if (checkDetailsNode.isArray()) {
+            for (final JsonNode checkNode : checkDetailsNode) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                Check check = objectMapper.convertValue(checkNode, Check.class);
+                LOGGER.info("HELLO the check is " + objectMapper.writeValueAsString(check));
+                for (String evidenceCheck : evidenceChecks) {
+                    LOGGER.info("HELLO the evidence check is " + evidenceCheck);
+
+                    if (null != check.getFraudCheck()
+                            && check.getFraudCheck().equals(evidenceCheck)) {
+                        LOGGER.info("Check " + evidenceCheck + " found");
+                        checkFound++;
+                    }
+                    if (evidenceCheck.equals("activity_history_check")
+                            && null != check.getIdentityCheckPolicy()
+                            && check.getIdentityCheckPolicy().equals("none")
+                            && check.getActivityFrom() != null) {
+                        if (activityFrom != null && activityFrom.length > 0) {
+                            assertEquals(activityFrom[0], check.getActivityFrom());
+                        }
+                        LOGGER.info("Activity history check found");
+                        checkFound++;
+                    }
                 }
             }
         }
-
         Assert.assertEquals(checkFound, evidenceChecks.size());
     }
 
@@ -332,5 +369,12 @@ public class FraudAPIPage {
                         .GET()
                         .build();
         return sendHttpRequest(request).body();
+    }
+
+    private JsonNode getSessionJwtAsJson(String criId, String rowNumber)
+            throws URISyntaxException, IOException, InterruptedException {
+        String jsonString = getAuthorisationJwtFromStub(criId, rowNumber);
+        LOGGER.info("jsonString = " + jsonString);
+        return objectMapper.readTree((jsonString));
     }
 }
