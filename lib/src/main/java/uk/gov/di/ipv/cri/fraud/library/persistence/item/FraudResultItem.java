@@ -4,6 +4,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @DynamoDbBean
@@ -12,6 +13,7 @@ public class FraudResultItem {
     private List<String> contraIndicators;
     private Integer identityFraudScore;
     private Integer activityHistoryScore;
+    private String activityFrom;
     private String transactionId;
     private String pepTransactionId;
     private String decisionScore;
@@ -105,5 +107,45 @@ public class FraudResultItem {
 
     public void setActivityHistoryScore(Integer activityHistoryScore) {
         this.activityHistoryScore = activityHistoryScore;
+    }
+
+    public String getActivityFrom() {
+        return activityFrom;
+    }
+
+    public void setActivityFrom(String activityFrom) {
+        this.activityFrom = activityFrom;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        FraudResultItem that = (FraudResultItem) o;
+        return Objects.equals(sessionId, that.sessionId)
+                && Objects.equals(contraIndicators, that.contraIndicators)
+                && Objects.equals(identityFraudScore, that.identityFraudScore)
+                && Objects.equals(activityHistoryScore, that.activityHistoryScore)
+                && Objects.equals(activityFrom, that.activityFrom)
+                && Objects.equals(transactionId, that.transactionId)
+                && Objects.equals(pepTransactionId, that.pepTransactionId)
+                && Objects.equals(decisionScore, that.decisionScore)
+                && Objects.equals(checkDetails, that.checkDetails)
+                && Objects.equals(failedCheckDetails, that.failedCheckDetails);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                sessionId,
+                contraIndicators,
+                identityFraudScore,
+                activityHistoryScore,
+                activityFrom,
+                transactionId,
+                pepTransactionId,
+                decisionScore,
+                checkDetails,
+                failedCheckDetails);
     }
 }

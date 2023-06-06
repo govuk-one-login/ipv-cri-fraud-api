@@ -26,6 +26,7 @@ import uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationService;
 import uk.gov.di.ipv.cri.fraud.api.service.ServiceFactory;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
+import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -91,12 +92,14 @@ class CredentialHandlerTest {
         APIGatewayProxyRequestEvent mockRequestEvent =
                 Mockito.mock(APIGatewayProxyRequestEvent.class);
 
+        UUID sessionId = UUID.randomUUID();
+        Map<String, String> requestHeaders = Map.of("session_id", sessionId.toString());
+
         when(mockRequestEvent.getBody()).thenReturn(testRequestBody);
-        Map<String, String> requestHeaders = Map.of("session_id", UUID.randomUUID().toString());
         when(mockRequestEvent.getHeaders()).thenReturn(requestHeaders);
 
         final var sessionItem = new SessionItem();
-        sessionItem.setSessionId(UUID.randomUUID());
+        sessionItem.setSessionId(sessionId);
         when(sessionService.validateSessionId(anyString())).thenReturn(sessionItem);
 
         when(mockObjectMapper.readValue(testRequestBody, PersonIdentity.class))
@@ -116,11 +119,15 @@ class CredentialHandlerTest {
                 fraudHandler.handleRequest(mockRequestEvent, context);
 
         verify(mockEventProbe).counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_OK);
+        final FraudResultItem fraudResultItem =
+                populateFraudResultItem(testIdentityVerificationResult, sessionItem);
+
+        verify(dataStore).create(fraudResultItem);
 
         assertNotNull(responseEvent);
         assertEquals(200, responseEvent.getStatusCode());
         assertEquals(
-                "{\"success\":true,\"validationErrors\":null,\"error\":null,\"contraIndicators\":[\"A01\"],\"identityCheckScore\":1,\"activityHistoryScore\":0,\"transactionId\":null,\"pepTransactionId\":null,\"decisionScore\":\"90\",\"thirdPartyFraudCodes\":[],\"checksSucceeded\":[\"check_one\",\"check_two\",\"check_three\"],\"checksFailed\":[]}",
+                "{\"success\":true,\"validationErrors\":null,\"error\":null,\"contraIndicators\":[\"A01\"],\"identityCheckScore\":1,\"activityHistoryScore\":0,\"activityFrom\":null,\"transactionId\":null,\"pepTransactionId\":null,\"decisionScore\":\"90\",\"thirdPartyFraudCodes\":[],\"checksSucceeded\":[\"check_one\",\"check_two\",\"check_three\"],\"checksFailed\":[]}",
                 responseEvent.getBody());
     }
 
@@ -170,5 +177,24 @@ class CredentialHandlerTest {
         assertEquals(500, responseEvent.getStatusCode());
         final String EXPECTED_ERROR = "{\"error_description\":\"error message\"}";
         assertEquals(EXPECTED_ERROR, responseEvent.getBody());
+    }
+
+    private FraudResultItem populateFraudResultItem(
+            IdentityVerificationResult testIdentityVerificationResult, SessionItem sessionItem) {
+        final FraudResultItem fraudResultItem =
+                new FraudResultItem(
+                        sessionItem.getSessionId(),
+                        testIdentityVerificationResult.getContraIndicators(),
+                        testIdentityVerificationResult.getIdentityCheckScore(),
+                        testIdentityVerificationResult.getActivityHistoryScore(),
+                        testIdentityVerificationResult.getDecisionScore());
+        fraudResultItem.setTransactionId(testIdentityVerificationResult.getTransactionId());
+        fraudResultItem.setPepTransactionId(testIdentityVerificationResult.getPepTransactionId());
+
+        fraudResultItem.setCheckDetails(testIdentityVerificationResult.getChecksSucceeded());
+        fraudResultItem.setFailedCheckDetails(testIdentityVerificationResult.getChecksFailed());
+
+        fraudResultItem.setActivityFrom(testIdentityVerificationResult.getActivityFrom());
+        return fraudResultItem;
     }
 }

@@ -16,6 +16,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class IssueCredentialAuditGeneratorTest {
+
     @Test
     void auditTest1() throws JsonProcessingException {
 
@@ -44,7 +45,6 @@ class IssueCredentialAuditGeneratorTest {
                         .withDefaultPrettyPrinter();
         String json = ow.writeValueAsString(ev1);
 
-        System.out.println(json);
         assertNotNull(json);
     }
 }

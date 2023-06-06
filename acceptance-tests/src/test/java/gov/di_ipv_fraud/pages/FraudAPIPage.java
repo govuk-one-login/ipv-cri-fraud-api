@@ -19,6 +19,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.text.ParseException;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -73,6 +74,12 @@ public class FraudAPIPage {
         String updatedJsonString = jsonNode.toString();
         LOGGER.info("updatedJsonString = " + updatedJsonString);
         SESSION_REQUEST_BODY = createRequest(coreStubUrl, criId, updatedJsonString);
+        LOGGER.info("SESSION_REQUEST_BODY = " + SESSION_REQUEST_BODY);
+    }
+
+    public void updateSessionRequestFieldWithValue(String fieldName, String fieldValue)
+            throws URISyntaxException, IOException, InterruptedException {
+
         LOGGER.info("SESSION_REQUEST_BODY = " + SESSION_REQUEST_BODY);
     }
 
@@ -201,6 +208,48 @@ public class FraudAPIPage {
                 firstItemInEvidenceArray.get("identityFraudScore").asInt();
         LOGGER.info("actualIdentityFraudScore = " + actualIdentityFraudScore);
         Assert.assertEquals(identityFraudScore, actualIdentityFraudScore);
+    }
+
+    public void activityHistoryScoreInVC(Integer activityHistoryScore)
+            throws URISyntaxException, IOException, InterruptedException, ParseException {
+        String fraudCRIVC = requestFraudCRIVC();
+        LOGGER.info("fraudCRIVC = " + fraudCRIVC);
+        JsonNode jsonNode = objectMapper.readTree((fraudCRIVC));
+        JsonNode evidenceArray = jsonNode.get("vc").get("evidence");
+        JsonNode firstItemInEvidenceArray = evidenceArray.get(0);
+
+        Integer actualActivityHistoryScore =
+                firstItemInEvidenceArray.get("activityHistoryScore").asInt();
+        LOGGER.info("activityHistoryScore = " + actualActivityHistoryScore);
+        Assert.assertEquals(activityHistoryScore, actualActivityHistoryScore);
+    }
+
+    public void evidenceChecksInVC(List<String> evidenceChecks)
+            throws URISyntaxException, IOException, InterruptedException, ParseException {
+        String fraudCRIVC = requestFraudCRIVC();
+        LOGGER.info("fraudCRIVC = " + fraudCRIVC);
+        JsonNode jsonNode = objectMapper.readTree((fraudCRIVC));
+        JsonNode evidenceArray = jsonNode.get("vc").get("evidence");
+        JsonNode firstItemInEvidenceArray = evidenceArray.get(0);
+
+        List<String> checkStrings =
+                firstItemInEvidenceArray.findValuesAsText("checkDetails");
+
+        int checkFound = 0;
+        for (String check : checkStrings) {
+            for (String evidenceCheck : evidenceChecks) {
+                if (check.contains(evidenceCheck)) {
+                    LOGGER.info("Check " + evidenceCheck + " found");
+                    checkFound++;
+                }
+                if (evidenceCheck.equals("activity_history_check") && check.contains("identityCheckPolicy")) {
+                    LOGGER.info("Activity history check found");
+                    checkFound++;
+                }
+            }
+        }
+
+        Assert.assertEquals(checkFound, evidenceChecks.size());
     }
 
     private String getClaimsForUser(String baseUrl, String criId, int userDataRowNumber)

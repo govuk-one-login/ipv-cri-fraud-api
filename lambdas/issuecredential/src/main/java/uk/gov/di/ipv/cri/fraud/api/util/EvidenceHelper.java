@@ -25,6 +25,7 @@ public class EvidenceHelper {
         evidence.setIdentityFraudScore(fraudResultItem.getIdentityFraudScore());
         evidence.setCi(fraudResultItem.getContraIndicators());
         evidence.setDecisionScore(fraudResultItem.getDecisionScore());
+        evidence.setActivityHistoryScore(fraudResultItem.getActivityHistoryScore());
 
         List<String> stringCheckDetails = fraudResultItem.getCheckDetails();
         if (stringCheckDetails != null && !stringCheckDetails.isEmpty()) {
@@ -51,10 +52,18 @@ public class EvidenceHelper {
             Check check = new Check(checkName.toLowerCase());
 
             // IPR check has the transaction recorded in the check result
-            if (checkName.equals(IMPERSONATION_RISK_CHECK.toString())) {
+            if (checkName.equalsIgnoreCase(IMPERSONATION_RISK_CHECK.toString())) {
                 check.setTxn(resultItem.getPepTransactionId());
             }
 
+            checkList.add(check);
+        }
+
+        if (resultItem.getActivityHistoryScore() != null
+                && resultItem.getActivityHistoryScore() != 0) {
+            Check check = new Check();
+            check.setActivityFrom(resultItem.getActivityFrom());
+            check.setIdentityCheckPolicy("none");
             checkList.add(check);
         }
 

@@ -9,6 +9,7 @@ import io.cucumber.java.en.When;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.text.ParseException;
+import java.util.List;
 
 public class FraudAPIStepDefs extends FraudAPIPage {
 
@@ -62,5 +63,24 @@ public class FraudAPIStepDefs extends FraudAPIPage {
     public void vc_should_contain_ci_and_identityFraudScore(String ci, Integer identityFraudScore)
             throws IOException, InterruptedException, ParseException, URISyntaxException {
         ciAndIdentityFraudScoreInVC(ci, identityFraudScore);
+    }
+
+    @And("user changes (.*) in session request to (.*)$")
+    public void userChangesFieldsInTheSessionRequest(String fieldName, String fieldValue)
+            throws IOException, InterruptedException, ParseException, URISyntaxException {
+        updateSessionRequestFieldWithValue(fieldName, fieldValue);
+    }
+
+    @And("VC should contain activityHistory score of (.*)$")
+    public void vc_should_contain_ci_and_identityFraudScore(Integer activityHistoryScore)
+            throws IOException, InterruptedException, ParseException, URISyntaxException {
+        activityHistoryScoreInVC(activityHistoryScore);
+    }
+
+    @And("VC evidence checks should contain (.*)$")
+    public void vc_should_contain_evidence_checks(String checksString)
+            throws IOException, InterruptedException, ParseException, URISyntaxException {
+        List<String> checks = List.of(checksString.split(","));
+        evidenceChecksInVC(checks);
     }
 }
