@@ -23,6 +23,7 @@ import java.util.logging.Logger;
 
 import static gov.di_ipv_fraud.pages.Headers.CHECK_PAGE_TITLE;
 import static gov.di_ipv_fraud.pages.Headers.IPV_CORE_STUB;
+import static gov.di_ipv_fraud.utilities.BrowserUtils.checkOkHttpResponseOnLink;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,6 +47,24 @@ public class FraudPageObject extends UniversalSteps {
 
     @FindBy(xpath = "//*[@value=\"Fraud CRI Staging\"]")
     public WebElement fraudCRIStaging;
+
+    @FindBy(xpath = "/html/body/div[2]/div/p/strong")
+    public WebElement betaBanner;
+
+    @FindBy(className = "govuk-phase-banner__text")
+    public WebElement betaBannerText;
+
+    @FindBy(xpath = "//*[@id=\"cookies-banner-main\"]/div[2]/button[2]")
+    public WebElement rejectAnalysisButton;
+
+    @FindBy(xpath = "//*[@id=\"cookies-rejected\"]/div[1]/div/div/p")
+    public WebElement rejectAnalysisActual;
+
+    @FindBy(xpath = "//*[@id=\"cookies-rejected\"]/div[1]/div/div/p/a")
+    public WebElement changeCookieButton;
+
+    @FindBy(xpath = "/html/head/link[1]")
+    public WebElement cookiePreference;
 
     @FindBy(id = "rowNumber")
     public WebElement selectRow;
@@ -245,6 +264,34 @@ public class FraudPageObject extends UniversalSteps {
         assertURLContains("credential-issuer?cri=fraud-cri");
         usersearchField.sendKeys(username);
         usersearchButton.click();
+    }
+
+    public void betaBanner() {
+        betaBanner.isDisplayed();
+    }
+
+    public void betaBannerSentence(String expectedText) {
+        Assert.assertEquals(expectedText, betaBannerText.getText());
+        LOGGER.info("actualText = " + betaBannerText.getText());
+    }
+
+    public void rejectAnalysisCookie(String rejectAnalyticsBtn) {
+        Assert.assertEquals(rejectAnalyticsBtn, rejectAnalysisButton.getText());
+        rejectAnalysisButton.click();
+    }
+
+    public void rejectCookieSentence(String rejectAnalysisSentence) {
+        Assert.assertEquals(rejectAnalysisSentence, rejectAnalysisActual.getText());
+    }
+
+    public void AssertChangeCookieLink(String changeCookieLink) {
+        Assert.assertEquals(changeCookieLink, changeCookieButton.getText());
+        changeCookieButton.click();
+    }
+
+    public void AssertcookiePreferencePage() {
+        String changeCookiePageUrl = cookiePreference.getAttribute("href");
+        checkOkHttpResponseOnLink(changeCookiePageUrl);
     }
 
     public void goTofraudCRILink() {
