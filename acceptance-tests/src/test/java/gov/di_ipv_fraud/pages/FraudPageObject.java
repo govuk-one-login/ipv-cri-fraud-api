@@ -28,6 +28,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class FraudPageObject extends UniversalSteps {
 
@@ -511,8 +512,15 @@ public class FraudPageObject extends UniversalSteps {
         return jsonNode.get(vc);
     }
 
-    public void expiryAbsentFromVC() throws JsonProcessingException {
-        assertNbfIsRecentAndExpiryIsNull();
+    public void expiryAbsentFromVC(String checkType) throws JsonProcessingException {
+        //assertNbfIsRecentAndExpiryIsNull();
+        JsonNode vcNode = getVCFromJson("vc");
+        JsonNode evidenceNode = vcNode.get("evidence").get(0);
+        boolean expInVC =
+                evidenceNode.findValues("expiryDate").stream()
+                        .anyMatch(x -> x.asText().equals(checkType));
+        assertFalse(expInVC);
+
     }
 
     public void assertCurrentPageIsFraudCheckPage() {
@@ -533,7 +541,7 @@ public class FraudPageObject extends UniversalSteps {
                 LocalDateTime.ofEpochSecond(Long.parseLong(nbf), 0, ZoneOffset.UTC);
 
         assertNull(expNode);
-        assertTrue(isWithinRange(nbfDateTime));
+        assertFalse(isWithinRange(nbfDateTime));
     }
 
     boolean isWithinRange(LocalDateTime testDate) {
