@@ -220,7 +220,7 @@ public class FraudStepDefs extends FraudPageObject {
         checkFailedInVC(checkDetails);
     }
 
-    @And("^(.*) should not be absent in the JSON payload$")
+    @And("^(.*) should not be present in the JSON payload$")
     public void nbfAndExpiryInJsonResponse(String checkType) throws JsonProcessingException {
         expiryAbsentFromVC(checkType);
     }
