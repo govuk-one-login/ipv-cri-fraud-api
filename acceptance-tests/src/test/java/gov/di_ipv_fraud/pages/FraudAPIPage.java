@@ -235,7 +235,7 @@ public class FraudAPIPage {
     }
 
     public void activityHistoryScoreInVC(Integer activityHistoryScore)
-            throws URISyntaxException, IOException, InterruptedException, ParseException {
+            throws IOException, InterruptedException, ParseException {
         String fraudCRIVC = requestFraudCRIVC();
         LOGGER.info("fraudCRIVC = " + fraudCRIVC);
         JsonNode jsonNode = objectMapper.readTree((fraudCRIVC));
@@ -286,7 +286,7 @@ public class FraudAPIPage {
                 }
             }
         }
-        Assert.assertEquals(checkFound, evidenceChecks.size());
+        Assert.assertEquals(evidenceChecks.size(), checkFound);
     }
 
     private String getClaimsForUser(String baseUrl, String criId, int userDataRowNumber)

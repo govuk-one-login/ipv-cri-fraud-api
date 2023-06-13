@@ -121,10 +121,10 @@ class IdentityVerificationServiceTest {
         assertNotNull(result);
         assertTrue(result.isSuccess());
         assertEquals(mappedFraudCodes[0], result.getContraIndicators().get(0));
-        assertEquals(result.getActivityHistoryScore(), 0);
+        assertEquals(0, result.getActivityHistoryScore());
         assertEquals(
-                result.getActivityFrom(),
-                LocalDate.now().withDayOfMonth(1).format(DateTimeFormatter.ISO_DATE));
+                LocalDate.now().withDayOfMonth(1).format(DateTimeFormatter.ISO_DATE),
+                result.getActivityFrom());
 
         verify(personIdentityValidator).validate(testPersonIdentity);
         verify(mockThirdPartyGateway).performFraudCheck(testPersonIdentity, false);
@@ -184,8 +184,8 @@ class IdentityVerificationServiceTest {
         assertTrue(result.isSuccess());
         assertEquals(mappedFraudCodes[0], result.getContraIndicators().get(0));
         assertEquals(mappedPEPCodes[0], result.getContraIndicators().get(1));
-        assertEquals(result.getActivityHistoryScore(), 1);
-        assertEquals(result.getActivityFrom(), "1992-12-01");
+        assertEquals(1, result.getActivityHistoryScore());
+        assertEquals("1992-12-01", result.getActivityFrom());
 
         verify(personIdentityValidator).validate(testPersonIdentity);
         verify(mockThirdPartyGateway).performFraudCheck(testPersonIdentity, false);
@@ -215,7 +215,7 @@ class IdentityVerificationServiceTest {
         inOrder.verify(mockEventProbe, never()).counterMetric(IDENTITY_CHECK_SCORE_PREFIX + 2);
 
         assertNotNull(result);
-        assertEquals(result.getActivityHistoryScore(), 0);
+        assertEquals(0, result.getActivityHistoryScore());
         assertNull(result.getActivityFrom());
         assertTrue(result.getContraIndicators().isEmpty());
         assertFalse(result.isSuccess());
@@ -495,8 +495,8 @@ class IdentityVerificationServiceTest {
 
         assertNotNull(result);
         assertTrue(result.isSuccess());
-        assertEquals(result.getActivityHistoryScore(), 1);
-        assertEquals(result.getActivityFrom(), "1992-12-01");
+        assertEquals(1, result.getActivityHistoryScore());
+        assertEquals("1992-12-01", result.getActivityFrom());
 
         // Fraud ucodes
         assertEquals(mappedFraudCodes[0], result.getContraIndicators().get(0));

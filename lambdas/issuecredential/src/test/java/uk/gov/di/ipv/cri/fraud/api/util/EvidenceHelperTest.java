@@ -31,12 +31,12 @@ class EvidenceHelperTest {
 
         Evidence evidence = EvidenceHelper.fraudCheckResultItemToEvidence(fraudResultItem, true);
 
-        assertEquals(evidence.getType(), IDENTITY_CHECK.toString());
-        assertEquals(evidence.getTxn(), fraudResultItem.getTransactionId());
-        assertEquals(evidence.getIdentityFraudScore(), fraudResultItem.getIdentityFraudScore());
-        assertEquals(evidence.getCi(), fraudResultItem.getContraIndicators());
-        assertEquals(evidence.getDecisionScore(), fraudResultItem.getDecisionScore());
-        assertEquals(evidence.getActivityHistoryScore(), fraudResultItem.getActivityHistoryScore());
+        assertEquals(IDENTITY_CHECK.toString(), evidence.getType());
+        assertEquals(fraudResultItem.getTransactionId(), evidence.getTxn());
+        assertEquals(fraudResultItem.getIdentityFraudScore(), evidence.getIdentityFraudScore());
+        assertEquals(fraudResultItem.getContraIndicators(), evidence.getCi());
+        assertEquals(fraudResultItem.getDecisionScore(), evidence.getDecisionScore());
+        assertEquals(fraudResultItem.getActivityHistoryScore(), evidence.getActivityHistoryScore());
     }
 
     @Test
@@ -53,11 +53,11 @@ class EvidenceHelperTest {
 
         Evidence evidence = EvidenceHelper.fraudCheckResultItemToEvidence(fraudResultItem, false);
 
-        assertEquals(evidence.getType(), IDENTITY_CHECK.toString());
-        assertEquals(evidence.getTxn(), fraudResultItem.getTransactionId());
-        assertEquals(evidence.getIdentityFraudScore(), fraudResultItem.getIdentityFraudScore());
-        assertEquals(evidence.getCi(), fraudResultItem.getContraIndicators());
-        assertEquals(evidence.getDecisionScore(), fraudResultItem.getDecisionScore());
+        assertEquals(IDENTITY_CHECK.toString(), evidence.getType());
+        assertEquals(fraudResultItem.getTransactionId(), evidence.getTxn());
+        assertEquals(fraudResultItem.getIdentityFraudScore(), evidence.getIdentityFraudScore());
+        assertEquals(fraudResultItem.getContraIndicators(), evidence.getCi());
+        assertEquals(fraudResultItem.getDecisionScore(), evidence.getDecisionScore());
         assertNotEquals(
                 evidence.getActivityHistoryScore(), fraudResultItem.getActivityHistoryScore());
         assertNull(evidence.getActivityHistoryScore());
@@ -86,17 +86,17 @@ class EvidenceHelperTest {
 
         Check mortalityCheck = new Check(MORTALITY_CHECK.toString().toLowerCase());
 
-        assertEquals(evidence.getType(), IDENTITY_CHECK.toString());
-        assertEquals(evidence.getTxn(), fraudResultItem.getTransactionId());
-        assertEquals(evidence.getIdentityFraudScore(), fraudResultItem.getIdentityFraudScore());
-        assertEquals(evidence.getCi(), fraudResultItem.getContraIndicators());
-        assertEquals(evidence.getDecisionScore(), fraudResultItem.getDecisionScore());
-        assertEquals(evidence.getActivityHistoryScore(), fraudResultItem.getActivityHistoryScore());
+        assertEquals(IDENTITY_CHECK.toString(), evidence.getType());
+        assertEquals(fraudResultItem.getTransactionId(), evidence.getTxn());
+        assertEquals(fraudResultItem.getIdentityFraudScore(), evidence.getIdentityFraudScore());
+        assertEquals(fraudResultItem.getContraIndicators(), evidence.getCi());
+        assertEquals(fraudResultItem.getDecisionScore(), evidence.getDecisionScore());
+        assertEquals(fraudResultItem.getActivityHistoryScore(), evidence.getActivityHistoryScore());
 
         if (checkType.equals("failedCheck")) {
-            assertEquals(evidence.getFailedCheckDetails().get(0), mortalityCheck);
+            assertEquals(mortalityCheck, evidence.getFailedCheckDetails().get(0));
         } else {
-            assertEquals(evidence.getCheckDetails().get(0), mortalityCheck);
+            assertEquals(mortalityCheck, evidence.getCheckDetails().get(0));
         }
     }
 
@@ -127,12 +127,12 @@ class EvidenceHelperTest {
         activityHistoryCheck.setIdentityCheckPolicy("none");
         activityHistoryCheck.setActivityFrom("1992-12-11");
 
-        assertEquals(evidence.getType(), IDENTITY_CHECK.toString());
-        assertEquals(evidence.getTxn(), fraudResultItem.getTransactionId());
-        assertEquals(evidence.getIdentityFraudScore(), fraudResultItem.getIdentityFraudScore());
-        assertEquals(evidence.getCi(), fraudResultItem.getContraIndicators());
-        assertEquals(evidence.getDecisionScore(), fraudResultItem.getDecisionScore());
-        assertEquals(evidence.getActivityHistoryScore(), fraudResultItem.getActivityHistoryScore());
+        assertEquals(IDENTITY_CHECK.toString(), evidence.getType());
+        assertEquals(fraudResultItem.getTransactionId(), evidence.getTxn());
+        assertEquals(fraudResultItem.getIdentityFraudScore(), evidence.getIdentityFraudScore());
+        assertEquals(fraudResultItem.getContraIndicators(), evidence.getCi());
+        assertEquals(fraudResultItem.getDecisionScore(), evidence.getDecisionScore());
+        assertEquals(fraudResultItem.getActivityHistoryScore(), evidence.getActivityHistoryScore());
 
         List<Check> checkDetails = evidence.getCheckDetails();
         if (checkType.equals("failedCheck")) {
@@ -140,7 +140,7 @@ class EvidenceHelperTest {
         }
         for (Check check : checkDetails) {
             if (null == check.getFraudCheck()) {
-                assertEquals(check, activityHistoryCheck);
+                assertEquals(activityHistoryCheck, check);
             }
         }
     }
@@ -173,16 +173,16 @@ class EvidenceHelperTest {
         Check impersonationRiskCheck = new Check(IMPERSONATION_RISK_CHECK.toString().toLowerCase());
         impersonationRiskCheck.setTxn("02");
 
-        assertEquals(evidence.getType(), IDENTITY_CHECK.toString());
-        assertEquals(evidence.getTxn(), fraudResultItem.getTransactionId());
-        assertEquals(evidence.getIdentityFraudScore(), fraudResultItem.getIdentityFraudScore());
-        assertEquals(evidence.getCi(), fraudResultItem.getContraIndicators());
-        assertEquals(evidence.getDecisionScore(), fraudResultItem.getDecisionScore());
+        assertEquals(IDENTITY_CHECK.toString(), evidence.getType());
+        assertEquals(fraudResultItem.getTransactionId(), evidence.getTxn());
+        assertEquals(fraudResultItem.getIdentityFraudScore(), evidence.getIdentityFraudScore());
+        assertEquals(fraudResultItem.getContraIndicators(), evidence.getCi());
+        assertEquals(fraudResultItem.getDecisionScore(), evidence.getDecisionScore());
 
         if (checkType.equals("failedCheck")) {
-            assertEquals(evidence.getFailedCheckDetails().get(0), impersonationRiskCheck);
+            assertEquals(impersonationRiskCheck, evidence.getFailedCheckDetails().get(0));
         } else {
-            assertEquals(evidence.getCheckDetails().get(0), impersonationRiskCheck);
+            assertEquals(impersonationRiskCheck, evidence.getCheckDetails().get(0));
         }
     }
 
@@ -223,27 +223,27 @@ class EvidenceHelperTest {
         activityHistoryCheck.setIdentityCheckPolicy("none");
         activityHistoryCheck.setActivityFrom("1992-12-11");
 
-        assertEquals(evidence.getType(), IDENTITY_CHECK.toString());
-        assertEquals(evidence.getTxn(), fraudResultItem.getTransactionId());
-        assertEquals(evidence.getIdentityFraudScore(), fraudResultItem.getIdentityFraudScore());
-        assertEquals(evidence.getCi(), fraudResultItem.getContraIndicators());
-        assertEquals(evidence.getDecisionScore(), fraudResultItem.getDecisionScore());
-        assertEquals(evidence.getActivityHistoryScore(), fraudResultItem.getActivityHistoryScore());
+        assertEquals(IDENTITY_CHECK.toString(), evidence.getType());
+        assertEquals(fraudResultItem.getTransactionId(), evidence.getTxn());
+        assertEquals(fraudResultItem.getIdentityFraudScore(), evidence.getIdentityFraudScore());
+        assertEquals(fraudResultItem.getContraIndicators(), evidence.getCi());
+        assertEquals(fraudResultItem.getDecisionScore(), evidence.getDecisionScore());
+        assertEquals(fraudResultItem.getActivityHistoryScore(), evidence.getActivityHistoryScore());
 
         List<Check> checkDetails = evidence.getCheckDetails();
         if (checkType.equals("failedCheck")) {
-            assertEquals(evidence.getFailedCheckDetails().size(), 3);
+            assertEquals(3, evidence.getFailedCheckDetails().size());
             checkDetails = evidence.getFailedCheckDetails();
         }
         for (Check check : checkDetails) {
             if (null == check.getFraudCheck()) {
-                assertEquals(check, activityHistoryCheck);
+                assertEquals(activityHistoryCheck, check);
             } else {
                 if (check.getFraudCheck().equalsIgnoreCase(IMPERSONATION_RISK_CHECK.toString())) {
-                    assertEquals(check, impersonationRiskCheck);
+                    assertEquals(impersonationRiskCheck, check);
                 } else {
-                    assertEquals(check.getFraudCheck(), MORTALITY_CHECK.toString().toLowerCase());
-                    assertEquals(check.getCheckMethod(), "data");
+                    assertEquals(MORTALITY_CHECK.toString().toLowerCase(), check.getFraudCheck());
+                    assertEquals("data", check.getCheckMethod());
                     assertNull(check.getTxn());
                     assertNull(check.getIdentityCheckPolicy());
                 }
