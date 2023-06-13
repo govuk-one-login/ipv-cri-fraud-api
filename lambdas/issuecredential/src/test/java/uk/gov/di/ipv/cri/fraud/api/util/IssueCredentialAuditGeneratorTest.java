@@ -29,7 +29,7 @@ class IssueCredentialAuditGeneratorTest {
 
         VCISSFraudAuditExtension ext =
                 IssueCredentialFraudAuditExtensionUtil.generateVCISSFraudAuditExtension(
-                        "TestIssuer", List.of(fraudResultItem1));
+                        "TestIssuer", List.of(fraudResultItem1), true);
 
         AuditEventType evt1 = AuditEventType.VC_ISSUED;
         AuditEvent<VCISSFraudAuditExtension> ev1 =

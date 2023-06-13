@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static uk.gov.di.ipv.cri.fraud.api.domain.EvidenceType.IDENTITY_CHECK;
 import static uk.gov.di.ipv.cri.fraud.library.domain.CheckType.IMPERSONATION_RISK_CHECK;
@@ -28,7 +29,7 @@ class EvidenceHelperTest {
         fraudResultItem.setSessionId(UUID.randomUUID());
         fraudResultItem.setTransactionId("01");
 
-        Evidence evidence = EvidenceHelper.fraudCheckResultItemToEvidence(fraudResultItem);
+        Evidence evidence = EvidenceHelper.fraudCheckResultItemToEvidence(fraudResultItem, true);
 
         assertEquals(evidence.getType(), IDENTITY_CHECK.toString());
         assertEquals(evidence.getTxn(), fraudResultItem.getTransactionId());
@@ -36,6 +37,31 @@ class EvidenceHelperTest {
         assertEquals(evidence.getCi(), fraudResultItem.getContraIndicators());
         assertEquals(evidence.getDecisionScore(), fraudResultItem.getDecisionScore());
         assertEquals(evidence.getActivityHistoryScore(), fraudResultItem.getActivityHistoryScore());
+    }
+
+    @Test
+    void TestFraudResultItemISuccessfullyMappedToEvidenceWithoutActivityHistoryIfToggleSet() {
+
+        FraudResultItem fraudResultItem = new FraudResultItem();
+
+        fraudResultItem.setIdentityFraudScore(1);
+        fraudResultItem.setContraIndicators(List.of("u101"));
+        fraudResultItem.setSessionId(UUID.randomUUID());
+        fraudResultItem.setTransactionId("01");
+        fraudResultItem.setActivityHistoryScore(1);
+        fraudResultItem.setActivityFrom("1992-12-11");
+
+        Evidence evidence = EvidenceHelper.fraudCheckResultItemToEvidence(fraudResultItem, false);
+
+        assertEquals(evidence.getType(), IDENTITY_CHECK.toString());
+        assertEquals(evidence.getTxn(), fraudResultItem.getTransactionId());
+        assertEquals(evidence.getIdentityFraudScore(), fraudResultItem.getIdentityFraudScore());
+        assertEquals(evidence.getCi(), fraudResultItem.getContraIndicators());
+        assertEquals(evidence.getDecisionScore(), fraudResultItem.getDecisionScore());
+        assertNotEquals(
+                evidence.getActivityHistoryScore(), fraudResultItem.getActivityHistoryScore());
+        assertNull(evidence.getActivityHistoryScore());
+        assertNull(evidence.getCheckDetails());
     }
 
     @ParameterizedTest
@@ -56,7 +82,7 @@ class EvidenceHelperTest {
             fraudResultItem.setCheckDetails(List.of(MORTALITY_CHECK.toString().toLowerCase()));
         }
 
-        Evidence evidence = EvidenceHelper.fraudCheckResultItemToEvidence(fraudResultItem);
+        Evidence evidence = EvidenceHelper.fraudCheckResultItemToEvidence(fraudResultItem, true);
 
         Check mortalityCheck = new Check(MORTALITY_CHECK.toString().toLowerCase());
 
@@ -95,7 +121,7 @@ class EvidenceHelperTest {
             fraudResultItem.setCheckDetails(List.of(MORTALITY_CHECK.toString().toLowerCase()));
         }
 
-        Evidence evidence = EvidenceHelper.fraudCheckResultItemToEvidence(fraudResultItem);
+        Evidence evidence = EvidenceHelper.fraudCheckResultItemToEvidence(fraudResultItem, true);
 
         Check activityHistoryCheck = new Check();
         activityHistoryCheck.setIdentityCheckPolicy("none");
@@ -142,7 +168,7 @@ class EvidenceHelperTest {
                     List.of(IMPERSONATION_RISK_CHECK.toString().toLowerCase()));
         }
 
-        Evidence evidence = EvidenceHelper.fraudCheckResultItemToEvidence(fraudResultItem);
+        Evidence evidence = EvidenceHelper.fraudCheckResultItemToEvidence(fraudResultItem, true);
 
         Check impersonationRiskCheck = new Check(IMPERSONATION_RISK_CHECK.toString().toLowerCase());
         impersonationRiskCheck.setTxn("02");
@@ -188,7 +214,7 @@ class EvidenceHelperTest {
                             MORTALITY_CHECK.toString().toLowerCase()));
         }
 
-        Evidence evidence = EvidenceHelper.fraudCheckResultItemToEvidence(fraudResultItem);
+        Evidence evidence = EvidenceHelper.fraudCheckResultItemToEvidence(fraudResultItem, true);
 
         Check impersonationRiskCheck = new Check(IMPERSONATION_RISK_CHECK.toString().toLowerCase());
         impersonationRiskCheck.setTxn("02");

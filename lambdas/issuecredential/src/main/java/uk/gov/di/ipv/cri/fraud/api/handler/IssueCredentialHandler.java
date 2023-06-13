@@ -18,6 +18,7 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
+import software.amazon.lambda.powertools.parameters.ParamManager;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventContext;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
@@ -58,6 +59,7 @@ public class IssueCredentialHandler
     private final SessionService sessionService;
     private EventProbe eventProbe;
     private final AuditService auditService;
+    private final uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService configurationService;
 
     public IssueCredentialHandler(
             VerifiableCredentialService verifiableCredentialService,
@@ -65,28 +67,36 @@ public class IssueCredentialHandler
             EventProbe eventProbe,
             AuditService auditService,
             PersonIdentityService personIdentityService,
-            FraudRetrievalService fraudRetrievalService) {
+            FraudRetrievalService fraudRetrievalService,
+            uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService configurationService) {
         this.verifiableCredentialService = verifiableCredentialService;
         this.personIdentityService = personIdentityService;
         this.sessionService = sessionService;
         this.eventProbe = eventProbe;
         this.auditService = auditService;
         this.fraudRetrievalService = fraudRetrievalService;
+        this.configurationService = configurationService;
     }
 
     public IssueCredentialHandler() {
-        ConfigurationService configurationService = new ConfigurationService();
-        this.verifiableCredentialService = getVerifiableCredentialService(configurationService);
+        ConfigurationService commonConfigurationService = new ConfigurationService();
+        this.verifiableCredentialService =
+                getVerifiableCredentialService(commonConfigurationService);
         this.personIdentityService = new PersonIdentityService();
         this.sessionService = new SessionService();
         this.eventProbe = new EventProbe();
         this.auditService =
                 new AuditService(
                         SqsClient.builder().build(),
-                        configurationService,
+                        commonConfigurationService,
                         new ObjectMapper(),
-                        new AuditEventFactory(configurationService, Clock.systemUTC()));
+                        new AuditEventFactory(commonConfigurationService, Clock.systemUTC()));
         this.fraudRetrievalService = new FraudRetrievalService();
+        this.configurationService =
+                new uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService(
+                        ParamManager.getSecretsProvider(),
+                        ParamManager.getSsmProvider(),
+                        System.getenv("ENVIRONMENT"));
     }
 
     @Override
@@ -122,7 +132,8 @@ public class IssueCredentialHandler
                     new AuditEventContext(input.getHeaders(), sessionItem),
                     IssueCredentialFraudAuditExtensionUtil.generateVCISSFraudAuditExtension(
                             verifiableCredentialService.getVerifiableCredentialIssuer(),
-                            List.of(fraudResult)));
+                            List.of(fraudResult),
+                            configurationService.isActivityHistoryEnabled()));
             eventProbe.counterMetric(TODO_REMOVE_BK_COMPAT_M2, 0d);
 
             LOGGER.info("Credential generated");

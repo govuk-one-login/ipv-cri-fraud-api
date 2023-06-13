@@ -5,6 +5,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.SignedJWT;
+import software.amazon.lambda.powertools.parameters.ParamManager;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.Address;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.BirthDate;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentityDetailed;
@@ -32,16 +33,22 @@ import static uk.gov.di.ipv.cri.fraud.api.domain.VerifiableCredentialConstants.V
 public class VerifiableCredentialService {
 
     private final SignedJWTFactory signedJwtFactory;
-    private final ConfigurationService configurationService;
+    private final ConfigurationService commonConfigurationService;
+    private final uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService configurationService;
     private final ObjectMapper objectMapper;
     private final VerifiableCredentialClaimsSetBuilder vcClaimsSetBuilder;
 
-    public VerifiableCredentialService(ConfigurationService configurationService) {
-        this.configurationService = configurationService;
+    public VerifiableCredentialService(ConfigurationService commonConfigurationService) {
+        this.configurationService =
+                new uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService(
+                        ParamManager.getSecretsProvider(),
+                        ParamManager.getSsmProvider(),
+                        System.getenv("ENVIRONMENT"));
+        this.commonConfigurationService = commonConfigurationService;
         this.signedJwtFactory =
                 new SignedJWTFactory(
                         new KMSSigner(
-                                configurationService.getCommonParameterValue(
+                                commonConfigurationService.getCommonParameterValue(
                                         "verifiableCredentialKmsSigningKeyId")));
         this.objectMapper =
                 new ObjectMapper()
@@ -49,18 +56,20 @@ public class VerifiableCredentialService {
                         .registerModule(new JavaTimeModule());
         this.vcClaimsSetBuilder =
                 new VerifiableCredentialClaimsSetBuilder(
-                        this.configurationService, Clock.systemUTC());
+                        this.commonConfigurationService, Clock.systemUTC());
     }
 
     public VerifiableCredentialService(
             SignedJWTFactory signedClaimSetJwt,
-            ConfigurationService configurationService,
+            ConfigurationService commonConfigurationService,
             ObjectMapper objectMapper,
-            VerifiableCredentialClaimsSetBuilder vcClaimsSetBuilder) {
+            VerifiableCredentialClaimsSetBuilder vcClaimsSetBuilder,
+            uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService configurationService) {
         this.signedJwtFactory = signedClaimSetJwt;
-        this.configurationService = configurationService;
+        this.commonConfigurationService = commonConfigurationService;
         this.objectMapper = objectMapper;
         this.vcClaimsSetBuilder = vcClaimsSetBuilder;
+        this.configurationService = configurationService;
     }
 
     public SignedJWT generateSignedVerifiableCredentialJwt(
@@ -68,9 +77,9 @@ public class VerifiableCredentialService {
             FraudResultItem fraudResultItem,
             PersonIdentityDetailed personIdentityDetailed)
             throws JOSEException {
-        long jwtTtl = this.configurationService.getMaxJwtTtl();
+        long jwtTtl = this.commonConfigurationService.getMaxJwtTtl();
         ChronoUnit jwtTtlUnit =
-                ChronoUnit.valueOf(this.configurationService.getParameterValue("JwtTtlUnit"));
+                ChronoUnit.valueOf(this.commonConfigurationService.getParameterValue("JwtTtlUnit"));
         var now = Instant.now();
 
         var claimsSet =
@@ -93,7 +102,7 @@ public class VerifiableCredentialService {
     }
 
     public String getVerifiableCredentialIssuer() {
-        return configurationService.getVerifiableCredentialIssuer();
+        return commonConfigurationService.getVerifiableCredentialIssuer();
     }
 
     private Object[] convertAddresses(List<Address> addresses) {
@@ -116,7 +125,9 @@ public class VerifiableCredentialService {
 
     private Object[] calculateEvidence(FraudResultItem fraudResultItem) {
 
-        Evidence evidence = EvidenceHelper.fraudCheckResultItemToEvidence(fraudResultItem);
+        Evidence evidence =
+                EvidenceHelper.fraudCheckResultItemToEvidence(
+                        fraudResultItem, configurationService.isActivityHistoryEnabled());
 
         // DecisionScore not currently requested to be in VC
         evidence.setDecisionScore(null);
