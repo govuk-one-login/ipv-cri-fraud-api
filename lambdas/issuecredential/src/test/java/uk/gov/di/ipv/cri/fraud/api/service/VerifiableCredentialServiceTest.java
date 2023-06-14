@@ -49,7 +49,8 @@ class VerifiableCredentialServiceTest implements TestFixtures {
     private final String UNIT_TEST_VC_ISSUER = "UNIT_TEST_VC_ISSUER";
     private final String UNIT_TEST_SUBJECT = "UNIT_TEST_SUBJECT";
 
-    @Mock private ConfigurationService mockConfigurationService;
+    @Mock private ConfigurationService mockCommonConfigurationService;
+    @Mock private uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService mockConfigurationService;
 
     private ObjectMapper objectMapper;
 
@@ -62,16 +63,17 @@ class VerifiableCredentialServiceTest implements TestFixtures {
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
 
-        when(mockConfigurationService.getParameterValue("JwtTtlUnit")).thenReturn("SECONDS");
+        when(mockCommonConfigurationService.getParameterValue("JwtTtlUnit")).thenReturn("SECONDS");
         VerifiableCredentialClaimsSetBuilder verifiableCredentialClaimsSetBuilder =
                 new VerifiableCredentialClaimsSetBuilder(
-                        mockConfigurationService, Clock.systemUTC());
+                        mockCommonConfigurationService, Clock.systemUTC());
         verifiableCredentialService =
                 new VerifiableCredentialService(
                         signedJwtFactory,
-                        mockConfigurationService,
+                        mockCommonConfigurationService,
                         objectMapper,
-                        verifiableCredentialClaimsSetBuilder);
+                        verifiableCredentialClaimsSetBuilder,
+                        mockConfigurationService);
     }
 
     @ParameterizedTest
@@ -117,9 +119,9 @@ class VerifiableCredentialServiceTest implements TestFixtures {
                 FraudPersonIdentityDetailedMapper.generatePersonIdentityDetailed(
                         TestDataCreator.createTestPersonIdentityMultipleAddresses(addressCount));
 
-        when(mockConfigurationService.getVerifiableCredentialIssuer())
+        when(mockCommonConfigurationService.getVerifiableCredentialIssuer())
                 .thenReturn(UNIT_TEST_VC_ISSUER);
-        when(mockConfigurationService.getMaxJwtTtl()).thenReturn(maxExpiryTime);
+        when(mockCommonConfigurationService.getMaxJwtTtl()).thenReturn(maxExpiryTime);
 
         SignedJWT signedJWT =
                 verifiableCredentialService.generateSignedVerifiableCredentialJwt(

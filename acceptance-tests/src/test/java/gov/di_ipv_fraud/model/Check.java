@@ -1,4 +1,4 @@
-package uk.gov.di.ipv.cri.fraud.api.domain.checkdetails;
+package gov.di_ipv_fraud.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;

@@ -14,6 +14,7 @@ public class ConfigurationService {
 
     private final String fraudResultTableName;
     private final String contraindicationMappings;
+    private final boolean activityHistoryEnabled;
     private final String parameterPrefix;
 
     public ConfigurationService(
@@ -28,6 +29,8 @@ public class ConfigurationService {
         this.contraindicationMappings =
                 paramProvider.get(getParameterName("contraindicationMappings"));
         this.fraudResultTableName = paramProvider.get(getParameterName("FraudTableName"));
+        this.activityHistoryEnabled =
+                Boolean.parseBoolean(paramProvider.get(getParameterName("activityHistoryEnabled")));
     }
 
     public String getFraudResultTableName() {
@@ -36,6 +39,10 @@ public class ConfigurationService {
 
     public String getContraindicationMappings() {
         return contraindicationMappings;
+    }
+
+    public boolean isActivityHistoryEnabled() {
+        return activityHistoryEnabled;
     }
 
     public String getParameterName(String parameterName) {

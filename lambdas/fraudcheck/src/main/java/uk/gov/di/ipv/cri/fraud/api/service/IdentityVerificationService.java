@@ -17,6 +17,8 @@ import uk.gov.di.ipv.cri.fraud.api.domain.ValidationResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.audit.TPREFraudAuditExtension;
 import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyFraudGateway;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -121,7 +123,9 @@ public class IdentityVerificationService {
         identityVerificationResult.setIdentityCheckScore(identityCheckScore);
 
         int activityHistoryScore = fraudIdentityVerificationResult.getActivityHistoryScore();
+        String activityFrom = fraudIdentityVerificationResult.getActivityFrom();
         identityVerificationResult.setActivityHistoryScore(activityHistoryScore);
+        identityVerificationResult.setActivityFrom(activityFrom);
 
         identityVerificationResult.setError(
                 fraudIdentityVerificationResult.getError() != null
@@ -272,6 +276,9 @@ public class IdentityVerificationService {
         LOGGER.info("IdentityCheckScore after Fraud {}", fraudIdentityCheckScore);
         identityVerificationResult.setIdentityCheckScore(fraudIdentityCheckScore);
         identityVerificationResult.setActivityHistoryScore(activityHistoryScore);
+
+        String activityFrom = getActivityFrom(fraudCheckResult);
+        identityVerificationResult.setActivityFrom(activityFrom);
 
         String stringFraudContraindications = String.join(", ", fraudContraindications);
         LOGGER.info(
@@ -446,5 +453,15 @@ public class IdentityVerificationService {
         combinedThirdPartyFraudCodes.addAll(
                 pepIdentityVerificationResult.getThirdPartyFraudCodes());
         return combinedThirdPartyFraudCodes;
+    }
+
+    private String getActivityFrom(FraudCheckResult fraudCheckResult) {
+        LocalDate dateNow = LocalDate.now();
+        LocalDate oldestRecordDate = dateNow.minusMonths(0);
+        if (null != fraudCheckResult.getOldestRecordDateInMonths()) {
+            oldestRecordDate = dateNow.minusMonths(fraudCheckResult.getOldestRecordDateInMonths());
+        }
+        String activityFrom = oldestRecordDate.withDayOfMonth(1).format(DateTimeFormatter.ISO_DATE);
+        return activityFrom;
     }
 }

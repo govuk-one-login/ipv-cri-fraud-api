@@ -19,6 +19,9 @@ public class Evidence {
     @JsonProperty("identityFraudScore")
     private Integer identityFraudScore;
 
+    @JsonProperty("activityHistoryScore")
+    private Integer activityHistoryScore;
+
     @JsonProperty("ci")
     private List<String> ci;
 
@@ -85,5 +88,13 @@ public class Evidence {
 
     public void setFailedCheckDetails(List<Check> failedCheckDetails) {
         this.failedCheckDetails = failedCheckDetails;
+    }
+
+    public Integer getActivityHistoryScore() {
+        return activityHistoryScore;
+    }
+
+    public void setActivityHistoryScore(Integer activityHistoryScore) {
+        this.activityHistoryScore = activityHistoryScore;
     }
 }

@@ -162,6 +162,8 @@ public class FraudHandler
             fraudResultItem.setCheckDetails(result.getChecksSucceeded());
             fraudResultItem.setFailedCheckDetails(result.getChecksFailed());
 
+            fraudResultItem.setActivityFrom(result.getActivityFrom());
+
             LOGGER.info("Saving fraud results...");
             dataStore.create(fraudResultItem);
             LOGGER.info("Fraud results saved.");

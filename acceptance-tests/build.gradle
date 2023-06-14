@@ -117,9 +117,9 @@ task cucumber() {
 				"${tags}",
 				'--glue',
 				'gov/di_ipv_fraud/step_definitions',
-				'src/test/resources' ,
+				'src/test/resources/features/' ,
 				'--plugin',
-				'html:build/test-results/cucmber.html',
+				'html:build/test-results/cucumber.html',
 				'--plugin',
 				'json:build/test-results/cucumber.json'
 			]

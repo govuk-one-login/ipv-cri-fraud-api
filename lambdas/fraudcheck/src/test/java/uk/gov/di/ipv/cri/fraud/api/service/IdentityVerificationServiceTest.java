@@ -24,12 +24,15 @@ import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyFraudGateway;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -104,6 +107,8 @@ class IdentityVerificationServiceTest {
         when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyFraudCodes))
                 .thenReturn(mappedFraudCodes);
 
+        when(mockActivityHistoryScoreCalculator.calculateActivityHistoryScore(null)).thenReturn(0);
+
         IdentityVerificationResult result =
                 this.identityVerificationService.verifyIdentity(
                         testPersonIdentity, sessionItem, requestHeaders);
@@ -116,6 +121,11 @@ class IdentityVerificationServiceTest {
         assertNotNull(result);
         assertTrue(result.isSuccess());
         assertEquals(mappedFraudCodes[0], result.getContraIndicators().get(0));
+        assertEquals(0, result.getActivityHistoryScore());
+        assertEquals(
+                LocalDate.now().withDayOfMonth(1).format(DateTimeFormatter.ISO_DATE),
+                result.getActivityFrom());
+
         verify(personIdentityValidator).validate(testPersonIdentity);
         verify(mockThirdPartyGateway).performFraudCheck(testPersonIdentity, false);
         verify(mockThirdPartyGateway, never()).performFraudCheck(testPersonIdentity, true);
@@ -130,6 +140,7 @@ class IdentityVerificationServiceTest {
         FraudCheckResult testFraudCheckResult = new FraudCheckResult();
         testFraudCheckResult.setExecutedSuccessfully(true);
         testFraudCheckResult.setDecisionScore("60");
+        testFraudCheckResult.setOldestRecordDateInMonths(366);
 
         FraudCheckResult testPEPCheckResult = new FraudCheckResult();
         testPEPCheckResult.setExecutedSuccessfully(true);
@@ -156,6 +167,8 @@ class IdentityVerificationServiceTest {
         when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyPEPCodes))
                 .thenReturn(mappedPEPCodes);
 
+        when(mockActivityHistoryScoreCalculator.calculateActivityHistoryScore(366)).thenReturn(1);
+
         IdentityVerificationResult result =
                 this.identityVerificationService.verifyIdentity(
                         testPersonIdentity, sessionItem, requestHeaders);
@@ -171,6 +184,8 @@ class IdentityVerificationServiceTest {
         assertTrue(result.isSuccess());
         assertEquals(mappedFraudCodes[0], result.getContraIndicators().get(0));
         assertEquals(mappedPEPCodes[0], result.getContraIndicators().get(1));
+        assertEquals(1, result.getActivityHistoryScore());
+        assertEquals("1992-12-01", result.getActivityFrom());
 
         verify(personIdentityValidator).validate(testPersonIdentity);
         verify(mockThirdPartyGateway).performFraudCheck(testPersonIdentity, false);
@@ -200,6 +215,8 @@ class IdentityVerificationServiceTest {
         inOrder.verify(mockEventProbe, never()).counterMetric(IDENTITY_CHECK_SCORE_PREFIX + 2);
 
         assertNotNull(result);
+        assertEquals(0, result.getActivityHistoryScore());
+        assertNull(result.getActivityFrom());
         assertTrue(result.getContraIndicators().isEmpty());
         assertFalse(result.isSuccess());
         assertEquals(validationErrors.get(0), result.getValidationErrors().get(0));
@@ -432,6 +449,7 @@ class IdentityVerificationServiceTest {
         String[] thirdPartyFraudCodes = new String[] {"sample-f-code"};
         String[] mappedFraudCodes = new String[] {"mapped-f-code"};
         testFraudCheckResult.setThirdPartyFraudCodes(thirdPartyFraudCodes);
+        testFraudCheckResult.setOldestRecordDateInMonths(366);
 
         FraudCheckResult testPEPCheckResult = new FraudCheckResult();
         testPEPCheckResult.setExecutedSuccessfully(
@@ -449,6 +467,8 @@ class IdentityVerificationServiceTest {
                 .thenReturn(testFraudCheckResult);
         when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyFraudCodes))
                 .thenReturn(mappedFraudCodes);
+
+        when(mockActivityHistoryScoreCalculator.calculateActivityHistoryScore(366)).thenReturn(1);
 
         // Pep is checked to be enabled
         when(mockConfigurationService.getPepEnabled()).thenReturn(Boolean.TRUE);
@@ -475,6 +495,8 @@ class IdentityVerificationServiceTest {
 
         assertNotNull(result);
         assertTrue(result.isSuccess());
+        assertEquals(1, result.getActivityHistoryScore());
+        assertEquals("1992-12-01", result.getActivityFrom());
 
         // Fraud ucodes
         assertEquals(mappedFraudCodes[0], result.getContraIndicators().get(0));

@@ -16,6 +16,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class IssueCredentialAuditGeneratorTest {
+
     @Test
     void auditTest1() throws JsonProcessingException {
 
@@ -28,7 +29,7 @@ class IssueCredentialAuditGeneratorTest {
 
         VCISSFraudAuditExtension ext =
                 IssueCredentialFraudAuditExtensionUtil.generateVCISSFraudAuditExtension(
-                        "TestIssuer", List.of(fraudResultItem1));
+                        "TestIssuer", List.of(fraudResultItem1), true);
 
         AuditEventType evt1 = AuditEventType.VC_ISSUED;
         AuditEvent<VCISSFraudAuditExtension> ev1 =
@@ -44,7 +45,6 @@ class IssueCredentialAuditGeneratorTest {
                         .withDefaultPrettyPrinter();
         String json = ow.writeValueAsString(ev1);
 
-        System.out.println(json);
         assertNotNull(json);
     }
 }

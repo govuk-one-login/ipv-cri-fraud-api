@@ -9,6 +9,7 @@ import io.cucumber.java.en.When;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.text.ParseException;
+import java.util.List;
 
 public class FraudAPIStepDefs extends FraudAPIPage {
 
@@ -19,11 +20,11 @@ public class FraudAPIStepDefs extends FraudAPIPage {
     }
 
     @Given(
-            "user (.*) (.*) has the user identity in the form of a signed JWT string for CRI Id (.*)$")
+            "user (.*) (.*) row number (.*) has the user identity in the form of a signed JWT string for CRI Id (.*)$")
     public void user_has_the_user_identity_in_the_form_of_a_signed_jwt_string(
-            String GivenName, String FamilyName, String criId)
+            String GivenName, String FamilyName, String rowNumber, String criId)
             throws URISyntaxException, IOException, InterruptedException {
-        userIdentityAsJwtStringForupdatedUser(GivenName, FamilyName, criId);
+        userIdentityAsJwtStringForupdatedUser(GivenName, FamilyName, criId, rowNumber);
     }
 
     @And("user sends a POST request to session endpoint")
@@ -62,5 +63,31 @@ public class FraudAPIStepDefs extends FraudAPIPage {
     public void vc_should_contain_ci_and_identityFraudScore(String ci, Integer identityFraudScore)
             throws IOException, InterruptedException, ParseException, URISyntaxException {
         ciAndIdentityFraudScoreInVC(ci, identityFraudScore);
+    }
+
+    @And("user changes (.*) in session request to (.*) for (.*)$")
+    public void userChangesFieldsInTheSessionRequest(
+            String fieldName, String fieldValue, String criId)
+            throws IOException, InterruptedException, ParseException, URISyntaxException {
+        updateSessionRequestFieldWithValue(fieldName, fieldValue, criId);
+    }
+
+    @And("VC should contain activityHistory score of (.*)$")
+    public void vc_should_contain_ci_and_identityFraudScore(Integer activityHistoryScore)
+            throws IOException, InterruptedException, ParseException, URISyntaxException {
+        activityHistoryScoreInVC(activityHistoryScore);
+    }
+
+    @And("VC evidence checks should contain (.*)$")
+    public void vc_should_contain_evidence_checks(String checksString)
+            throws IOException, InterruptedException, ParseException, URISyntaxException {
+        List<String> checks = List.of(checksString.split(","));
+        evidenceChecksInVC(checks);
+    }
+
+    @And("VC evidence activity`history check contains activity from (.*)$")
+    public void vc_should_contain_evidence_check_with_activity_from(String activityFrom)
+            throws IOException, InterruptedException, ParseException, URISyntaxException {
+        evidenceChecksInVC(List.of("activity_history_check"), activityFrom);
     }
 }

@@ -154,6 +154,13 @@ Mappings:
       integration: "true"
       production: "true"
 
+  ActivityHistoryScoreInVcMapping:
+    Environment:
+      dev: "true"
+      build: "true"
+      staging: "true"
+      integration: "false"
+      production: "false"
 
 
 Resources:
@@ -471,6 +478,7 @@ Resources:
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/MaxJwtTtl"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/JwtTtlUnit"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/contraindicationMappings"
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/activityHistoryEnabled"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/verifiableCredentialKmsSigningKeyId"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/SessionTableName"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/verifiable-credential/issuer"
@@ -625,6 +633,14 @@ Resources:
       Type: String
       Value: !FindInMap [ FraudCriPepEnabledMapping, Environment, !Ref 'Environment' ]
       Description: The fraud PEP enabled feature toggle
+
+  ParameterReleaseFlagsVcActivityHistory:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/activityHistoryEnabled"
+      Type: String
+      Value: !FindInMap [ ActivityHistoryScoreInVcMapping, Environment, !Ref 'Environment' ]
+      Description: Feature toggle to enable or disable activity history within the VC
 
   JwtTtlUnitParameter:
     Type: AWS::SSM::Parameter

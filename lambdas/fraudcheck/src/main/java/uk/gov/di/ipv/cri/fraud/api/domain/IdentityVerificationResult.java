@@ -10,6 +10,7 @@ public class IdentityVerificationResult {
     private List<String> contraIndicators = new ArrayList<>();
     private int identityCheckScore;
     private int activityHistoryScore;
+    private String activityFrom;
     private String transactionId;
     private String pepTransactionId;
     private String decisionScore;
@@ -113,5 +114,13 @@ public class IdentityVerificationResult {
 
     public void setActivityHistoryScore(int activityHistoryScore) {
         this.activityHistoryScore = activityHistoryScore;
+    }
+
+    public String getActivityFrom() {
+        return activityFrom;
+    }
+
+    public void setActivityFrom(String activityFrom) {
+        this.activityFrom = activityFrom;
     }
 }

@@ -16,7 +16,8 @@ public class EvidenceHelper {
         throw new IllegalStateException("Instantiation is not valid for this class.");
     }
 
-    public static Evidence fraudCheckResultItemToEvidence(FraudResultItem fraudResultItem) {
+    public static Evidence fraudCheckResultItemToEvidence(
+            FraudResultItem fraudResultItem, boolean activityHistoryEnabled) {
 
         Evidence evidence = new Evidence();
 
@@ -26,22 +27,28 @@ public class EvidenceHelper {
         evidence.setCi(fraudResultItem.getContraIndicators());
         evidence.setDecisionScore(fraudResultItem.getDecisionScore());
 
+        if (activityHistoryEnabled) {
+            evidence.setActivityHistoryScore(fraudResultItem.getActivityHistoryScore());
+        }
+
         List<String> stringCheckDetails = fraudResultItem.getCheckDetails();
         if (stringCheckDetails != null && !stringCheckDetails.isEmpty()) {
-            evidence.setCheckDetails(createCheckList(stringCheckDetails, fraudResultItem));
+            evidence.setCheckDetails(
+                    createCheckList(stringCheckDetails, fraudResultItem, activityHistoryEnabled));
         }
 
         List<String> stringFailedCheckDetails = fraudResultItem.getFailedCheckDetails();
         if (stringFailedCheckDetails != null && !stringFailedCheckDetails.isEmpty()) {
             evidence.setFailedCheckDetails(
-                    createCheckList(stringFailedCheckDetails, fraudResultItem));
+                    createCheckList(
+                            stringFailedCheckDetails, fraudResultItem, activityHistoryEnabled));
         }
 
         return evidence;
     }
 
     private static List<Check> createCheckList(
-            List<String> stringChecks, FraudResultItem resultItem) {
+            List<String> stringChecks, FraudResultItem resultItem, boolean activityHistoryEnabled) {
 
         List<Check> checkList = new ArrayList<>();
 
@@ -51,11 +58,21 @@ public class EvidenceHelper {
             Check check = new Check(checkName.toLowerCase());
 
             // IPR check has the transaction recorded in the check result
-            if (checkName.equals(IMPERSONATION_RISK_CHECK.toString())) {
+            if (checkName.equalsIgnoreCase(IMPERSONATION_RISK_CHECK.toString())) {
                 check.setTxn(resultItem.getPepTransactionId());
             }
 
             checkList.add(check);
+        }
+
+        if (activityHistoryEnabled) {
+            if (resultItem.getActivityHistoryScore() != null
+                    && resultItem.getActivityHistoryScore() != 0) {
+                Check check = new Check();
+                check.setActivityFrom(resultItem.getActivityFrom());
+                check.setIdentityCheckPolicy("none");
+                checkList.add(check);
+            }
         }
 
         return checkList;
