@@ -512,13 +512,8 @@ public class FraudPageObject extends UniversalSteps {
         return jsonNode.get(vc);
     }
 
-    public void expiryAbsentFromVC(String checkType) throws JsonProcessingException {
-        JsonNode vcNode = getVCFromJson("vc");
-        JsonNode evidenceNode = vcNode.get("evidence").get(0);
-        boolean expInVC =
-                evidenceNode.findValues("expiryDate").stream()
-                        .anyMatch(x -> x.asText().equals(checkType));
-        assertFalse(expInVC);
+    public void expiryAbsentFromVC(String exp) throws JsonProcessingException {
+        assertNbfIsRecentAndExpiryIsNull();
     }
 
     public void assertCurrentPageIsFraudCheckPage() {

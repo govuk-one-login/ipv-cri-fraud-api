@@ -221,7 +221,7 @@ public class FraudStepDefs extends FraudPageObject {
     }
 
     @And("^(.*) should not be present in the JSON payload$")
-    public void nbfAndExpiryInJsonResponse(String checkType) throws JsonProcessingException {
-        expiryAbsentFromVC(checkType);
+    public void nbfAndExpiryInJsonResponse(String exp) throws JsonProcessingException {
+        expiryAbsentFromVC(exp);
     }
 }
