@@ -534,12 +534,12 @@ public class FraudPageObject extends UniversalSteps {
                 LocalDateTime.ofEpochSecond(Long.parseLong(nbf), 0, ZoneOffset.UTC);
 
         assertNull(expNode);
-        assertFalse(isWithinRange(nbfDateTime));
+        assertTrue(isWithinRange(nbfDateTime));
     }
 
     boolean isWithinRange(LocalDateTime testDate) {
-        LocalDateTime nbfMin = LocalDateTime.now().minusSeconds(30);
-        LocalDateTime nbfMax = LocalDateTime.now().plusSeconds(30);
+        LocalDateTime nbfMin = LocalDateTime.now(ZoneOffset.UTC).minusSeconds(30);
+        LocalDateTime nbfMax = LocalDateTime.now(ZoneOffset.UTC).plusSeconds(30);
         LOGGER.info("nbfMin " + nbfMin);
         LOGGER.info("nbfMax " + nbfMax);
         LOGGER.info("nbf " + testDate);
