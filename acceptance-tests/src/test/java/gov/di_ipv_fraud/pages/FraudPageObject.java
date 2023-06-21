@@ -27,7 +27,6 @@ import static gov.di_ipv_fraud.utilities.BrowserUtils.checkOkHttpResponseOnLink;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FraudPageObject extends UniversalSteps {
