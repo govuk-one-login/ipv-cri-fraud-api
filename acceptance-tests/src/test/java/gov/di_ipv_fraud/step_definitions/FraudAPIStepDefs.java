@@ -44,9 +44,10 @@ public class FraudAPIStepDefs extends FraudAPIPage {
         postRequestToFraudEndpoint();
     }
 
-    @And("user gets authorisation code")
-    public void user_gets_authorisation_code() throws IOException, InterruptedException {
-        getAuthorisationCode();
+    @And("user gets authorisation code for client (.*)$")
+    public void user_gets_authorisation_code(String clientId)
+            throws IOException, InterruptedException {
+        getAuthorisationCode(clientId);
     }
 
     @And("user sends a POST request to Access Token endpoint (.*)$")
