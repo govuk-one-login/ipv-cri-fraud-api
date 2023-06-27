@@ -511,7 +511,7 @@ public class FraudPageObject extends UniversalSteps {
         return jsonNode.get(vc);
     }
 
-    public void expiryAbsentFromVC() throws JsonProcessingException {
+    public void expiryAbsentFromVC(String exp) throws JsonProcessingException {
         assertNbfIsRecentAndExpiryIsNull();
     }
 
@@ -537,8 +537,8 @@ public class FraudPageObject extends UniversalSteps {
     }
 
     boolean isWithinRange(LocalDateTime testDate) {
-        LocalDateTime nbfMin = LocalDateTime.now().minusSeconds(30);
-        LocalDateTime nbfMax = LocalDateTime.now().plusSeconds(30);
+        LocalDateTime nbfMin = LocalDateTime.now(ZoneOffset.UTC).minusSeconds(30);
+        LocalDateTime nbfMax = LocalDateTime.now(ZoneOffset.UTC).plusSeconds(30);
         LOGGER.info("nbfMin " + nbfMin);
         LOGGER.info("nbfMax " + nbfMax);
         LOGGER.info("nbf " + testDate);
