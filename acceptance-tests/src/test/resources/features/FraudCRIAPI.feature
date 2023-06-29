@@ -7,7 +7,7 @@ Feature: Fraud CRI API
     And user sends a POST request to session endpoint
     And user gets a session-id
     When user sends a POST request to Fraud endpoint
-    And user gets authorisation code
+    And user gets authorisation code for client ipv-core-stub-aws-prod
     And user sends a POST request to Access Token endpoint fraud-cri-shared-dev
     Then user requests Fraud CRI VC
     And VC should contain ci  and identityFraudScore 1
@@ -18,7 +18,7 @@ Feature: Fraud CRI API
     And user sends a POST request to session endpoint
     And user gets a session-id
     When user sends a POST request to Fraud endpoint
-    And user gets authorisation code
+    And user gets authorisation code for client ipv-core-stub-aws-prod
     And user sends a POST request to Access Token endpoint fraud-cri-shared-dev
     Then user requests Fraud CRI VC
     And VC should contain ci  and identityFraudScore 1
@@ -29,7 +29,7 @@ Feature: Fraud CRI API
     And user sends a POST request to session endpoint
     And user gets a session-id
     When user sends a POST request to Fraud endpoint
-    And user gets authorisation code
+    And user gets authorisation code for client ipv-core-stub-aws-prod
     And user sends a POST request to Access Token endpoint fraud-cri-shared-dev
     Then user requests Fraud CRI VC
     And VC should contain ci  and identityFraudScore 2
@@ -41,7 +41,7 @@ Feature: Fraud CRI API
     And user sends a POST request to session endpoint
     And user gets a session-id
     When user sends a POST request to Fraud endpoint
-    And user gets authorisation code
+    And user gets authorisation code for client ipv-core-stub-aws-prod
     And user sends a POST request to Access Token endpoint fraud-cri-shared-dev
     Then user requests Fraud CRI VC
     And VC should contain ci P01 and identityFraudScore 2
@@ -52,7 +52,7 @@ Feature: Fraud CRI API
     And user sends a POST request to session endpoint
     And user gets a session-id
     When user sends a POST request to Fraud endpoint
-    And user gets authorisation code
+    And user gets authorisation code for client ipv-core-stub-aws-prod
     And user sends a POST request to Access Token endpoint fraud-cri-shared-dev
     Then user requests Fraud CRI VC
     And VC should contain ci  and identityFraudScore 1
@@ -63,7 +63,7 @@ Feature: Fraud CRI API
     And user sends a POST request to session endpoint
     And user gets a session-id
     When user sends a POST request to Fraud endpoint
-    And user gets authorisation code
+    And user gets authorisation code for client ipv-core-stub-aws-prod
     And user sends a POST request to Access Token endpoint fraud-cri-shared-dev
     Then user requests Fraud CRI VC
     And VC should contain ci T02 and identityFraudScore 0
@@ -75,7 +75,7 @@ Feature: Fraud CRI API
     And user sends a POST request to session endpoint
     And user gets a session-id
     When user sends a POST request to Fraud endpoint
-    And user gets authorisation code
+    And user gets authorisation code for client ipv-core-stub-aws-prod
     And user sends a POST request to Access Token endpoint fraud-cri-shared-dev
     Then user requests Fraud CRI VC
     And VC should contain ci  and identityFraudScore <identityFraudScore>
@@ -93,7 +93,7 @@ Feature: Fraud CRI API
     And user sends a POST request to session endpoint
     And user gets a session-id
     When user sends a POST request to Fraud endpoint
-    And user gets authorisation code
+    And user gets authorisation code for client ipv-core-stub-aws-prod
     And user sends a POST request to Access Token endpoint fraud-cri-shared-dev
     Then user requests Fraud CRI VC
     And VC should contain ci  and identityFraudScore <identityFraudScore>
@@ -110,7 +110,7 @@ Feature: Fraud CRI API
     And user sends a POST request to session endpoint
     And user gets a session-id
     When user sends a POST request to Fraud endpoint
-    And user gets authorisation code
+    And user gets authorisation code for client ipv-core-stub-aws-prod
     And user sends a POST request to Access Token endpoint fraud-cri-shared-dev
     Then user requests Fraud CRI VC
     And VC should contain ci <ci> and identityFraudScore 2
