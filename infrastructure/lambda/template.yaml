@@ -57,6 +57,9 @@ Conditions:
   IsProdEnvironment: !Equals
     - !Ref Environment
     - production
+  IsPerformance: !Or
+    - !Equals [ !Ref Environment, build ]
+    - !Equals [ !Ref Environment, production ]
   IsDevEnvironment: !Equals
     - !Ref Environment
     - dev
@@ -100,7 +103,7 @@ Globals:
         COMMON_PARAMETER_NAME_PREFIX: !Ref CommonStackName
         ENVIRONMENT: !Ref Environment
     ProvisionedConcurrencyConfig: !If
-      - IsProdEnvironment
+      - IsPerformance
       - ProvisionedConcurrentExecutions: 1
       - !Ref AWS::NoValue
 
@@ -108,7 +111,7 @@ Mappings:
   MemorySizeMapping:
     Environment:
       dev: 512
-      build: 1024
+      build: 2048
       staging: 1024
       integration: 1024
       production: 2048
@@ -902,7 +905,7 @@ Outputs:
     Value: !Sub "https://${PublicFraudApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
     Export:
       Name: !Sub ${AWS::StackName}-PublicFraudApiBaseUrl
-  
+
   PublicFraudApiGatewayId:
     Description: "API GatewayID of the public Fraud CRI API"
     Value: !Sub "${PublicFraudApi}"
