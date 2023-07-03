@@ -156,6 +156,7 @@ public class FraudHandler
                             result.getIdentityCheckScore(),
                             result.getActivityHistoryScore(),
                             result.getDecisionScore());
+            fraudResultItem.setTtl(configurationService.getFraudResultItemExpirationEpoch());
             fraudResultItem.setTransactionId(result.getTransactionId());
             fraudResultItem.setPepTransactionId(result.getPepTransactionId());
 

@@ -51,6 +51,7 @@ class ConfigurationServiceTest {
         when(mockParamProvider.get("/null/contraindicationMappings")).thenReturn("null:null");
         when(mockParamProvider.get("/null/zeroScoreUcodes")).thenReturn("U001,U002");
         when(mockParamProvider.get("/null/noFileFoundThreshold")).thenReturn("35");
+        when(mockParamProvider.get("/null/SessionTtl")).thenReturn("7200");
         when(mockSecretsProvider.get(String.format(KEY_FORMAT, env, hmacKey)))
                 .thenReturn(testHmacKeyValue);
         when(mockSecretsProvider.get(
