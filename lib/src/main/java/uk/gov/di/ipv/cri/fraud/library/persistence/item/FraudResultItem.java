@@ -21,6 +21,8 @@ public class FraudResultItem {
     private List<String> checkDetails;
     private List<String> failedCheckDetails;
 
+    private long ttl;
+
     public FraudResultItem() {}
 
     public FraudResultItem(
@@ -115,6 +117,14 @@ public class FraudResultItem {
 
     public void setActivityFrom(String activityFrom) {
         this.activityFrom = activityFrom;
+    }
+
+    public long getTtl() {
+        return ttl;
+    }
+
+    public void setTtl(long ttl) {
+        this.ttl = ttl;
     }
 
     @Override

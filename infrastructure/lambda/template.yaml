@@ -533,6 +533,9 @@ Resources:
       KeySchema:
         - AttributeName: "sessionId"
           KeyType: "HASH"
+      TimeToLiveSpecification:
+        AttributeName: "ttl"
+        Enabled: true
 
 ####################################################################
 #                                                                  #

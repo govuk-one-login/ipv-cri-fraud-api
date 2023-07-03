@@ -185,7 +185,12 @@ class IdentityVerificationServiceTest {
         assertEquals(mappedFraudCodes[0], result.getContraIndicators().get(0));
         assertEquals(mappedPEPCodes[0], result.getContraIndicators().get(1));
         assertEquals(1, result.getActivityHistoryScore());
-        assertEquals("1992-12-01", result.getActivityFrom());
+        assertEquals(
+                LocalDate.now()
+                        .minusMonths(366)
+                        .withDayOfMonth(1)
+                        .format(DateTimeFormatter.ISO_DATE),
+                result.getActivityFrom());
 
         verify(personIdentityValidator).validate(testPersonIdentity);
         verify(mockThirdPartyGateway).performFraudCheck(testPersonIdentity, false);
@@ -496,7 +501,12 @@ class IdentityVerificationServiceTest {
         assertNotNull(result);
         assertTrue(result.isSuccess());
         assertEquals(1, result.getActivityHistoryScore());
-        assertEquals("1992-12-01", result.getActivityFrom());
+        assertEquals(
+                LocalDate.now()
+                        .minusMonths(366)
+                        .withDayOfMonth(1)
+                        .format(DateTimeFormatter.ISO_DATE),
+                result.getActivityFrom());
 
         // Fraud ucodes
         assertEquals(mappedFraudCodes[0], result.getContraIndicators().get(0));
