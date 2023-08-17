@@ -821,6 +821,49 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       TreatMissingData: notBreaching
 
+  FraudAPIGW5XXErrorsPrivatePercentage:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub Fraud ${Environment} Private API Gateway Percentage 5XX Errors
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref AlarmTopicFraud
+      OKActions:
+        - !Ref AlarmTopicFraud
+      InsufficientDataActions: []
+      DatapointsToAlarm: 3
+      EvaluationPeriods: 3
+      Threshold: 50
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      Metrics:
+        - Id: e1
+          Label: PercentageFailure
+          ReturnData: true
+          Expression: (m1/m2)*100
+        - Id: m1
+          ReturnData: false
+          MetricStat:
+            Metric:
+              Namespace: AWS/ApiGateway
+              MetricName: Count
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub "${AWS::StackName}-PrivateFraudApi"
+            Period: 60
+            Stat: Sum
+        - Id: m2
+          ReturnData: false
+          MetricStat:
+            Metric:
+              Namespace: AWS/ApiGateway
+              MetricName: 5XXError
+              Dimensions:
+                - Name: ApiName
+                  Value: !Sub "${AWS::StackName}-PrivateFraudApi"
+            Period: 60
+            Stat: Sum
+
   ####################################################################
   #                                                                  #
   # Alarm setup                                                      #
