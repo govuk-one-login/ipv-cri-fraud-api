@@ -840,7 +840,7 @@ Resources:
         - Id: e1
           Label: PercentageFailure
           ReturnData: true
-          Expression: (m1/m2)*100
+          Expression: (m2/m1)*100
         - Id: m1
           ReturnData: false
           MetricStat:
