@@ -754,50 +754,6 @@ Resources:
             Period: 300
             Stat: Sum
 
-  FraudAPIGW4XXErrors:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmDescription: !Sub Fraud ${Environment} API Gateway 4XX errors
-      ActionsEnabled: true
-      AlarmActions:
-        - !Ref AlarmTopicFraud
-      OKActions:
-        - !Ref AlarmTopicFraud
-      InsufficientDataActions: []
-      Dimensions: []
-      DatapointsToAlarm: 3
-      EvaluationPeriods: 3
-      Threshold: 2
-      ComparisonOperator: GreaterThanThreshold
-      TreatMissingData: notBreaching
-      Metrics:
-        - Id: e1
-          Label: Expression1
-          ReturnData: true
-          Expression: SUM(METRICS())
-        - Id: m1
-          ReturnData: false
-          MetricStat:
-            Metric:
-              Namespace: AWS/ApiGateway
-              MetricName: 4XXError
-              Dimensions:
-                - Name: ApiName
-                  Value: !Sub "${AWS::StackName}-PublicFraudApi"
-            Period: 300
-            Stat: Sum
-        - Id: m2
-          ReturnData: false
-          MetricStat:
-            Metric:
-              Namespace: AWS/ApiGateway
-              MetricName: 4XXError
-              Dimensions:
-                - Name: ApiName
-                  Value: !Sub "${AWS::StackName}-PrivateFraudApi"
-            Period: 300
-            Stat: Sum
-
   FraudPepCheckFail:
     Type: AWS::CloudWatch::Alarm
     Properties:
