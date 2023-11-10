@@ -37,6 +37,18 @@ Parameters:
     Description: "The name of the stack containing the common CRI lambdas/infra"
     Type: String
     Default: "common-cri-api"
+  ParameterPrefix:
+    Type: String
+    Default: "none"
+    Description: If set the this value will be used for ParameterStore prefix instead of AWS::StackName
+  DeploymentType:
+    Type: String
+    Default: "pipeline"
+    Description: Private Api gateway resources are not be reachable in stacks deployed via pipelines, this override enables less restrictive settings for manual/pre-merge-test deployments.
+  UseApiKey:
+    Type: String
+    Default: "true"
+    Description: Value used to indicate if the public api should be protected by a api key.
 
 Conditions:
   EnforceCodeSigning: !Equals
@@ -71,6 +83,25 @@ Conditions:
           - !Ref PermissionsBoundary
           - "none"
 
+  IsDeployedFromPipeline: !Equals
+    - !Ref DeploymentType
+    - "pipeline"
+# Don't send logs in dev to avoid overwhelming the destination with debug
+  LogSendingEnabled: !And
+    - !Not [!Equals [!Ref Environment, "dev"]]
+    - !Condition IsDeployedFromPipeline
+
+  # This is a special case fix to avoid setting this environment wide feature flag in dev.
+  # As it becomes owned by the first stack using it. Remove once the feature flag is removed and feature is permanent.
+  OverrideSettingOfEnvironmentWideFeatureFlag: !Equals
+    - !Ref Environment
+    - dev
+
+  UseParameterPrefix:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref ParameterPrefix
+          - "none"
 Globals:
   Function:
     VpcConfig:
@@ -119,6 +150,7 @@ Globals:
         POWERTOOLS_METRICS_NAMESPACE: !Ref CriIdentifier
         COMMON_PARAMETER_NAME_PREFIX: !Ref CommonStackName
         ENVIRONMENT: !Ref Environment
+        PARAMETER_PREFIX: !If [UseParameterPrefix, !Ref ParameterPrefix , !Ref AWS::StackName]
     ProvisionedConcurrencyConfig: !If
       - IsPerformance
       - ProvisionedConcurrentExecutions: 1
@@ -210,6 +242,8 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       Description: Public Fraud CRI API with metrics
+      Auth:
+        ApiKeyRequired: !Ref UseApiKey
       MethodSettings:
         - LoggingLevel: INFO
           ResourcePath: '/*'
@@ -277,7 +311,7 @@ Resources:
                   type: "string"
           securitySchemes:
             !If
-            - IsNotDevEnvironment
+            - IsDeployedFromPipeline
             -
               api_key:
                 type: "apiKey"
@@ -330,7 +364,7 @@ Resources:
             Location: './private-api.yaml'
       OpenApiVersion: 3.0.1
       EndpointConfiguration:
-        Type: !If [IsNotDevEnvironment, PRIVATE, REGIONAL]
+        Type: !If [IsDeployedFromPipeline, PRIVATE, REGIONAL]
       Auth:
         ResourcePolicy:
           CustomStatements:
@@ -339,17 +373,18 @@ Resources:
               Principal: '*'
               Resource:
                 - 'execute-api:/*'
-            - Action: 'execute-api:Invoke'
-              Effect: !If [IsNotDevEnvironment, Deny, Allow]
-              Principal: '*'
-              Resource:
-                - 'execute-api:/*'
-              Condition:
-                StringNotEquals:
-                  aws:SourceVpce: !If
-                    - CreateDevResources
-                    - vpce-082cab7c78139eb54
-                    - !ImportValue cri-vpc-ApiGatewayVpcEndpointId
+            - !If
+              - IsDeployedFromPipeline
+              - Action: 'execute-api:Invoke'
+                Effect: Deny
+                Principal: '*'
+                Resource:
+                  - 'execute-api:/*'
+                Condition:
+                  StringNotEquals:
+                    aws:SourceVpce: !ImportValue cri-vpc-ApiGatewayVpcEndpointId
+              - !Ref AWS::NoValue
+
 
   PublicFraudApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
@@ -359,7 +394,7 @@ Resources:
 
   PublicFraudApiAccessLogGroupSubscriptionFilterCsls:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
+    Condition: LogSendingEnabled
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
@@ -373,7 +408,7 @@ Resources:
 
   PrivateFraudApiAccessLogGroupSubscriptionFilterCsls:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
+    Condition: LogSendingEnabled
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
@@ -393,6 +428,7 @@ Resources:
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-identitycheck"
+          ENVIRONMENT: !Ref Environment
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -435,11 +471,17 @@ Resources:
               Action:
                 - ssm:GetParameter
               Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/contraindicationMappings"
+                - !Sub
+                  - "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${PREFIX}/contraindicationMappings"
+                  - PREFIX: !If [UseParameterPrefix, !Ref ParameterPrefix , !Ref AWS::StackName]
+                - !Sub
+                  - "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${PREFIX}/zeroScoreUcodes"
+                  - PREFIX: !If [UseParameterPrefix, !Ref ParameterPrefix , !Ref AWS::StackName]
+                - !Sub
+                  - "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${PREFIX}/noFileFoundThreshold"
+                  - PREFIX: !If [UseParameterPrefix, !Ref ParameterPrefix , !Ref AWS::StackName]
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/FraudTableName"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/pepEnabled"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/zeroScoreUcodes"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/noFileFoundThreshold"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/SessionTableName"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/SessionTtl"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/verifiable-credential/issuer"
@@ -461,7 +503,7 @@ Resources:
 
   IdentityCheckingFunctionLogGroupSubscriptionFilterCsls:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
+    Condition: LogSendingEnabled
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
@@ -488,6 +530,7 @@ Resources:
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-issuecredential"
+          ENVIRONMENT: !Ref Environment
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -512,7 +555,9 @@ Resources:
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/FraudTableName"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/MaxJwtTtl"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/JwtTtlUnit"
-              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/contraindicationMappings"
+              - !Sub
+                - "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${PREFIX}/contraindicationMappings"
+                - PREFIX: !If [UseParameterPrefix, !Ref ParameterPrefix , !Ref AWS::StackName]
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/activityHistoryEnabled"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/verifiableCredentialKmsSigningKeyId"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/SessionTableName"
@@ -535,7 +580,7 @@ Resources:
 
   IssueCredentialFunctionLogGroupSubscriptionFilterCsls:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevEnvironment
+    Condition: LogSendingEnabled
     Properties:
       DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
       FilterPattern: ""
@@ -577,7 +622,7 @@ Resources:
 
   PublicFraudApiUsagePlan:
     Type: AWS::ApiGateway::UsagePlan
-    Condition: IsNotDevEnvironment
+    Condition: IsDeployedFromPipeline
     DependsOn:
       - PublicFraudApiStage
     Properties:
@@ -593,7 +638,7 @@ Resources:
 
   PrivateFraudApiUsagePlan:
     Type: AWS::ApiGateway::UsagePlan
-    Condition: IsNotDevEnvironment
+    Condition: IsDeployedFromPipeline
     DependsOn:
       - PrivateFraudApiStage
     Properties:
@@ -608,16 +653,16 @@ Resources:
         RateLimit: 50 # allowed requests per second
 
   LinkUsagePlanApiKey1:
+    Condition: IsDeployedFromPipeline
     Type: AWS::ApiGateway::UsagePlanKey
-    Condition: IsNotDevEnvironment
     Properties:
       KeyId: !ImportValue core-infrastructure-ApiKey1
       KeyType: API_KEY
       UsagePlanId: !Ref PublicFraudApiUsagePlan
 
   LinkUsagePlanApiKey2:
+    Condition: IsDeployedFromPipeline
     Type: AWS::ApiGateway::UsagePlanKey
-    Condition: IsNotDevEnvironment
     Properties:
       KeyId: !ImportValue core-infrastructure-ApiKey2
       KeyType: API_KEY
@@ -633,7 +678,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Name: !If
-        - IsDevEnvironment
+        - OverrideSettingOfEnvironmentWideFeatureFlag
         - !Sub "/${AWS::StackName}/release-flags-vc-expiry-removed-not-used-in-dev"
         - !Sub "/release-flags/vc-expiry-removed"
       Value: !FindInMap [ VcExpiryRemoved, Environment, !Ref Environment ]
@@ -936,6 +981,12 @@ Resources:
                   Fn::Sub: arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*
     Metadata:
       SamResourceId: AlarmPublishToTopicPolicyFraud
+
+####################################################################
+#                                                                  #
+# Outputs                                                          #
+#                                                                  #
+####################################################################
 
 Outputs:
   StackName:

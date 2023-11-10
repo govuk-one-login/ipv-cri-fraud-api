@@ -11,7 +11,6 @@ jobs:
   deploy:
     name: pre-merge-integration-tests
     runs-on: ubuntu-latest
-    environment: di-ipv-cri-dev
     timeout-minutes: 15
     env:
       AWS_REGION: eu-west-2
@@ -25,7 +24,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: true
-
       - name: Set up JDK 11
         uses: actions/setup-java@v2
         with:
@@ -34,16 +32,15 @@ jobs:
 
       - uses: gradle/gradle-build-action@v2
         with:
-          gradle-version: 7.6
+          gradle-version: wrapper
 
-      - name: Setup SAM CLI
+      - name: Setup SAM
         uses: aws-actions/setup-sam@v1
 
       - name: Assume temporary AWS role
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          role-session-name: ${{ secrets.AWS_ROLE_SESSION }}
+          role-to-assume: ${{ secrets.AWS_PRE_MERGE_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: SAM build
@@ -56,15 +53,13 @@ jobs:
       - name: SAM deploy integration test stack
         run: |
           STACK_NAME=${{ env.STACK_NAME_PREFIX }}-${{ steps.vars.outputs.sha_short }}
-          aws ssm put-parameter --name "/${STACK_NAME}/contraindicationMappings" --type "String" --value "${{ secrets.SENSTIVE_PARAM_CI_MAPPINGS }}" 2>&1 > /dev/null
-          aws ssm put-parameter --name "/${STACK_NAME}/zeroScoreUcodes" --type "String" --value "${{ secrets.SENSTIVE_PARAM_ZERO_SCORE_CODES }}" 2>&1 > /dev/null
-          aws ssm put-parameter --name "/${STACK_NAME}/noFileFoundThreshold" --type "String" --value "${{ secrets.SENSTIVE_PARAM_FILE_NOT_FOUND_THRESHOLD }}" 2>&1 > /dev/null
+          
           sam deploy \
             --no-fail-on-empty-changeset \
             --no-confirm-changeset \
-            --parameter-overrides "Environment=${{ secrets.SHARED_DEV_ENVIRONMENT }} CodeSigningEnabled=false AuditEventNamePrefix=/common-cri-parameters/FraudAuditEventNamePrefix CriIdentifier=/common-cri-parameters/FraudCriIdentifier CommonStackName=fraud-common-cri-api" \
+            --parameter-overrides "DeploymentType=pre-merge-integration UseApiKey=\"\" Environment=${{ env.ENVIRONMENT }} ParameterPrefix=${{ secrets.PREMERGE_PARAMETER_PREFIX_STACK_NAME }} CodeSigningEnabled=false AuditEventNamePrefix=/common-cri-parameters/FraudAuditEventNamePrefix CriIdentifier=/common-cri-parameters/FraudCriIdentifier CommonStackName=common-cri-api" \
             --stack-name $STACK_NAME \
-            --s3-bucket ${{ secrets.AWS_CONFIG_BUCKET }} \
+            --s3-bucket ${{ secrets.AWS_PRE_MERGE_S3_BUCKET_NAME }} \
             --s3-prefix $STACK_NAME \
             --region ${{ env.AWS_REGION }} \
             --capabilities CAPABILITY_IAM
@@ -72,11 +67,14 @@ jobs:
       - name: Run API integration tests
         ### currently failing as were running build on dev stack
         env:
-          ENVIRONMENT: shared-dev
-          APIGW_API_KEY: ${{ secrets.API_KEY_CRI_DEV }}
+          ENVIRONMENT: ${{ secrets.PREMERGE_TEST_ENVIRONMENT }}
+          APIGW_API_KEY: ${{ secrets.FRAUD_API_KEY_CRI_DEV }}
           coreStubUrl: ${{ secrets.CORE_STUB_URL }}
           coreStubUsername: ${{ secrets.CORE_STUB_USERNAME }}
           coreStubPassword: ${{ secrets.CORE_STUB_PASSWORD }}
+          orchestratorStubUrl: ${{ secrets.ORCHESTRATOR_STUB_URL }}
+          CUCUMBER_PUBLISH_ENABLED: true
+          BROWSER: chrome-headless
         run: |
           echo "🤞 now run integration tests..."
           STACK_NAME=${{ env.STACK_NAME_PREFIX }}-${{ steps.vars.outputs.sha_short }}
@@ -84,14 +82,12 @@ jobs:
           API_GATEWAY_ID_PUBLIC=$(aws cloudformation describe-stacks --stack-name $STACK_NAME | jq -r '.Stacks[].Outputs[] | select(.OutputKey == "FraudApiGatewayId").OutputValue')
           export API_GATEWAY_ID_PRIVATE=$API_GATEWAY_ID_PRIVATE
           export API_GATEWAY_ID_PUBLIC=$API_GATEWAY_ID_PUBLIC
+          export API_GATEWAY_KEY=${{ secrets.API_KEY_FRAUD_DEV }}
           cd acceptance-tests && ./gradlew clean cucumber -P tags=@pre-merge
 
       - name: Delete integration test stack
         if: always()
         run: |
           STACK_NAME=${{ env.STACK_NAME_PREFIX }}-${{ steps.vars.outputs.sha_short }}
-          aws ssm delete-parameter --name "/${STACK_NAME}/contraindicationMappings" 2>&1 > /dev/null
-          aws ssm delete-parameter --name "/${STACK_NAME}/zeroScoreUcodes" 2>&1 > /dev/null
-          aws ssm delete-parameter --name "/${STACK_NAME}/noFileFoundThreshold" 2>&1 > /dev/null
           aws cloudformation delete-stack --region ${{ env.AWS_REGION }} --stack-name $STACK_NAME
 

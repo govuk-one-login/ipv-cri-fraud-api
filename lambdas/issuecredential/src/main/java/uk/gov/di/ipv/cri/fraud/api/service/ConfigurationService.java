@@ -7,6 +7,7 @@ import software.amazon.lambda.powertools.parameters.ParamProvider;
 import software.amazon.lambda.powertools.parameters.SecretsProvider;
 
 import java.util.Objects;
+import java.util.Optional;
 
 public class ConfigurationService {
 
@@ -16,6 +17,7 @@ public class ConfigurationService {
     private final String contraindicationMappings;
     private final boolean activityHistoryEnabled;
     private final String parameterPrefix;
+    private final String stackParameterPrefix;
 
     public ConfigurationService(
             SecretsProvider secretsProvider, ParamProvider paramProvider, String env) {
@@ -25,12 +27,17 @@ public class ConfigurationService {
             throw new IllegalArgumentException("env must be specified");
         }
 
-        this.parameterPrefix = System.getenv("AWS_STACK_NAME");
+        this.parameterPrefix =
+                Optional.ofNullable(System.getenv("PARAMETER_PREFIX"))
+                        .orElse(System.getenv("AWS_STACK_NAME"));
+        this.stackParameterPrefix = System.getenv("AWS_STACK_NAME");
+
         this.contraindicationMappings =
                 paramProvider.get(getParameterName("contraindicationMappings"));
-        this.fraudResultTableName = paramProvider.get(getParameterName("FraudTableName"));
+        this.fraudResultTableName = paramProvider.get(getStackParameterName("FraudTableName"));
         this.activityHistoryEnabled =
-                Boolean.parseBoolean(paramProvider.get(getParameterName("activityHistoryEnabled")));
+                Boolean.parseBoolean(
+                        paramProvider.get(getStackParameterName("activityHistoryEnabled")));
     }
 
     public String getFraudResultTableName() {
@@ -45,7 +52,11 @@ public class ConfigurationService {
         return activityHistoryEnabled;
     }
 
-    public String getParameterName(String parameterName) {
+    private String getParameterName(String parameterName) {
         return String.format("/%s/%s", parameterPrefix, parameterName);
+    }
+
+    private String getStackParameterName(String parameterName) {
+        return String.format("/%s/%s", stackParameterPrefix, parameterName);
     }
 }
