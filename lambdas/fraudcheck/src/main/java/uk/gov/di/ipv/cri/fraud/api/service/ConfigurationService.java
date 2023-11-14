@@ -9,6 +9,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static software.amazon.lambda.powertools.parameters.transform.Transformer.json;
 
@@ -47,6 +48,7 @@ public class ConfigurationService {
     private final String fraudResultTableName;
     private final String contraindicationMappings;
     private final String parameterPrefix;
+    private final String stackParameterPrefix;
     private final String commonParameterPrefix;
     private final boolean pepEnabled;
     private List<String> zeroScoreUcodes;
@@ -57,6 +59,12 @@ public class ConfigurationService {
 
     public ConfigurationService(
             SecretsProvider secretsProvider, ParamProvider paramProvider, String env) {
+        this.parameterPrefix =
+                Optional.ofNullable(System.getenv("PARAMETER_PREFIX"))
+                        .orElse(System.getenv("AWS_STACK_NAME"));
+        this.stackParameterPrefix = System.getenv("AWS_STACK_NAME");
+        this.commonParameterPrefix = System.getenv("COMMON_PARAMETER_NAME_PREFIX");
+
         Objects.requireNonNull(secretsProvider, "secretsProvider must not be null");
         Objects.requireNonNull(paramProvider, "paramProvider must not be null");
 
@@ -66,8 +74,6 @@ public class ConfigurationService {
 
         // ****************************Private Parameters****************************
 
-        this.parameterPrefix = System.getenv("AWS_STACK_NAME");
-        this.commonParameterPrefix = System.getenv("COMMON_PARAMETER_NAME_PREFIX");
         this.clock = Clock.systemUTC();
 
         this.tenantId = paramProvider.get(String.format(KEY_FORMAT, env, "thirdPartyApiTenantId"));
@@ -78,7 +84,7 @@ public class ConfigurationService {
 
         this.contraindicationMappings =
                 paramProvider.get(getParameterName("contraindicationMappings"));
-        this.fraudResultTableName = paramProvider.get(getParameterName("FraudTableName"));
+        this.fraudResultTableName = paramProvider.get(getStackParameterName("FraudTableName"));
         this.zeroScoreUcodes =
                 Arrays.asList(paramProvider.get(getParameterName("zeroScoreUcodes")).split(","));
         this.noFileFoundThreshold =
@@ -88,7 +94,7 @@ public class ConfigurationService {
 
         // *****************************Feature Toggles*******************************
 
-        this.pepEnabled = Boolean.valueOf(paramProvider.get(getParameterName("pepEnabled")));
+        this.pepEnabled = Boolean.valueOf(paramProvider.get(getStackParameterName("pepEnabled")));
 
         // *********************************Secrets***********************************
 
@@ -163,8 +169,12 @@ public class ConfigurationService {
         return clock.instant().plus(fraudResultItemTtl, ChronoUnit.SECONDS).getEpochSecond();
     }
 
-    public String getParameterName(String parameterName) {
+    private String getParameterName(String parameterName) {
         return String.format("/%s/%s", parameterPrefix, parameterName);
+    }
+
+    private String getStackParameterName(String parameterName) {
+        return String.format("/%s/%s", stackParameterPrefix, parameterName);
     }
 
     private String getCommonParameterName(String parameterName) {

@@ -296,8 +296,8 @@ Feature: Fraud CRI
     And JSON payload should contain ci <ci> and score <score>
     And The test is complete and I close the driver
     Examples:
-      | name                    | dob       | ci| score|
-      | ALBERT PEPS        | 05/10/1943     |P01   | 2     |
+      | name                    | dob            | ci   | score|
+      | ALBERT PEPS             | 05/10/1943     |P01   | 2     |
 
 
   @build-fraud @test

@@ -32,7 +32,7 @@ echo -e "\tAuditEventNamePrefix SSM key ${GREEN}$audit_event_name_prefix${NOCOLO
 echo -e "\tCriIdentifier SSM key ${GREEN}$cri_identifier${NOCOLOR}"
 
 ./gradlew clean
-sam validate -t infrastructure/lambda/template.yaml --config-env dev
+sam validate -t infrastructure/lambda/template.yaml --config-env dev --lint
 sam build -t infrastructure/lambda/template.yaml --config-env dev
 sam deploy --stack-name "$stack_name" \
    --no-fail-on-empty-changeset \
@@ -45,4 +45,7 @@ sam deploy --stack-name "$stack_name" \
    Environment=dev \
    AuditEventNamePrefix=$audit_event_name_prefix \
    CriIdentifier=$cri_identifier \
-   CommonStackName=fraud-common-cri-api-local
+   CommonStackName=fraud-common-cri-api-local \
+   ParameterPrefix="fraud-cri-api-v1" \
+   UseApiKey="' '" \
+   DeploymentType="not-pipeline"
