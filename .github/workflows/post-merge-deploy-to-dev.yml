@@ -1,4 +1,4 @@
-name: Deploy to dev
+name: Deploy to Fraud dev
 on:
   push:
     branches:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to dev
+    name: Deploy to Fraud dev
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -30,7 +30,7 @@ jobs:
 
       - uses: gradle/gradle-build-action@v2
         with:
-          gradle-version: 7.6
+          gradle-version: wrapper
 
       - name: Setup SAM CLI
         uses: aws-actions/setup-sam@v1
@@ -38,7 +38,7 @@ jobs:
       - name: Assume temporary AWS role
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: ${{ secrets.DEV_CRI_V1_GH_ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ secrets.FRAUD_DEV_CRI_V1_GH_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Generate code signing config
@@ -46,7 +46,7 @@ jobs:
         uses: rusty-actions/sam-code-signing-config@39f63740a9f8622eb9b6755413a31a6013a62a86
         with:
           template: ./infrastructure/lambda/template.yaml
-          profile: ${{ secrets.DEV_SIGNING_PROFILE_NAME }}
+          profile: ${{ secrets.FRAUD_DEV_SIGNING_PROFILE_NAME }}
 
       - name: SAM Validate
         run: sam validate --region ${{ env.AWS_REGION }} -t infrastructure/lambda/template.yaml
@@ -58,7 +58,7 @@ jobs:
         run: |
           sam package \
             ${{ steps.signing.outputs.signing_config }} \
-            --s3-bucket ${{ secrets.DEV_CRI_V1_ARTIFACT_SOURCE_BUCKET_NAME }} \
+            --s3-bucket ${{ secrets.FRAUD_DEV_CRI_V1_ARTIFACT_SOURCE_BUCKET_NAME }} \
             --region ${{ env.AWS_REGION }} --output-template-file=cf-template.yaml
 
       - name: Zip the CloudFormation template
@@ -66,5 +66,5 @@ jobs:
 
       - name: Upload zipped CloudFormation artifact to S3
         env:
-          DEV_ARTIFACT_SOURCE_BUCKET_NAME: ${{ secrets.DEV_CRI_V1_ARTIFACT_SOURCE_BUCKET_NAME }}
-        run: aws s3 cp template.zip "s3://$DEV_ARTIFACT_SOURCE_BUCKET_NAME/template.zip"
+          FRAUD_DEV_ARTIFACT_SOURCE_BUCKET_NAME: ${{ secrets.FRAUD_DEV_CRI_V1_ARTIFACT_SOURCE_BUCKET_NAME }}
+        run: aws s3 cp template.zip "s3://$FRAUD_DEV_ARTIFACT_SOURCE_BUCKET_NAME/template.zip"
