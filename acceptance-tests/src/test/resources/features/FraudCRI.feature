@@ -230,7 +230,7 @@ Feature: Fraud CRI
       | name                    | dob            | ci  | score |
       | ANTHONY ROBERTS         | 25/06/1959     |     |   2   |
 
-  @build-fraud @test1
+  @build-fraud
   Scenario Outline:Crosscore Authenticate and PEP completed and user is a PEP
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -255,7 +255,7 @@ Feature: Fraud CRI
       | JAMALA BROWER           | 27/10/1963     |    |2    |
 
 
-  @build-fraud @test
+  @build-fraud
   Scenario Outline:Crosscore Authenticate and PEP completed and user not PEP
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -280,7 +280,7 @@ Feature: Fraud CRI
       | ALBERT PEPS             | 05/10/1943     |P01   | 2     |
 
 
-  @build-fraud @test
+  @build-fraud
   Scenario Outline: Mortality u-code returned
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -304,7 +304,7 @@ Feature: Fraud CRI
       | ALBERT GILT    | 05/10/1943       | T02  | 0     |
 
 
-  @build-fraud @test
+  @build-fraud
   Scenario Outline: Crosscore Authenticate completed and PEP not completed due to error from ThirdParty
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -328,7 +328,7 @@ Feature: Fraud CRI
       | name                         | dob              | ci   | score  |
       | ALBERT PEP_ERROR_RESPONSE    | 05/10/1943       |      | 1    |
 
-  @build-fraud @test
+  @build-fraud
   Scenario Outline: Crosscore Authenticate completed and PEP not completed due to technical failure
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -352,7 +352,7 @@ Feature: Fraud CRI
       | name                    | dob              | ci   | score  |
       | ALBERT PEP_TECH_FAIL    | 05/10/1943       |      | 1    |
 
-  @build-fraud @test
+  @build-fraud
   Scenario Outline: Decision score below 35
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
