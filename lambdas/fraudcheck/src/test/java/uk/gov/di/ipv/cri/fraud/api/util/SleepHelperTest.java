@@ -35,15 +35,6 @@ class SleepHelperTest {
         assertEquals(expectedWait, waitTime, EPSILON);
     }
 
-    @Test
-    void shouldSleep0msWhenCalledOnce() throws InterruptedException {
-        long expectedWait = 0;
-
-        long waitTime = sleepHelper.sleepWithExponentialBackOff(0);
-
-        assertEquals(expectedWait, waitTime, EPSILON);
-    }
-
     @ParameterizedTest
     @ValueSource(ints = {1, 2, 3, 4, 5, 6, 7})
     void shouldBusyWait2P100ForCallN(int callNumber) {
@@ -58,34 +49,11 @@ class SleepHelperTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {1, 2, 3, 4, 5, 6, 7})
-    void shouldSleep2P100ForCallN(int callNumber) throws InterruptedException {
-        long baseWaitTime = 100;
-        long power = callNumber - 1;
-
-        long expectedWait = (long) Math.pow(2, power) * baseWaitTime;
-
-        long waitTime = sleepHelper.sleepWithExponentialBackOff(callNumber);
-
-        assertEquals(expectedWait, waitTime, EPSILON);
-    }
-
-    @ParameterizedTest
     @ValueSource(ints = {8, 9})
     void shouldBusyWaitMaxTimeWhenCalledMoreThan7Times(int callNumber) {
         long expectedWait = MAX_TEST_SLEEP;
 
         long waitTime = sleepHelper.busyWaitWithExponentialBackOff(callNumber);
-
-        assertEquals(expectedWait, waitTime, EPSILON);
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = {8, 9})
-    void shouldSleepMaxTimeWhenCalledMoreThan7Times(int callNumber) throws InterruptedException {
-        long expectedWait = MAX_TEST_SLEEP;
-
-        long waitTime = sleepHelper.sleepWithExponentialBackOff(callNumber);
 
         assertEquals(expectedWait, waitTime, EPSILON);
     }

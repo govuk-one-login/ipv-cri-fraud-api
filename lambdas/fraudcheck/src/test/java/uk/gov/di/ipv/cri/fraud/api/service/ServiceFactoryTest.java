@@ -19,7 +19,6 @@ import static org.mockito.Mockito.*;
 class ServiceFactoryTest {
     @Mock private ObjectMapper mockObjectMapper;
     @Mock private ConfigurationService mockConfigurationService;
-    @Mock private SSLContextFactory mockSslContextFactory;
     @Mock private ContraindicationMapper mockContraindicationMapper;
     @Mock private PersonIdentityValidator mockPersonIdentityValidator;
     @Mock private HttpClient mockHttpClient;
@@ -33,23 +32,22 @@ class ServiceFactoryTest {
             throws NoSuchAlgorithmException, InvalidKeyException {
         when(mockConfigurationService.getHmacKey()).thenReturn("hmac key");
         when(mockConfigurationService.getEndpointUrl()).thenReturn("https://test-endpoint");
+
         ServiceFactory serviceFactory =
                 new ServiceFactory(
                         mockObjectMapper,
                         mockEventProbe,
                         mockConfigurationService,
-                        mockSslContextFactory,
                         mockContraindicationMapper,
                         mockPersonIdentityValidator,
-                        mockHttpClient,
                         mockAuditService);
 
         IdentityVerificationService identityVerificationService =
                 serviceFactory.getIdentityVerificationService();
 
         assertNotNull(identityVerificationService);
-        verify(mockConfigurationService).getTenantId();
-        verify(mockConfigurationService).getHmacKey();
-        verify(mockConfigurationService).getEndpointUrl();
+        verify(mockConfigurationService, times(2)).getTenantId();
+        verify(mockConfigurationService, times(2)).getHmacKey();
+        verify(mockConfigurationService, times(2)).getEndpointUrl();
     }
 }

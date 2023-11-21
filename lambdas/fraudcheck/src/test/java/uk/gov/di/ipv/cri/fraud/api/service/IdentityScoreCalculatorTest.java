@@ -4,13 +4,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
+import uk.gov.di.ipv.cri.fraud.api.domain.check.FraudCheckResult;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.*;
 
 @ExtendWith(MockitoExtension.class)
 class IdentityScoreCalculatorTest {

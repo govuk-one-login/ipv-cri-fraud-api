@@ -29,35 +29,14 @@ public class SleepHelper {
 
         LOGGER.info("busyWaitWithExponentialBackOff start time : {}", startTime);
 
-        while (System.currentTimeMillis() < futureTime) {}
+        while (System.currentTimeMillis() < futureTime) {
+            // Intended
+        }
 
         long endTime = System.currentTimeMillis();
         long timeWaited = (endTime - startTime);
 
         LOGGER.info("busyWaitWithExponentialBackOff end time : {}", endTime);
-
-        return timeWaited;
-    }
-
-    /**
-     * Calculates a wait time based on number of calls - starting from zero for the first call.
-     * Using Thread.sleep()
-     *
-     * @param callNumber
-     * @return
-     */
-    public long sleepWithExponentialBackOff(int callNumber) throws InterruptedException {
-
-        long startTime = System.currentTimeMillis();
-
-        LOGGER.info("sleepWithExponentialBackOff start time : {}", startTime);
-
-        Thread.sleep(Math.min(calculateExponentialBackOffTimeMS(callNumber), maxSleepTimeMs));
-
-        long endTime = System.currentTimeMillis();
-        long timeWaited = (endTime - startTime);
-
-        LOGGER.info("sleepWithExponentialBackOff end time : {}", endTime);
 
         return timeWaited;
     }

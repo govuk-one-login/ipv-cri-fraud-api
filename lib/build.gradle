@@ -1,13 +1,14 @@
 plugins {
 	id "java-library"
 	id "jacoco"
-	id "io.freefair.aspectj.post-compile-weaving" version "6.3.0"
+	id "io.freefair.aspectj.post-compile-weaving" version "6.6.3"
 }
 
 dependencies {
 
 	implementation configurations.cri_common_lib,
 			configurations.aws,
+			configurations.aws_apache_http_client,
 			configurations.dynamodb
 
 	aspect configurations.powertools

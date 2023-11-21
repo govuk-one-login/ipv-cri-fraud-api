@@ -1,14 +1,6 @@
 package uk.gov.di.ipv.cri.fraud.library.metrics;
 
 public class Definitions {
-
-    // TODO Remove these first two metrics when safe
-    //  - Kept until alerts are converted to the _completed metrics
-    // They are named incorrectly, inconsistently placed and called.
-    // The LAMBDA_NAME_COMPLETED metrics are the replacements
-    public static final String TODO_REMOVE_BK_COMPAT_M1 = "fraud_issue_credential";
-    public static final String TODO_REMOVE_BK_COMPAT_M2 = "fraud_credential_issuer";
-
     // These completed metrics record all escape routes from the lambdas.
     // OK for expected routes with ERROR being all others
     public static final String LAMBDA_IDENTITY_CHECK_COMPLETED_OK =
@@ -38,16 +30,6 @@ public class Definitions {
     // Per response Contra Indicators (CI is Appended)
     public static final String FRAUD_CHECK_CI_PREFIX = "fraud_check_ci_";
     public static final String PEP_CHECK_CI_PREFIX = "pep_check_ci_";
-
-    // HTTP Connection Send (Both)
-    public static final String THIRD_PARTY_REQUEST_CREATED = "third_party_requests_created";
-    public static final String THIRD_PARTY_REQUEST_SEND_RETRY = "third_party_requests_send_retry";
-    public static final String THIRD_PARTY_REQUEST_SEND_OK = "third_party_request_send_ok";
-    public static final String THIRD_PARTY_REQUEST_SEND_ERROR = "third_party_request_send_error";
-    public static final String THIRD_PARTY_REQUEST_SEND_MAX_RETRIES =
-            "third_party_request_send_max_retries";
-    public static final String THIRD_PARTY_REQUEST_SEND_FAIL =
-            "third_party_requests_send_fail"; // IOException
 
     // Third Party Response Type Fraud
     public static final String THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO =

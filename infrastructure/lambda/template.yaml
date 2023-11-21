@@ -54,29 +54,12 @@ Conditions:
   EnforceCodeSigning: !Equals
     - !Ref CodeSigningEnabled
     - true
-  CreateDevResources: !Equals
-    - !Ref Environment
-    - dev
-  IsStubEnvironment: !Or
-    - !Equals [ !Ref Environment, dev]
-    - !Equals [ !Ref Environment, build ]
-    - !Equals [ !Ref Environment, staging ]
-    - !Equals [ !Ref Environment, integration ]
-  IsProdLikeEnvironment: !Or
-    - !Equals [ !Ref Environment, staging ]
-    - !Equals [ !Ref Environment, integration ]
-    - !Equals [ !Ref Environment, production ]
   IsProdEnvironment: !Equals
     - !Ref Environment
     - production
   IsPerformance: !Or
     - !Equals [ !Ref Environment, build ]
     - !Equals [ !Ref Environment, production ]
-  IsDevEnvironment: !Equals
-    - !Ref Environment
-    - dev
-  IsNotDevEnvironment: !Not
-    - Condition: IsDevEnvironment
   UsePermissionsBoundary:
     Fn::Not:
       - Fn::Equals:

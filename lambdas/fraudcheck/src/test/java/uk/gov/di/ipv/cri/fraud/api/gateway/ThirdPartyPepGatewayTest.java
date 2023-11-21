@@ -18,11 +18,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
-import uk.gov.di.ipv.cri.fraud.api.domain.check.FraudCheckResult;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.IdentityVerificationResponse;
-import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckHttpRetryStatusConfig;
+import uk.gov.di.ipv.cri.fraud.api.domain.check.PepCheckResult;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PEPRequest;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.PEPResponse;
 import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryer;
+import uk.gov.di.ipv.cri.fraud.api.service.PepCheckHttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.api.util.HttpResponseFixtures;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 import uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse;
@@ -38,26 +38,30 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyDouble;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse.ERROR_FRAUD_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_FRAUD_RESPONSE_LATENCY_MILLIS;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_REQUEST_CREATED;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_REQUEST_SEND_OK;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_RESPONSE_TYPE_EXPECTED_HTTP_STATUS;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_RESPONSE_TYPE_INVALID;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_RESPONSE_TYPE_VALID;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse.ERROR_PEP_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_REQUEST_CREATED;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_REQUEST_SEND_OK;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_RESPONSE_TYPE_EXPECTED_HTTP_STATUS;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_RESPONSE_TYPE_INVALID;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_RESPONSE_TYPE_VALID;
 
 @ExtendWith(MockitoExtension.class)
-class ThirdPartyFraudGatewayTest {
+class ThirdPartyPepGatewayTest {
 
     private static final String TEST_API_RESPONSE_BODY = "test-api-response-content";
     private static final String TEST_ENDPOINT_URL = "https://test-endpoint.co.uk";
 
     private static final String HMAC_OF_REQUEST_BODY = "hmac-of-request-body";
 
-    private ThirdPartyFraudGateway thirdPartyFraudGateway;
+    private ThirdPartyPepGateway thirdPartyPepGateway;
 
     @Mock private HttpRetryer mockHttpRetryer;
 
@@ -69,8 +73,8 @@ class ThirdPartyFraudGatewayTest {
 
     @BeforeEach
     void setUp() {
-        this.thirdPartyFraudGateway =
-                new ThirdPartyFraudGateway(
+        thirdPartyPepGateway =
+                new ThirdPartyPepGateway(
                         mockHttpRetryer,
                         mockRequestMapper,
                         mockResponseMapper,
@@ -81,15 +85,15 @@ class ThirdPartyFraudGatewayTest {
     }
 
     @Test
-    void shouldInvokeExperianApi() throws IOException, OAuthErrorResponseException {
-        final String testRequestBody = "serialisedCrossCoreApiRequest";
-        final IdentityVerificationRequest testApiRequest = new IdentityVerificationRequest();
+    void shouldInvokePepApi() throws IOException, OAuthErrorResponseException {
+        final String testRequestBody = "serialisedPepApiRequest";
+        final PEPRequest testApiRequest = new PEPRequest();
 
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
-        IdentityVerificationResponse testResponse = new IdentityVerificationResponse();
-        FraudCheckResult testFraudCheckResult = new FraudCheckResult();
-        when(mockRequestMapper.mapPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+        PEPResponse testPepResponse = new PEPResponse();
+        PepCheckResult testPepCheckResult = new PepCheckResult();
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
         when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(HMAC_OF_REQUEST_BODY);
@@ -97,46 +101,45 @@ class ThirdPartyFraudGatewayTest {
                 ArgumentCaptor.forClass(HttpPost.class);
 
         when(mockHttpRetryer.sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(FraudCheckHttpRetryStatusConfig.class)))
+                        httpRequestCaptor.capture(), any(PepCheckHttpRetryStatusConfig.class)))
                 .thenReturn(
                         HttpResponseFixtures.createHttpResponse(
                                 200, null, TEST_API_RESPONSE_BODY, false));
 
-        when(this.mockObjectMapper.readValue(
-                        TEST_API_RESPONSE_BODY, IdentityVerificationResponse.class))
-                .thenReturn(testResponse);
-        when(this.mockResponseMapper.mapFraudResponse(testResponse))
-                .thenReturn(testFraudCheckResult);
+        when(this.mockObjectMapper.readValue(TEST_API_RESPONSE_BODY, PEPResponse.class))
+                .thenReturn(testPepResponse);
+        when(this.mockResponseMapper.mapPEPResponse(testPepResponse))
+                .thenReturn(testPepCheckResult);
 
-        FraudCheckResult actualFraudCheckResult =
-                thirdPartyFraudGateway.performFraudCheck(personIdentity);
+        PepCheckResult actualPepCheckResult = thirdPartyPepGateway.performPepCheck(personIdentity);
 
         InOrder inOrderMockEventProbe = inOrder(mockEventProbe);
         inOrderMockEventProbe
                 .verify(mockEventProbe)
-                .counterMetric(FRAUD_REQUEST_CREATED.withEndpointPrefix());
+                .counterMetric(PEP_REQUEST_CREATED.withEndpointPrefix());
         inOrderMockEventProbe
                 .verify(mockEventProbe)
-                .counterMetric(FRAUD_REQUEST_SEND_OK.withEndpointPrefix());
+                .counterMetric(PEP_REQUEST_SEND_OK.withEndpointPrefix());
         inOrderMockEventProbe
                 .verify(mockEventProbe)
-                .counterMetric(eq(THIRD_PARTY_FRAUD_RESPONSE_LATENCY_MILLIS), anyDouble());
+                .counterMetric(eq(THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS), anyDouble());
         inOrderMockEventProbe
                 .verify(mockEventProbe)
-                .counterMetric(FRAUD_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
+                .counterMetric(PEP_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
         inOrderMockEventProbe
                 .verify(mockEventProbe)
-                .counterMetric(FRAUD_RESPONSE_TYPE_VALID.withEndpointPrefix());
+                .counterMetric(PEP_RESPONSE_TYPE_VALID.withEndpointPrefix());
         verifyNoMoreInteractions(mockEventProbe);
 
-        verify(mockRequestMapper).mapPersonIdentity(personIdentity);
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHmacGenerator).generateHmac(testRequestBody);
         verify(mockHttpRetryer)
                 .sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(FraudCheckHttpRetryStatusConfig.class));
-        verify(mockResponseMapper).mapFraudResponse(testResponse);
-        assertNotNull(actualFraudCheckResult);
+                        httpRequestCaptor.capture(), any(PepCheckHttpRetryStatusConfig.class));
+        verify(mockResponseMapper).mapPEPResponse(testPepResponse);
+
+        assertNotNull(actualPepCheckResult);
         assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().getURI().toString());
         assertEquals(HttpPost.class, httpRequestCaptor.getValue().getClass());
         assertHeaders(httpRequestCaptor);
@@ -146,12 +149,12 @@ class ThirdPartyFraudGatewayTest {
     void shouldReturnOAuthErrorResponseExceptionIfThirdPartyApiReturnsInvalidResponse()
             throws IOException {
         final String testRequestBody = "serialisedCrossCoreApiRequest";
-        final IdentityVerificationRequest testApiRequest = new IdentityVerificationRequest();
+        final PEPRequest testApiRequest = new PEPRequest();
 
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
 
-        when(mockRequestMapper.mapPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
         when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(HMAC_OF_REQUEST_BODY);
@@ -159,17 +162,17 @@ class ThirdPartyFraudGatewayTest {
                 ArgumentCaptor.forClass(HttpPost.class);
 
         when(mockHttpRetryer.sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(FraudCheckHttpRetryStatusConfig.class)))
+                        httpRequestCaptor.capture(), any(PepCheckHttpRetryStatusConfig.class)))
                 .thenReturn(
                         HttpResponseFixtures.createHttpResponse(200, null, "}BAD JSON{", false));
 
         OAuthErrorResponseException expectedReturnedException =
                 new OAuthErrorResponseException(
                         HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                        ErrorResponse.FAILED_TO_MAP_FRAUD_CHECK_RESPONSE_BODY);
+                        ErrorResponse.FAILED_TO_MAP_PEP_CHECK_RESPONSE_BODY);
 
         // Trigger the mapping failure via the mock
-        when(mockObjectMapper.readValue("}BAD JSON{", IdentityVerificationResponse.class))
+        when(mockObjectMapper.readValue("}BAD JSON{", PEPResponse.class))
                 .thenThrow(
                         new InputCoercionException(
                                 null, "Problem during json mapping", null, null));
@@ -177,7 +180,7 @@ class ThirdPartyFraudGatewayTest {
         OAuthErrorResponseException thrownException =
                 assertThrows(
                         OAuthErrorResponseException.class,
-                        () -> thirdPartyFraudGateway.performFraudCheck(personIdentity),
+                        () -> thirdPartyPepGateway.performPepCheck(personIdentity),
                         "Expected OAuthErrorResponseException");
 
         assertEquals(expectedReturnedException.getStatusCode(), thrownException.getStatusCode());
@@ -186,27 +189,27 @@ class ThirdPartyFraudGatewayTest {
         InOrder inOrderMockEventProbe = inOrder(mockEventProbe);
         inOrderMockEventProbe
                 .verify(mockEventProbe)
-                .counterMetric(FRAUD_REQUEST_CREATED.withEndpointPrefix());
+                .counterMetric(PEP_REQUEST_CREATED.withEndpointPrefix());
         inOrderMockEventProbe
                 .verify(mockEventProbe)
-                .counterMetric(FRAUD_REQUEST_SEND_OK.withEndpointPrefix());
+                .counterMetric(PEP_REQUEST_SEND_OK.withEndpointPrefix());
         inOrderMockEventProbe
                 .verify(mockEventProbe)
-                .counterMetric(eq(THIRD_PARTY_FRAUD_RESPONSE_LATENCY_MILLIS), anyDouble());
+                .counterMetric(eq(THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS), anyDouble());
         inOrderMockEventProbe
                 .verify(mockEventProbe)
-                .counterMetric(FRAUD_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
+                .counterMetric(PEP_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
         inOrderMockEventProbe
                 .verify(mockEventProbe)
-                .counterMetric(FRAUD_RESPONSE_TYPE_INVALID.withEndpointPrefix());
+                .counterMetric(PEP_RESPONSE_TYPE_INVALID.withEndpointPrefix());
         verifyNoMoreInteractions(mockEventProbe);
 
-        verify(mockRequestMapper).mapPersonIdentity(personIdentity);
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHmacGenerator).generateHmac(testRequestBody);
         verify(mockHttpRetryer)
                 .sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(FraudCheckHttpRetryStatusConfig.class));
+                        httpRequestCaptor.capture(), any(PepCheckHttpRetryStatusConfig.class));
 
         assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().getURI().toString());
         assertEquals(HttpPost.class, httpRequestCaptor.getValue().getClass());
@@ -217,14 +220,14 @@ class ThirdPartyFraudGatewayTest {
     @CsvSource({
         "300", "400", "500", "-1",
     })
-    void thirdPartyApiReturnsErrorOnUnexpectedHTTPStatusResponse(int errorStatus)
+    void thirdPartyApiReturnsErrorOnHTTP300Response(int errorStatus)
             throws IOException, OAuthErrorResponseException {
         final String testRequestBody = "serialisedCrossCoreApiRequest";
-        final IdentityVerificationRequest testApiRequest = new IdentityVerificationRequest();
+        final PEPRequest testApiRequest = new PEPRequest();
 
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
-        when(mockRequestMapper.mapPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
 
@@ -233,42 +236,41 @@ class ThirdPartyFraudGatewayTest {
                 ArgumentCaptor.forClass(HttpPost.class);
 
         when(mockHttpRetryer.sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(FraudCheckHttpRetryStatusConfig.class)))
+                        httpRequestCaptor.capture(), any(PepCheckHttpRetryStatusConfig.class)))
                 .thenReturn(
                         HttpResponseFixtures.createHttpResponse(
                                 errorStatus, null, TEST_API_RESPONSE_BODY, false));
 
-        FraudCheckResult actualFraudCheckResult =
-                thirdPartyFraudGateway.performFraudCheck(personIdentity);
+        PepCheckResult actualPepCheckResult = thirdPartyPepGateway.performPepCheck(personIdentity);
 
         InOrder inOrderMockEventProbe = inOrder(mockEventProbe);
         inOrderMockEventProbe
                 .verify(mockEventProbe)
-                .counterMetric(FRAUD_REQUEST_CREATED.withEndpointPrefix());
+                .counterMetric(PEP_REQUEST_CREATED.withEndpointPrefix());
         inOrderMockEventProbe
                 .verify(mockEventProbe)
-                .counterMetric(FRAUD_REQUEST_SEND_OK.withEndpointPrefix());
+                .counterMetric(PEP_REQUEST_SEND_OK.withEndpointPrefix());
         inOrderMockEventProbe
                 .verify(mockEventProbe)
-                .counterMetric(eq(THIRD_PARTY_FRAUD_RESPONSE_LATENCY_MILLIS), anyDouble());
+                .counterMetric(eq(THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS), anyDouble());
         inOrderMockEventProbe
                 .verify(mockEventProbe)
-                .counterMetric(FRAUD_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS.withEndpointPrefix());
+                .counterMetric(PEP_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS.withEndpointPrefix());
         verifyNoMoreInteractions(mockEventProbe);
 
         final String EXPECTED_ERROR =
-                ERROR_FRAUD_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE.getMessage();
+                ERROR_PEP_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE.getMessage();
 
-        verify(mockRequestMapper).mapPersonIdentity(personIdentity);
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHmacGenerator).generateHmac(testRequestBody);
 
         verify(mockHttpRetryer, times(1))
                 .sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(FraudCheckHttpRetryStatusConfig.class));
+                        httpRequestCaptor.capture(), any(PepCheckHttpRetryStatusConfig.class));
 
-        assertNotNull(actualFraudCheckResult);
-        assertEquals(EXPECTED_ERROR, actualFraudCheckResult.getErrorMessage());
+        assertNotNull(actualPepCheckResult);
+        assertEquals(EXPECTED_ERROR, actualPepCheckResult.getErrorMessage());
         assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().getURI().toString());
         assertEquals(HttpPost.class, httpRequestCaptor.getValue().getClass());
         assertHeaders(httpRequestCaptor);

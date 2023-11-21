@@ -13,7 +13,6 @@ import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
-import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -44,12 +43,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.apache.logging.log4j.Level.ERROR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_ISSUE_CREDENTIAL_COMPLETED_OK;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.TODO_REMOVE_BK_COMPAT_M2;
 
 @ExtendWith(MockitoExtension.class)
 class IssueCredentialHandlerTest {
@@ -99,7 +96,6 @@ class IssueCredentialHandlerTest {
 
         when(mockEventProbe.counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_OK))
                 .thenReturn(mockEventProbe);
-        when(mockEventProbe.counterMetric(TODO_REMOVE_BK_COMPAT_M2, 0d)).thenReturn(mockEventProbe);
 
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, context);
 
@@ -115,8 +111,6 @@ class IssueCredentialHandlerTest {
                         any(AuditEventContext.class),
                         any(VCISSFraudAuditExtension.class));
         verify(mockEventProbe).counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_OK);
-        verify(mockEventProbe)
-                .counterMetric(TODO_REMOVE_BK_COMPAT_M2, 0d); // Old Metric set incorrect value
         assertEquals(
                 ContentType.APPLICATION_JWT.getType(), response.getHeaders().get("Content-Type"));
         assertEquals(HttpStatusCode.OK, response.getStatusCode());
@@ -124,7 +118,7 @@ class IssueCredentialHandlerTest {
 
     @Test
     void shouldThrowJOSEExceptionWhenGenerateVerifiableCredentialIsMalformed()
-            throws JsonProcessingException, JOSEException, SqsException, JsonProcessingException {
+            throws JOSEException, SqsException, JsonProcessingException {
         APIGatewayProxyRequestEvent event = new APIGatewayProxyRequestEvent();
         AccessToken accessToken = new BearerAccessToken();
         event.withHeaders(
@@ -132,7 +126,7 @@ class IssueCredentialHandlerTest {
                         IssueCredentialHandler.AUTHORIZATION_HEADER_KEY,
                         accessToken.toAuthorizationHeader()));
         setRequestBodyAsPlainJWT(event);
-        setupEventProbeErrorBehaviour();
+
         var unExpectedJOSEException = new JOSEException("Unexpected JOSE object type: JWSObject");
 
         var personIdentityDetailed =
@@ -179,7 +173,6 @@ class IssueCredentialHandlerTest {
     void shouldThrowCredentialRequestExceptionWhenAuthorizationHeaderIsNotSupplied()
             throws SqsException {
         APIGatewayProxyRequestEvent event = new APIGatewayProxyRequestEvent();
-        setupEventProbeErrorBehaviour();
 
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, context);
         verify(mockEventProbe).counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
@@ -204,7 +197,6 @@ class IssueCredentialHandlerTest {
                         accessToken.toAuthorizationHeader()));
 
         setRequestBodyAsPlainJWT(event);
-        setupEventProbeErrorBehaviour();
 
         AwsErrorDetails awsErrorDetails =
                 AwsErrorDetails.builder()
@@ -234,6 +226,7 @@ class IssueCredentialHandlerTest {
                         any(VCISSFraudAuditExtension.class));
         verify(mockEventProbe).counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
         verify(mockAuditService, never()).sendAuditEvent((AuditEventType) any());
+
         String responseBody = new ObjectMapper().readValue(response.getBody(), String.class);
         assertEquals(awsErrorDetails.sdkHttpResponse().statusCode(), response.getStatusCode());
         assertEquals(awsErrorDetails.errorMessage(), responseBody);
@@ -269,10 +262,9 @@ class IssueCredentialHandlerTest {
                                 .statusCode(500)
                                 .awsErrorDetails(awsErrorDetails)
                                 .build());
-        when(mockEventProbe.log(any(Level.class), any(Exception.class))).thenReturn(mockEventProbe);
+
         when(mockEventProbe.counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR))
                 .thenReturn(mockEventProbe);
-        when(mockEventProbe.counterMetric(TODO_REMOVE_BK_COMPAT_M2, 0d)).thenReturn(mockEventProbe);
 
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, context);
 
@@ -283,17 +275,11 @@ class IssueCredentialHandlerTest {
                         eq(AuditEventType.VC_ISSUED),
                         any(AuditEventContext.class),
                         any(VCISSFraudAuditExtension.class));
-        verify(mockEventProbe).log(eq(ERROR), any(AwsServiceException.class));
         verify(mockEventProbe).counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
-        verify(mockEventProbe).counterMetric(TODO_REMOVE_BK_COMPAT_M2, 0d);
+
         String responseBody = new ObjectMapper().readValue(response.getBody(), String.class);
         assertEquals(awsErrorDetails.sdkHttpResponse().statusCode(), response.getStatusCode());
         assertEquals(awsErrorDetails.errorMessage(), responseBody);
-    }
-
-    private void setupEventProbeErrorBehaviour() {
-        when(mockEventProbe.counterMetric(anyString(), anyDouble())).thenReturn(mockEventProbe);
-        when(mockEventProbe.log(any(Level.class), any(Exception.class))).thenReturn(mockEventProbe);
     }
 
     private void setRequestBodyAsPlainJWT(APIGatewayProxyRequestEvent event) {
