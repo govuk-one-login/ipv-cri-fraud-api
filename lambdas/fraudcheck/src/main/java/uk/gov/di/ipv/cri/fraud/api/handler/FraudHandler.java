@@ -6,6 +6,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.apache.http.HttpException;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,7 +32,6 @@ import uk.gov.di.ipv.cri.fraud.api.service.ServiceFactory;
 import uk.gov.di.ipv.cri.fraud.api.util.FraudPersonIdentityDetailedMapper;
 import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
 
-import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
@@ -53,7 +53,7 @@ public class FraudHandler
     private final ConfigurationService configurationService;
     private final AuditService auditService;
 
-    public FraudHandler() throws NoSuchAlgorithmException, IOException, InvalidKeyException {
+    public FraudHandler() throws NoSuchAlgorithmException, InvalidKeyException, HttpException {
         this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         ServiceFactory serviceFactory = new ServiceFactory(objectMapper);
         this.eventProbe = new EventProbe();
