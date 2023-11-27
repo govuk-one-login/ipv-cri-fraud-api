@@ -145,7 +145,8 @@ public class ThirdPartyPepGateway {
         final HTTPReply httpReply;
         LOGGER.info("Submitting {} request...", REQUEST_NAME);
         try {
-            httpReply = httpRetryer.sendHTTPRequestRetryIfAllowed(
+            httpReply =
+                    httpRetryer.sendHTTPRequestRetryIfAllowed(
                             postRequest, pepHttpRetryStatusConfig, REQUEST_NAME);
             eventProbe.counterMetric(PEP_REQUEST_SEND_OK.withEndpointPrefix());
             // throws OAuthErrorResponseException on error
@@ -166,10 +167,9 @@ public class ThirdPartyPepGateway {
 
     private PepCheckResult pepCheckResponseHandler(HTTPReply httpReply)
             throws OAuthErrorResponseException {
-        int statusCode = httpReply.statusCode;
-        LOGGER.info("{} response code {}", REQUEST_NAME, statusCode);
 
-        if (statusCode == 200) {
+        if (null != httpReply && httpReply.getStatusCode() == 200) {
+            LOGGER.info("{} response code {}", REQUEST_NAME, httpReply.getStatusCode());
 
             eventProbe.counterMetric(PEP_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
 
@@ -194,6 +194,9 @@ public class ThirdPartyPepGateway {
 
             return responseMapper.mapPEPResponse(pepResponse);
         } else {
+            if (null != httpReply) {
+                LOGGER.info("{} response code {}", REQUEST_NAME, httpReply.getStatusCode());
+            }
             eventProbe.counterMetric(PEP_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS.withEndpointPrefix());
 
             PepCheckResult pepCheckResult = new PepCheckResult();

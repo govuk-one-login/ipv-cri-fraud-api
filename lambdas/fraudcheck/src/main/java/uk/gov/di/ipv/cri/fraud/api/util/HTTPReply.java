@@ -23,4 +23,16 @@ public class HTTPReply {
 
         throw new IllegalStateException("Not Valid to call no args constructor for this class");
     }
+
+    public int getStatusCode() {
+        return statusCode;
+    }
+
+    public Map<String, String> getResponseHeaders() {
+        return responseHeaders;
+    }
+
+    public String getResponseBody() {
+        return responseBody;
+    }
 }
