@@ -4,8 +4,9 @@ import com.nimbusds.oauth2.sdk.util.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
-import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.ValidationResult;
+import uk.gov.di.ipv.cri.fraud.api.domain.check.FraudCheckResult;
+import uk.gov.di.ipv.cri.fraud.api.domain.check.PepCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.*;
 import uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationInfoResponseValidator;
 
@@ -43,18 +44,32 @@ public class IdentityVerificationResponseMapper {
         this.eventProbe = eventProbe;
     }
 
-    public FraudCheckResult mapIdentityVerificationResponse(IdentityVerificationResponse response) {
+    public FraudCheckResult mapFraudResponse(IdentityVerificationResponse response) {
         ResponseType responseType = response.getResponseHeader().getResponseType();
 
         switch (responseType) {
             case INFO:
                 eventProbe.counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO);
-                return mapResponse(response, new IdentityVerificationInfoResponseValidator());
+                return mapFraudInfoResponse(
+                        response, new IdentityVerificationInfoResponseValidator());
             case ERROR:
             case WARN:
             case WARNING:
                 eventProbe.counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_ERROR);
-                return mapErrorResponse(response.getResponseHeader());
+
+                ResponseHeader responseHeader = response.getResponseHeader();
+
+                FraudCheckResult fraudCheckResult = new FraudCheckResult();
+                fraudCheckResult.setExecutedSuccessfully(false);
+                fraudCheckResult.setErrorMessage(
+                        String.format(
+                                IV_ERROR_RESPONSE_ERROR_MESSAGE_FORMAT,
+                                replaceWithDefaultErrorValueIfBlank(
+                                        responseHeader.getResponseCode()),
+                                replaceWithDefaultErrorValueIfBlank(
+                                        responseHeader.getResponseMessage())));
+
+                return fraudCheckResult;
             default:
                 eventProbe.counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_UNKNOWN);
                 throw new IllegalArgumentException(
@@ -62,18 +77,32 @@ public class IdentityVerificationResponseMapper {
         }
     }
 
-    public FraudCheckResult mapPEPResponse(PEPResponse response) {
+    public PepCheckResult mapPEPResponse(PEPResponse response) {
         ResponseType responseType = response.getResponseHeader().getResponseType();
 
         switch (responseType) {
             case INFO:
                 eventProbe.counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_INFO);
-                return mapPEPResponse(response, new IdentityVerificationInfoResponseValidator());
+                return mapPEPInfoResponse(
+                        response, new IdentityVerificationInfoResponseValidator());
             case ERROR:
             case WARN:
             case WARNING:
                 eventProbe.counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_ERROR);
-                return mapErrorResponse(response.getResponseHeader());
+
+                ResponseHeader responseHeader = response.getResponseHeader();
+
+                PepCheckResult pepCheckResult = new PepCheckResult();
+                pepCheckResult.setExecutedSuccessfully(false);
+                pepCheckResult.setErrorMessage(
+                        String.format(
+                                IV_ERROR_RESPONSE_ERROR_MESSAGE_FORMAT,
+                                replaceWithDefaultErrorValueIfBlank(
+                                        responseHeader.getResponseCode()),
+                                replaceWithDefaultErrorValueIfBlank(
+                                        responseHeader.getResponseMessage())));
+
+                return pepCheckResult;
             default:
                 eventProbe.counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_UNKNOWN);
                 throw new IllegalArgumentException(
@@ -81,7 +110,7 @@ public class IdentityVerificationResponseMapper {
         }
     }
 
-    private FraudCheckResult mapResponse(
+    private FraudCheckResult mapFraudInfoResponse(
             IdentityVerificationResponse response,
             IdentityVerificationInfoResponseValidator infoResponseValidator) {
         FraudCheckResult fraudCheckResult = new FraudCheckResult();
@@ -156,15 +185,15 @@ public class IdentityVerificationResponseMapper {
         return fraudCheckResult;
     }
 
-    private FraudCheckResult mapPEPResponse(
+    private PepCheckResult mapPEPInfoResponse(
             PEPResponse response, IdentityVerificationInfoResponseValidator infoResponseValidator) {
-        FraudCheckResult fraudCheckResult = new FraudCheckResult();
+        PepCheckResult pepCheckResult = new PepCheckResult();
 
         ValidationResult<List<String>> validationResult =
                 infoResponseValidator.validatePEP(response);
 
         if (validationResult.isValid()) {
-            fraudCheckResult.setExecutedSuccessfully(true);
+            pepCheckResult.setExecutedSuccessfully(true);
 
             List<DecisionElement> decisionElements =
                     response.getClientResponsePayload().getDecisionElements();
@@ -181,32 +210,21 @@ public class IdentityVerificationResponseMapper {
 
             getDecisionScore(decisionElements, "PEP");
 
-            fraudCheckResult.setThirdPartyFraudCodes(
+            pepCheckResult.setThirdPartyFraudCodes(
                     fraudCodes.toArray(fraudCodes.toArray(String[]::new)));
 
             eventProbe.counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_INFO_VALIDATION_PASS);
         } else {
-            fraudCheckResult.setExecutedSuccessfully(false);
-            fraudCheckResult.setErrorMessage(IV_INFO_RESPONSE_VALIDATION_FAILED_MSG);
+            pepCheckResult.setExecutedSuccessfully(false);
+            pepCheckResult.setErrorMessage(IV_INFO_RESPONSE_VALIDATION_FAILED_MSG);
 
             LOGGER.error(
                     () -> (IV_INFO_RESPONSE_VALIDATION_FAILED_MSG + validationResult.getError()));
 
             eventProbe.counterMetric(THIRD_PARTY_PEP_RESPONSE_TYPE_INFO_VALIDATION_FAIL);
         }
-        fraudCheckResult.setTransactionId(response.getResponseHeader().getExpRequestId());
-        return fraudCheckResult;
-    }
-
-    private FraudCheckResult mapErrorResponse(ResponseHeader responseHeader) {
-        FraudCheckResult fraudCheckResult = new FraudCheckResult();
-        fraudCheckResult.setExecutedSuccessfully(false);
-        fraudCheckResult.setErrorMessage(
-                String.format(
-                        IV_ERROR_RESPONSE_ERROR_MESSAGE_FORMAT,
-                        replaceWithDefaultErrorValueIfBlank(responseHeader.getResponseCode()),
-                        replaceWithDefaultErrorValueIfBlank(responseHeader.getResponseMessage())));
-        return fraudCheckResult;
+        pepCheckResult.setTransactionId(response.getResponseHeader().getExpRequestId());
+        return pepCheckResult;
     }
 
     private String replaceWithDefaultErrorValueIfBlank(String input) {

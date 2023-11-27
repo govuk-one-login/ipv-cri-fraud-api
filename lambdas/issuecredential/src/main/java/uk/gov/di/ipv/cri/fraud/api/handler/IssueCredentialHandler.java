@@ -12,8 +12,10 @@ import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.AccessTokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import software.amazon.awssdk.awscore.defaultsmode.DefaultsMode;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.http.HttpStatusCode;
+import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
@@ -42,10 +44,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static org.apache.logging.log4j.Level.ERROR;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_ISSUE_CREDENTIAL_COMPLETED_OK;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.TODO_REMOVE_BK_COMPAT_M2;
 
 public class IssueCredentialHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
@@ -85,9 +85,16 @@ public class IssueCredentialHandler
         this.personIdentityService = new PersonIdentityService();
         this.sessionService = new SessionService();
         this.eventProbe = new EventProbe();
+
+        SqsClient sqsClient =
+                SqsClient.builder()
+                        .defaultsMode(DefaultsMode.STANDARD)
+                        .httpClientBuilder(UrlConnectionHttpClient.builder())
+                        .build();
+
         this.auditService =
                 new AuditService(
-                        SqsClient.builder().build(),
+                        sqsClient,
                         commonConfigurationService,
                         new ObjectMapper(),
                         new AuditEventFactory(commonConfigurationService, Clock.systemUTC()));
@@ -134,7 +141,6 @@ public class IssueCredentialHandler
                             verifiableCredentialService.getVerifiableCredentialIssuer(),
                             List.of(fraudResult),
                             configurationService.isActivityHistoryEnabled()));
-            eventProbe.counterMetric(TODO_REMOVE_BK_COMPAT_M2, 0d);
 
             LOGGER.info("Credential generated");
 
@@ -151,9 +157,8 @@ public class IssueCredentialHandler
                     "Exception while handling lambda {} exception {}",
                     context.getFunctionName(),
                     ex.getClass());
-            eventProbe.counterMetric(TODO_REMOVE_BK_COMPAT_M2, 0d);
 
-            eventProbe.log(ERROR, ex).counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
+            eventProbe.counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, ex.awsErrorDetails().errorMessage());
@@ -162,9 +167,8 @@ public class IssueCredentialHandler
                     "Exception while handling lambda {} exception {}",
                     context.getFunctionName(),
                     e.getClass());
-            eventProbe.counterMetric(TODO_REMOVE_BK_COMPAT_M2, 0d);
 
-            eventProbe.log(ERROR, e).counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
+            eventProbe.counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.BAD_REQUEST, ErrorResponse.VERIFIABLE_CREDENTIAL_ERROR);
@@ -174,9 +178,7 @@ public class IssueCredentialHandler
                     context.getFunctionName(),
                     sqsException.getClass());
 
-            eventProbe
-                    .log(ERROR, sqsException)
-                    .counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
+            eventProbe.counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, sqsException.getMessage());
@@ -186,7 +188,7 @@ public class IssueCredentialHandler
                     context.getFunctionName(),
                     e.getClass());
 
-            eventProbe.log(ERROR, e).counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
+            eventProbe.counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, e.getMessage());

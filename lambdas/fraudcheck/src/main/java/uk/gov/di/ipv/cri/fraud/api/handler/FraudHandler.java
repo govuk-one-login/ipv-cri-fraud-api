@@ -39,7 +39,6 @@ import java.util.UUID;
 
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_IDENTITY_CHECK_COMPLETED_OK;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.TODO_REMOVE_BK_COMPAT_M1;
 
 public class FraudHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
@@ -143,8 +142,6 @@ public class FraudHandler
             }
             LOGGER.info("Identity verified.");
 
-            eventProbe.counterMetric(TODO_REMOVE_BK_COMPAT_M1);
-
             LOGGER.info("Generating authorization code...");
             sessionService.createAuthorizationCode(sessionItem);
 
@@ -175,7 +172,6 @@ public class FraudHandler
             return ApiGatewayResponseGenerator.proxyJsonResponse(HttpStatusCode.OK, result);
         } catch (Exception e) {
             LOGGER.warn("Exception while handling lambda {}", context.getFunctionName());
-            eventProbe.counterMetric(TODO_REMOVE_BK_COMPAT_M1, 0d);
             eventProbe.log(Level.ERROR, e).counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR);
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorResponse.GENERIC_SERVER_ERROR);

@@ -1,4 +1,4 @@
-package uk.gov.di.ipv.cri.fraud.api.domain;
+package uk.gov.di.ipv.cri.fraud.api.domain.check;
 
 public class FraudCheckResult {
     private boolean executedSuccessfully;

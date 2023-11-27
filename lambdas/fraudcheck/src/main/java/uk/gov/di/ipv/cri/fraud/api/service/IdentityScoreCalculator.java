@@ -2,7 +2,7 @@ package uk.gov.di.ipv.cri.fraud.api.service;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
+import uk.gov.di.ipv.cri.fraud.api.domain.check.FraudCheckResult;
 
 import java.util.Arrays;
 import java.util.List;

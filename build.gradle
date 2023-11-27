@@ -2,6 +2,7 @@ plugins {
 	id "java"
 	id "org.sonarqube"
 	id "com.diffplug.spotless"
+	id "io.freefair.lombok" version "6.6.3"
 }
 
 defaultTasks 'clean', 'spotlessApply', 'build'
@@ -9,7 +10,7 @@ defaultTasks 'clean', 'spotlessApply', 'build'
 ext {
 	dependencyVersions = [
 		jackson_version             : "2.13.1",
-		aws_sdk_version             : "1.12.153",
+		aws_sdk_version             : "2.21.9",
 		aws_lambda_events_version   : "3.11.0",
 		aws_powertools_version      : "1.12.2",
 		nimbusds_oauth_version      : "9.25",
@@ -17,7 +18,8 @@ ext {
 		protobuf_version            : "3.19.4",
 		junit                       : "5.8.2",
 		mockito                     : "4.3.1",
-		cri_common_lib              : "1.4.5"
+		cri_common_lib              : "1.4.5",
+		lombok_version              : "1.18.22"
 	]
 }
 
@@ -28,6 +30,7 @@ repositories {
 }
 
 subprojects {
+	apply plugin: 'io.freefair.lombok'
 
 	java {
 		sourceCompatibility = JavaVersion.VERSION_11
@@ -43,6 +46,7 @@ subprojects {
 
 	configurations {
 		aws
+		aws_apache_http_client
 		dynamodb
 		jackson
 		lambda
@@ -58,18 +62,15 @@ subprojects {
 		mockito
 		logging_runtime
 		cri_common_lib
-	}
-
-	// The dynamodb enhanced package loads the apache-client as well as the spi-client, so
-	// we need to add the apache-client to the dependencies exclusion to not get a mismatch
-	configurations.all {
-		exclude group:"software.amazon.awssdk", module: "apache-client"
+		lombok
 	}
 
 	dependencies {
 		cri_common_lib "uk.gov.account:cri-common-lib:${dependencyVersions.cri_common_lib}"
 
-		aws platform('software.amazon.awssdk:bom:2.17.191')
+		aws platform("software.amazon.awssdk:bom:${dependencyVersions.aws_sdk_version}")
+
+		aws_apache_http_client "software.amazon.awssdk:apache-client:${dependencyVersions.aws_sdk_version}"
 
 		dynamodb "software.amazon.awssdk:dynamodb",
 				"software.amazon.awssdk:dynamodb-enhanced"

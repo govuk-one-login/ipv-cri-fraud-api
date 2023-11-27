@@ -11,11 +11,14 @@ import uk.gov.di.ipv.cri.common.library.exception.SqsException;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
-import uk.gov.di.ipv.cri.fraud.api.domain.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.ValidationResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.audit.TPREFraudAuditExtension;
+import uk.gov.di.ipv.cri.fraud.api.domain.check.FraudCheckResult;
+import uk.gov.di.ipv.cri.fraud.api.domain.check.PepCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyFraudGateway;
+import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyPepGateway;
+import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -50,6 +53,8 @@ public class IdentityVerificationService {
     private static final String ERROR_PEP_CHECK_RESULT_NO_ERR_MSG =
             "PepCheckResult had no error message.";
     private final ThirdPartyFraudGateway thirdPartyGateway;
+    private final ThirdPartyPepGateway thirdPartyPepGateway;
+
     private final PersonIdentityValidator personIdentityValidator;
     private final ContraindicationMapper contraindicationMapper;
     private final IdentityScoreCalculator identityScoreCalculator;
@@ -63,6 +68,7 @@ public class IdentityVerificationService {
 
     IdentityVerificationService(
             ThirdPartyFraudGateway thirdPartyGateway,
+            ThirdPartyPepGateway thirdPartyPepGateway,
             PersonIdentityValidator personIdentityValidator,
             ContraindicationMapper contraindicationMapper,
             IdentityScoreCalculator identityScoreCalculator,
@@ -71,6 +77,7 @@ public class IdentityVerificationService {
             ConfigurationService configurationService,
             EventProbe eventProbe) {
         this.thirdPartyGateway = thirdPartyGateway;
+        this.thirdPartyPepGateway = thirdPartyPepGateway;
         this.personIdentityValidator = personIdentityValidator;
         this.contraindicationMapper = contraindicationMapper;
         this.identityScoreCalculator = identityScoreCalculator;
@@ -183,21 +190,18 @@ public class IdentityVerificationService {
         // Requests split into two try blocks to differentiate tech failures in fraud from pep
         FraudCheckResult fraudCheckResult;
         try {
-            fraudCheckResult = thirdPartyGateway.performFraudCheck(personIdentity, false);
-        } catch (InterruptedException ie) {
-            LOGGER.error(ERROR_MSG_CONTEXT, ie);
-            eventProbe.counterMetric(FRAUD_CHECK_REQUEST_FAILED);
-
-            Thread.currentThread().interrupt();
-            identityVerificationResult.setError(ERROR_MSG_CONTEXT + ": " + ie.getMessage());
-            identityVerificationResult.setSuccess(false);
-
-            return identityVerificationResult;
+            fraudCheckResult = thirdPartyGateway.performFraudCheck(personIdentity);
         } catch (Exception e) {
             LOGGER.error(ERROR_MSG_CONTEXT, e);
             eventProbe.counterMetric(FRAUD_CHECK_REQUEST_FAILED);
 
-            identityVerificationResult.setError(ERROR_MSG_CONTEXT + ": " + e.getMessage());
+            String errorMessage = e.getMessage();
+
+            if (e instanceof OAuthErrorResponseException) {
+                errorMessage = ((OAuthErrorResponseException) e).getErrorReason();
+            }
+
+            identityVerificationResult.setError(ERROR_MSG_CONTEXT + ": " + errorMessage);
             identityVerificationResult.setSuccess(false);
 
             return identityVerificationResult;
@@ -339,14 +343,10 @@ public class IdentityVerificationService {
         List<String> checksSucceeded = new ArrayList<>();
         List<String> checksFailed = new ArrayList<>();
 
-        FraudCheckResult pepCheckResult = null;
+        PepCheckResult pepCheckResult = null;
 
         try {
-            pepCheckResult = thirdPartyGateway.performFraudCheck(personIdentity, true);
-        } catch (InterruptedException ie) {
-            // This handles an IE occurring when doing the sleep in the backoff
-            LOGGER.error(ERROR_MSG_CONTEXT, ie);
-            Thread.currentThread().interrupt();
+            pepCheckResult = thirdPartyPepGateway.performPepCheck(personIdentity);
         } catch (Exception e) {
             // Pep check can completely fail and result returned based on fraud check alone
             LOGGER.error(ERROR_MSG_CONTEXT, e);

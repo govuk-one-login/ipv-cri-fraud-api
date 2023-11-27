@@ -12,12 +12,12 @@ import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.http.HttpStatusCode;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
-import uk.gov.di.ipv.cri.fraud.api.domain.check.FraudCheckResult;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.IdentityVerificationResponse;
-import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckHttpRetryStatusConfig;
+import uk.gov.di.ipv.cri.fraud.api.domain.check.PepCheckResult;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PEPRequest;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.PEPResponse;
 import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryer;
+import uk.gov.di.ipv.cri.fraud.api.service.PepCheckHttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.api.util.HTTPReply;
 import uk.gov.di.ipv.cri.fraud.library.config.HttpRequestConfig;
 import uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse;
@@ -29,23 +29,22 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.Objects;
 
-import static uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse.ERROR_FRAUD_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE;
-import static uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse.ERROR_SENDING_FRAUD_CHECK_REQUEST;
-import static uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse.FAILED_TO_CREATE_API_REQUEST_FOR_FRAUD_CHECK;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_FRAUD_RESPONSE_LATENCY_MILLIS;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_REQUEST_CREATED;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_REQUEST_SEND_ERROR;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_REQUEST_SEND_OK;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_RESPONSE_TYPE_EXPECTED_HTTP_STATUS;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_RESPONSE_TYPE_INVALID;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_RESPONSE_TYPE_VALID;
+import static uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse.ERROR_PEP_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE;
+import static uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse.FAILED_TO_CREATE_API_REQUEST_FOR_PEP_CHECK;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_REQUEST_CREATED;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_REQUEST_SEND_ERROR;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_REQUEST_SEND_OK;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_RESPONSE_TYPE_EXPECTED_HTTP_STATUS;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_RESPONSE_TYPE_INVALID;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_RESPONSE_TYPE_VALID;
 
-public class ThirdPartyFraudGateway {
+public class ThirdPartyPepGateway {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static final String REQUEST_NAME = "Fraud Check";
+    private static final String REQUEST_NAME = "Pep Check";
 
     private final IdentityVerificationRequestMapper requestMapper;
     private final IdentityVerificationResponseMapper responseMapper;
@@ -58,16 +57,16 @@ public class ThirdPartyFraudGateway {
     private final Clock clock;
 
     // HTTP
-    private final HttpRetryStatusConfig fraudHttpRetryStatusConfig;
+    private final HttpRetryStatusConfig pepHttpRetryStatusConfig;
     private final HttpRetryer httpRetryer;
 
     // POOL_REQ + CONN_EST + HTTP_RESP = overall max timeout
     private static final int POOL_REQUEST_TIMEOUT_MS = 5000;
     private static final int CONNECTION_ESTABLISHMENT_TIMEOUT_MS = 5000;
-    private static final int FRAUD_HTTP_RESPONSE_TIMEOUT_MS = 5000;
-    private final RequestConfig fraudCheckRequestConfig;
+    private static final int PEP_HTTP_RESPONSE_TIMEOUT_MS = 10000;
+    private final RequestConfig pepCheckRequestConfig;
 
-    public ThirdPartyFraudGateway(
+    public ThirdPartyPepGateway(
             HttpRetryer httpRetryer,
             IdentityVerificationRequestMapper requestMapper,
             IdentityVerificationResponseMapper responseMapper,
@@ -93,13 +92,13 @@ public class ThirdPartyFraudGateway {
         this.eventProbe = eventProbe;
         this.clock = Clock.systemUTC();
 
-        this.fraudHttpRetryStatusConfig = new FraudCheckHttpRetryStatusConfig();
+        this.pepHttpRetryStatusConfig = new PepCheckHttpRetryStatusConfig();
 
-        this.fraudCheckRequestConfig =
+        this.pepCheckRequestConfig =
                 HttpRequestConfig.getCustomRequestConfig(
                         POOL_REQUEST_TIMEOUT_MS,
                         CONNECTION_ESTABLISHMENT_TIMEOUT_MS,
-                        FRAUD_HTTP_RESPONSE_TIMEOUT_MS);
+                        PEP_HTTP_RESPONSE_TIMEOUT_MS);
     }
 
     private HttpPost httpRequestBuilder(String requestBody) {
@@ -112,10 +111,10 @@ public class ThirdPartyFraudGateway {
         return request;
     }
 
-    public FraudCheckResult performFraudCheck(PersonIdentity personIdentity)
+    public PepCheckResult performPepCheck(PersonIdentity personIdentity)
             throws OAuthErrorResponseException {
         LOGGER.info("Mapping person to {} request", REQUEST_NAME);
-        IdentityVerificationRequest apiRequest = requestMapper.mapPersonIdentity(personIdentity);
+        PEPRequest apiRequest = requestMapper.mapPEPPersonIdentity(personIdentity);
 
         String requestBody = null;
         try {
@@ -125,92 +124,88 @@ public class ThirdPartyFraudGateway {
             // PII in variables
             LOGGER.error(
                     "JsonProcessingException {}",
-                    FAILED_TO_CREATE_API_REQUEST_FOR_FRAUD_CHECK.getMessage());
+                    FAILED_TO_CREATE_API_REQUEST_FOR_PEP_CHECK.getMessage());
             LOGGER.debug(e.getMessage());
 
             throw new OAuthErrorResponseException(
                     HttpStatusCode.INTERNAL_SERVER_ERROR,
-                    ErrorResponse.FAILED_TO_CREATE_API_REQUEST_FOR_FRAUD_CHECK);
+                    FAILED_TO_CREATE_API_REQUEST_FOR_PEP_CHECK);
         }
 
         LOGGER.debug("{} Request {}", REQUEST_NAME, requestBody);
         HttpPost postRequest = httpRequestBuilder(requestBody);
 
         // Enforce connection timeout values
-        postRequest.setConfig(fraudCheckRequestConfig);
+        postRequest.setConfig(pepCheckRequestConfig);
 
-        eventProbe.counterMetric(FRAUD_REQUEST_CREATED.withEndpointPrefix());
+        eventProbe.counterMetric(PEP_REQUEST_CREATED.withEndpointPrefix());
 
         var startCheck = clock.instant();
 
         final HTTPReply httpReply;
-        LOGGER.info("Submitting {} request", REQUEST_NAME);
+        LOGGER.info("Submitting {} request...", REQUEST_NAME);
         try {
             httpReply =
                     httpRetryer.sendHTTPRequestRetryIfAllowed(
-                            postRequest, fraudHttpRetryStatusConfig, REQUEST_NAME);
-            eventProbe.counterMetric(FRAUD_REQUEST_SEND_OK.withEndpointPrefix());
+                            postRequest, pepHttpRetryStatusConfig, REQUEST_NAME);
+            eventProbe.counterMetric(PEP_REQUEST_SEND_OK.withEndpointPrefix());
             // throws OAuthErrorResponseException on error
         } catch (IOException e) {
             LOGGER.error("IOException executing {} http request {}", REQUEST_NAME, e.getMessage());
-            eventProbe.counterMetric(FRAUD_REQUEST_SEND_ERROR.withEndpointPrefix());
+            eventProbe.counterMetric(PEP_REQUEST_SEND_ERROR.withEndpointPrefix());
             throw new OAuthErrorResponseException(
-                    HttpStatusCode.INTERNAL_SERVER_ERROR, ERROR_SENDING_FRAUD_CHECK_REQUEST);
+                    HttpStatusCode.INTERNAL_SERVER_ERROR,
+                    ErrorResponse.ERROR_SENDING_PEP_CHECK_REQUEST);
         }
 
         long latency = Duration.between(startCheck, clock.instant()).toMillis();
-        eventProbe.counterMetric(THIRD_PARTY_FRAUD_RESPONSE_LATENCY_MILLIS, latency);
+        eventProbe.counterMetric(THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS, latency);
         LOGGER.info("{} latency {}", REQUEST_NAME, latency);
 
-        return fraudCheckResponseHandler(httpReply);
+        return pepCheckResponseHandler(httpReply);
     }
 
-    private FraudCheckResult fraudCheckResponseHandler(HTTPReply httpReply)
+    private PepCheckResult pepCheckResponseHandler(HTTPReply httpReply)
             throws OAuthErrorResponseException {
 
         if (null != httpReply && httpReply.getStatusCode() == 200) {
             LOGGER.info("{} response code {}", REQUEST_NAME, httpReply.getStatusCode());
 
-            eventProbe.counterMetric(FRAUD_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
+            eventProbe.counterMetric(PEP_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
 
             String responseBody = httpReply.responseBody;
             LOGGER.debug("{} response {}", REQUEST_NAME, responseBody);
-            IdentityVerificationResponse fraudCheckResponse;
+            PEPResponse pepResponse;
 
             try {
-                fraudCheckResponse =
-                        objectMapper.readValue(responseBody, IdentityVerificationResponse.class);
+                pepResponse = objectMapper.readValue(responseBody, PEPResponse.class);
             } catch (JsonProcessingException e) {
                 LOGGER.error("JsonProcessingException mapping {} response", REQUEST_NAME);
                 LOGGER.debug(e.getMessage());
 
-                eventProbe.counterMetric(FRAUD_RESPONSE_TYPE_INVALID.withEndpointPrefix());
+                eventProbe.counterMetric(PEP_RESPONSE_TYPE_INVALID.withEndpointPrefix());
 
                 throw new OAuthErrorResponseException(
                         HttpStatusCode.INTERNAL_SERVER_ERROR,
-                        ErrorResponse.FAILED_TO_MAP_FRAUD_CHECK_RESPONSE_BODY);
+                        ErrorResponse.FAILED_TO_MAP_PEP_CHECK_RESPONSE_BODY);
             }
 
-            // Note this refers to the API response being able to be object mapped correctly
-            eventProbe.counterMetric(FRAUD_RESPONSE_TYPE_VALID.withEndpointPrefix());
+            eventProbe.counterMetric(PEP_RESPONSE_TYPE_VALID.withEndpointPrefix());
 
-            return responseMapper.mapFraudResponse(fraudCheckResponse);
-
+            return responseMapper.mapPEPResponse(pepResponse);
         } else {
             if (null != httpReply) {
                 LOGGER.info("{} response code {}", REQUEST_NAME, httpReply.getStatusCode());
             }
+            eventProbe.counterMetric(PEP_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS.withEndpointPrefix());
 
-            eventProbe.counterMetric(
-                    FRAUD_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS.withEndpointPrefix());
+            PepCheckResult pepCheckResult = new PepCheckResult();
+            pepCheckResult.setExecutedSuccessfully(false);
 
-            FraudCheckResult fraudCheckResult = new FraudCheckResult();
-            fraudCheckResult.setExecutedSuccessfully(false);
+            pepCheckResult.setErrorMessage(
+                    ERROR_PEP_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE.getMessage());
 
-            fraudCheckResult.setErrorMessage(
-                    ERROR_FRAUD_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE.getMessage());
-
-            return fraudCheckResult;
+            return pepCheckResult;
         }
     }
 }

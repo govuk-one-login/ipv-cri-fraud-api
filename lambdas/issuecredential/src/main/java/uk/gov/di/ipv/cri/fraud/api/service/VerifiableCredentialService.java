@@ -5,6 +5,10 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.SignedJWT;
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.lambda.powertools.parameters.ParamManager;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.Address;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.BirthDate;
@@ -45,11 +49,20 @@ public class VerifiableCredentialService {
                         ParamManager.getSsmProvider(),
                         System.getenv("ENVIRONMENT"));
         this.commonConfigurationService = commonConfigurationService;
+
+        KmsClient kmsClient =
+                KmsClient.builder()
+                        .httpClientBuilder(UrlConnectionHttpClient.builder())
+                        .region(Region.of(System.getenv("AWS_REGION")))
+                        .credentialsProvider(EnvironmentVariableCredentialsProvider.create())
+                        .build();
+
         this.signedJwtFactory =
                 new SignedJWTFactory(
                         new KMSSigner(
                                 commonConfigurationService.getCommonParameterValue(
-                                        "verifiableCredentialKmsSigningKeyId")));
+                                        "verifiableCredentialKmsSigningKeyId"),
+                                kmsClient));
         this.objectMapper =
                 new ObjectMapper()
                         .registerModule(new Jdk8Module())

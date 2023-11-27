@@ -85,6 +85,15 @@ public class Driver {
                     break;
             }
         }
+
+        try {
+            // Avoid increasing this too much as Driver.get() is called many times,
+            // A correct fix is to check the document state where needed.
+            Thread.sleep(50);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
         return driverPool.get();
     }
 

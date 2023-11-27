@@ -3,7 +3,12 @@ package uk.gov.di.ipv.cri.fraud.api.service;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ContraIndicatorRemoteMapper implements ContraindicationMapper {
@@ -12,11 +17,8 @@ public class ContraIndicatorRemoteMapper implements ContraindicationMapper {
     private static final String CIMAP = "CIMap";
 
     private final Map<String, String> uCodeCIMap;
-    private ConfigurationService configurationService;
 
     public ContraIndicatorRemoteMapper(ConfigurationService configurationService) {
-        this.configurationService = configurationService;
-
         final String contraindicatorMappingString =
                 System.getenv().get(CIMAP) == null
                         ? configurationService.getContraindicationMappings()
