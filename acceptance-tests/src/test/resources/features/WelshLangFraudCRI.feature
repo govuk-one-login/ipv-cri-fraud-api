@@ -7,6 +7,7 @@ Feature: Fraud CRI Language Test
     Then I search for user number 12 in the ThirdParty table
     And I add a cookie to change the language to Welsh
 
+  #  To be removed after the test is moved to the front repo
   @Language-regression-fraud
   Scenario: Beta Banner Reject Analysis
     When I view the Beta banner

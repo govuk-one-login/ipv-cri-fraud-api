@@ -10,6 +10,7 @@ Feature: Fraud CRI
     And exp should not be present in the JSON payload
     And The test is complete and I close the driver
 
+#  To be removed after the test is moved to the front repo
   @happy_path @build-fraud @staging-fraud @integration-fraud
   Scenario: Beta Banner Reject Analysis
     Given I navigate to the IPV Core Stub
@@ -30,18 +31,6 @@ Feature: Fraud CRI
     Then I search for user number 14 in the ThirdParty table
     And I navigate to the verifiable issuer to check for a Invalid response from thirdParty
     And The test is complete and I close the driver
-
-  @external_links @build-fraud @staging-fraud @integration-fraud
-  Scenario Outline: User Navigates To ThirdParty/Privacy Policy
-    Given I navigate to the IPV Core Stub
-    And I click the Fraud CRI for the testEnvironment
-    Then I search for user number 12 in the ThirdParty table
-    Then I navigate to <page> and assert I have been directed correctly
-    And The test is complete and I close the driver
-    Examples:
-      | page           |
-      | ThirdParty       |
-      | Privacy Policy |
 
   @userSearch_by_userName_happyPath @build-fraud @staging-fraud @integration-fraud
   Scenario: User Search By UserName User Journey Happy Path (STUB)
