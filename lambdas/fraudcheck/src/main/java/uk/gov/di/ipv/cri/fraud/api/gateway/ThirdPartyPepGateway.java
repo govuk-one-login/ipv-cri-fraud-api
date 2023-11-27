@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.oauth2.sdk.util.StringUtils;
 import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
@@ -20,7 +19,6 @@ import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryer;
 import uk.gov.di.ipv.cri.fraud.api.service.PepCheckHttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.api.util.HTTPReply;
-import uk.gov.di.ipv.cri.fraud.api.util.HTTPReplyHelper;
 import uk.gov.di.ipv.cri.fraud.library.config.HttpRequestConfig;
 import uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
@@ -146,11 +144,11 @@ public class ThirdPartyPepGateway {
 
         final HTTPReply httpReply;
         LOGGER.info("Submitting {} request...", REQUEST_NAME);
-        try (CloseableHttpResponse response =
-                httpRetryer.sendHTTPRequestRetryIfAllowed(postRequest, pepHttpRetryStatusConfig)) {
+        try {
+            httpReply = httpRetryer.sendHTTPRequestRetryIfAllowed(
+                            postRequest, pepHttpRetryStatusConfig, REQUEST_NAME);
             eventProbe.counterMetric(PEP_REQUEST_SEND_OK.withEndpointPrefix());
             // throws OAuthErrorResponseException on error
-            httpReply = HTTPReplyHelper.retrieveResponse(response, REQUEST_NAME);
         } catch (IOException e) {
             LOGGER.error("IOException executing {} http request {}", REQUEST_NAME, e.getMessage());
             eventProbe.counterMetric(PEP_REQUEST_SEND_ERROR.withEndpointPrefix());

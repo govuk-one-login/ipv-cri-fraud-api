@@ -2,7 +2,6 @@ package uk.gov.di.ipv.cri.fraud.api.gateway;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.Header;
-import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpPost;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,7 +19,7 @@ import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PEPRequest;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.PEPResponse;
 import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryer;
 import uk.gov.di.ipv.cri.fraud.api.service.PepCheckHttpRetryStatusConfig;
-import uk.gov.di.ipv.cri.fraud.api.util.HttpResponseFixtures;
+import uk.gov.di.ipv.cri.fraud.api.util.HTTPReply;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 
@@ -152,12 +151,13 @@ class ThirdPartyFraudGatewayComponentTest {
                         + "\t}\n"
                         + "}";
 
-        CloseableHttpResponse closeableHttpResponse =
-                HttpResponseFixtures.createHttpResponse(200, null, responseBody, false);
+        HTTPReply httpReply = new HTTPReply(200, null, responseBody);
 
         when(mockHttpRetryer.sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(PepCheckHttpRetryStatusConfig.class)))
-                .thenReturn(closeableHttpResponse);
+                        httpRequestCaptor.capture(),
+                        any(PepCheckHttpRetryStatusConfig.class),
+                        eq("Pep Check")))
+                .thenReturn(httpReply);
 
         when(this.mockResponseMapper.mapPEPResponse(any(PEPResponse.class)))
                 .thenReturn(testPepCheckResult);
@@ -186,7 +186,9 @@ class ThirdPartyFraudGatewayComponentTest {
         verify(mockHmacGenerator).generateHmac(anyString());
         verify(mockHttpRetryer)
                 .sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(PepCheckHttpRetryStatusConfig.class));
+                        httpRequestCaptor.capture(),
+                        any(PepCheckHttpRetryStatusConfig.class),
+                        eq("Pep Check"));
         verify(mockResponseMapper).mapPEPResponse(any(PEPResponse.class));
 
         assertNotNull(actualPepCheckResult);

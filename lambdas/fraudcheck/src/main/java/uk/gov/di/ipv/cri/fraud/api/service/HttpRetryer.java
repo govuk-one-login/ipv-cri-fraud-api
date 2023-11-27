@@ -7,7 +7,10 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
+import uk.gov.di.ipv.cri.fraud.api.util.HTTPReply;
+import uk.gov.di.ipv.cri.fraud.api.util.HTTPReplyHelper;
 import uk.gov.di.ipv.cri.fraud.api.util.SleepHelper;
+import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
@@ -34,32 +37,32 @@ public class HttpRetryer {
         LOGGER.info("Max retries configured as {}", maxRetries);
     }
 
-    public CloseableHttpResponse sendHTTPRequestRetryIfAllowed(
-            HttpUriRequest request, HttpRetryStatusConfig httpRetryStatusConfig)
-            throws IOException {
-
-        CloseableHttpResponse httpResponse = null;
+    public HTTPReply sendHTTPRequestRetryIfAllowed(
+            HttpUriRequest request,
+            HttpRetryStatusConfig httpRetryStatusConfig,
+            String endpointName)
+            throws IOException, OAuthErrorResponseException {
 
         // 0 is initial request, > 0 are retries
         int tryCount = 0;
         boolean retry = false;
+        int statusCode = 0;
+        HTTPReply reply = null;
 
         do {
             if (retry) {
                 eventProbe.counterMetric(httpRetryStatusConfig.httpRetryerSendRetryMetric());
-
-                freeHttpConnectionBackToPool(httpResponse);
             }
 
             // Wait before sending request (0ms for first try)
             sleepHelper.busyWaitWithExponentialBackOff(tryCount);
 
-            try {
-                httpResponse = httpClient.execute(request);
+            try (CloseableHttpResponse httpResponse = httpClient.execute(request)) {
 
-                int statusCode = httpResponse.getStatusLine().getStatusCode();
-
+                statusCode = httpResponse.getStatusLine().getStatusCode();
                 retry = httpRetryStatusConfig.shouldHttpClientRetry(statusCode);
+
+                reply = HTTPReplyHelper.retrieveResponse(httpResponse, endpointName);
 
                 if (retry) {
                     LOGGER.warn("shouldHttpClientRetry statusCode - {}", statusCode);
@@ -82,8 +85,6 @@ public class HttpRetryer {
                             e.getClass().getCanonicalName(),
                             e.getMessage());
                     eventProbe.counterMetric(httpRetryStatusConfig.httpRetryerSendFailMetric(e));
-
-                    freeHttpConnectionBackToPool(httpResponse);
 
                     throw e;
                 }
@@ -114,17 +115,14 @@ public class HttpRetryer {
                             e.getMessage());
                     eventProbe.counterMetric(httpRetryStatusConfig.httpRetryerSendFailMetric(e));
 
-                    freeHttpConnectionBackToPool(httpResponse);
-
                     throw e;
                 }
             }
         } while (retry && (tryCount++ < maxRetries));
 
-        int lastStatusCode = httpResponse.getStatusLine().getStatusCode();
-        LOGGER.info("HTTPRequestRetry Exited lastStatusCode {}", lastStatusCode);
+        LOGGER.info("HTTPRequestRetry Exited lastStatusCode {}", statusCode);
 
-        if (httpRetryStatusConfig.isSuccessStatusCode(lastStatusCode)) {
+        if (httpRetryStatusConfig.isSuccessStatusCode(statusCode)) {
             eventProbe.counterMetric(httpRetryStatusConfig.httpRetryerSendOkMetric());
         } else if (tryCount < maxRetries) {
             // Reachable when the remote api responds initially with a retryable status code, then
@@ -134,20 +132,6 @@ public class HttpRetryer {
             eventProbe.counterMetric(httpRetryStatusConfig.httpRetryerMaxRetriesMetric());
         }
 
-        return httpResponse;
-    }
-
-    /***
-     * This avoids using all the limited number of http connection pool
-     * resources, by closing previous responses when errors occur.
-     * @param httpResponse
-     * @throws IOException
-     */
-    private void freeHttpConnectionBackToPool(CloseableHttpResponse httpResponse)
-            throws IOException {
-        if (httpResponse != null) {
-            // Prevent the resource leak
-            httpResponse.close();
-        }
+        return reply;
     }
 }

@@ -23,7 +23,7 @@ import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PEPRequest;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.PEPResponse;
 import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryer;
 import uk.gov.di.ipv.cri.fraud.api.service.PepCheckHttpRetryStatusConfig;
-import uk.gov.di.ipv.cri.fraud.api.util.HttpResponseFixtures;
+import uk.gov.di.ipv.cri.fraud.api.util.HTTPReply;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 import uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
@@ -101,10 +101,10 @@ class ThirdPartyPepGatewayTest {
                 ArgumentCaptor.forClass(HttpPost.class);
 
         when(mockHttpRetryer.sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(PepCheckHttpRetryStatusConfig.class)))
-                .thenReturn(
-                        HttpResponseFixtures.createHttpResponse(
-                                200, null, TEST_API_RESPONSE_BODY, false));
+                        httpRequestCaptor.capture(),
+                        any(PepCheckHttpRetryStatusConfig.class),
+                        eq("Pep Check")))
+                .thenReturn(new HTTPReply(200, null, TEST_API_RESPONSE_BODY));
 
         when(this.mockObjectMapper.readValue(TEST_API_RESPONSE_BODY, PEPResponse.class))
                 .thenReturn(testPepResponse);
@@ -136,7 +136,9 @@ class ThirdPartyPepGatewayTest {
         verify(mockHmacGenerator).generateHmac(testRequestBody);
         verify(mockHttpRetryer)
                 .sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(PepCheckHttpRetryStatusConfig.class));
+                        httpRequestCaptor.capture(),
+                        any(PepCheckHttpRetryStatusConfig.class),
+                        eq("Pep Check"));
         verify(mockResponseMapper).mapPEPResponse(testPepResponse);
 
         assertNotNull(actualPepCheckResult);
@@ -147,7 +149,7 @@ class ThirdPartyPepGatewayTest {
 
     @Test
     void shouldReturnOAuthErrorResponseExceptionIfThirdPartyApiReturnsInvalidResponse()
-            throws IOException {
+            throws IOException, OAuthErrorResponseException {
         final String testRequestBody = "serialisedCrossCoreApiRequest";
         final PEPRequest testApiRequest = new PEPRequest();
 
@@ -162,9 +164,10 @@ class ThirdPartyPepGatewayTest {
                 ArgumentCaptor.forClass(HttpPost.class);
 
         when(mockHttpRetryer.sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(PepCheckHttpRetryStatusConfig.class)))
-                .thenReturn(
-                        HttpResponseFixtures.createHttpResponse(200, null, "}BAD JSON{", false));
+                        httpRequestCaptor.capture(),
+                        any(PepCheckHttpRetryStatusConfig.class),
+                        eq("Pep Check")))
+                .thenReturn(new HTTPReply(200, null, "}BAD JSON{"));
 
         OAuthErrorResponseException expectedReturnedException =
                 new OAuthErrorResponseException(
@@ -209,7 +212,9 @@ class ThirdPartyPepGatewayTest {
         verify(mockHmacGenerator).generateHmac(testRequestBody);
         verify(mockHttpRetryer)
                 .sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(PepCheckHttpRetryStatusConfig.class));
+                        httpRequestCaptor.capture(),
+                        any(PepCheckHttpRetryStatusConfig.class),
+                        eq("Pep Check"));
 
         assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().getURI().toString());
         assertEquals(HttpPost.class, httpRequestCaptor.getValue().getClass());
@@ -236,10 +241,10 @@ class ThirdPartyPepGatewayTest {
                 ArgumentCaptor.forClass(HttpPost.class);
 
         when(mockHttpRetryer.sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(PepCheckHttpRetryStatusConfig.class)))
-                .thenReturn(
-                        HttpResponseFixtures.createHttpResponse(
-                                errorStatus, null, TEST_API_RESPONSE_BODY, false));
+                        httpRequestCaptor.capture(),
+                        any(PepCheckHttpRetryStatusConfig.class),
+                        eq("Pep Check")))
+                .thenReturn(new HTTPReply(errorStatus, null, TEST_API_RESPONSE_BODY));
 
         PepCheckResult actualPepCheckResult = thirdPartyPepGateway.performPepCheck(personIdentity);
 
@@ -267,7 +272,9 @@ class ThirdPartyPepGatewayTest {
 
         verify(mockHttpRetryer, times(1))
                 .sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(PepCheckHttpRetryStatusConfig.class));
+                        httpRequestCaptor.capture(),
+                        any(PepCheckHttpRetryStatusConfig.class),
+                        eq("Pep Check"));
 
         assertNotNull(actualPepCheckResult);
         assertEquals(EXPECTED_ERROR, actualPepCheckResult.getErrorMessage());

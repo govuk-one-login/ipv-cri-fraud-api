@@ -23,7 +23,7 @@ import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationReque
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.IdentityVerificationResponse;
 import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckHttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryer;
-import uk.gov.di.ipv.cri.fraud.api.util.HttpResponseFixtures;
+import uk.gov.di.ipv.cri.fraud.api.util.HTTPReply;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 import uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
@@ -97,10 +97,10 @@ class ThirdPartyFraudGatewayTest {
                 ArgumentCaptor.forClass(HttpPost.class);
 
         when(mockHttpRetryer.sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(FraudCheckHttpRetryStatusConfig.class)))
-                .thenReturn(
-                        HttpResponseFixtures.createHttpResponse(
-                                200, null, TEST_API_RESPONSE_BODY, false));
+                        httpRequestCaptor.capture(),
+                        any(FraudCheckHttpRetryStatusConfig.class),
+                        eq("Fraud Check")))
+                .thenReturn(new HTTPReply(200, null, TEST_API_RESPONSE_BODY));
 
         when(this.mockObjectMapper.readValue(
                         TEST_API_RESPONSE_BODY, IdentityVerificationResponse.class))
@@ -134,7 +134,9 @@ class ThirdPartyFraudGatewayTest {
         verify(mockHmacGenerator).generateHmac(testRequestBody);
         verify(mockHttpRetryer)
                 .sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(FraudCheckHttpRetryStatusConfig.class));
+                        httpRequestCaptor.capture(),
+                        any(FraudCheckHttpRetryStatusConfig.class),
+                        eq("Fraud Check"));
         verify(mockResponseMapper).mapFraudResponse(testResponse);
         assertNotNull(actualFraudCheckResult);
         assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().getURI().toString());
@@ -144,7 +146,7 @@ class ThirdPartyFraudGatewayTest {
 
     @Test
     void shouldReturnOAuthErrorResponseExceptionIfThirdPartyApiReturnsInvalidResponse()
-            throws IOException {
+            throws IOException, OAuthErrorResponseException {
         final String testRequestBody = "serialisedCrossCoreApiRequest";
         final IdentityVerificationRequest testApiRequest = new IdentityVerificationRequest();
 
@@ -159,9 +161,10 @@ class ThirdPartyFraudGatewayTest {
                 ArgumentCaptor.forClass(HttpPost.class);
 
         when(mockHttpRetryer.sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(FraudCheckHttpRetryStatusConfig.class)))
-                .thenReturn(
-                        HttpResponseFixtures.createHttpResponse(200, null, "}BAD JSON{", false));
+                        httpRequestCaptor.capture(),
+                        any(FraudCheckHttpRetryStatusConfig.class),
+                        eq("Fraud Check")))
+                .thenReturn(new HTTPReply(200, null, "}BAD JSON{"));
 
         OAuthErrorResponseException expectedReturnedException =
                 new OAuthErrorResponseException(
@@ -206,7 +209,9 @@ class ThirdPartyFraudGatewayTest {
         verify(mockHmacGenerator).generateHmac(testRequestBody);
         verify(mockHttpRetryer)
                 .sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(FraudCheckHttpRetryStatusConfig.class));
+                        httpRequestCaptor.capture(),
+                        any(FraudCheckHttpRetryStatusConfig.class),
+                        eq("Fraud Check"));
 
         assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().getURI().toString());
         assertEquals(HttpPost.class, httpRequestCaptor.getValue().getClass());
@@ -233,10 +238,10 @@ class ThirdPartyFraudGatewayTest {
                 ArgumentCaptor.forClass(HttpPost.class);
 
         when(mockHttpRetryer.sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(FraudCheckHttpRetryStatusConfig.class)))
-                .thenReturn(
-                        HttpResponseFixtures.createHttpResponse(
-                                errorStatus, null, TEST_API_RESPONSE_BODY, false));
+                        httpRequestCaptor.capture(),
+                        any(FraudCheckHttpRetryStatusConfig.class),
+                        eq("Fraud Check")))
+                .thenReturn(new HTTPReply(errorStatus, null, TEST_API_RESPONSE_BODY));
 
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(personIdentity);
@@ -265,7 +270,9 @@ class ThirdPartyFraudGatewayTest {
 
         verify(mockHttpRetryer, times(1))
                 .sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(), any(FraudCheckHttpRetryStatusConfig.class));
+                        httpRequestCaptor.capture(),
+                        any(FraudCheckHttpRetryStatusConfig.class),
+                        eq("Fraud Check"));
 
         assertNotNull(actualFraudCheckResult);
         assertEquals(EXPECTED_ERROR, actualFraudCheckResult.getErrorMessage());

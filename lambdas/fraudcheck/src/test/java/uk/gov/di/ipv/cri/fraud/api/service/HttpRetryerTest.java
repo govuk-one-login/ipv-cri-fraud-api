@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.util.HttpResponseFixtures;
 import uk.gov.di.ipv.cri.fraud.api.util.HttpRetryStatusConfigFixtures;
+import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
@@ -23,6 +24,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -56,7 +58,7 @@ class HttpRetryerTest {
         "500, true", // Retry Expected
     })
     void shouldOnlyRetryWhenStatusIsAMatchingRetryCode(int statusCode, boolean retryExpected)
-            throws IOException {
+            throws IOException, OAuthErrorResponseException {
 
         CloseableHttpResponse testCloseableHttpResponse =
                 HttpResponseFixtures.createHttpResponse(statusCode, null, "", false);
@@ -66,7 +68,8 @@ class HttpRetryerTest {
         HttpRetryStatusConfig testHttpRetryStatusConfig =
                 HttpRetryStatusConfigFixtures.generateTestReplyStatusConfig(
                         TEST_RETRY_STATUS_CODES, TEST_SUCCESS_STATUS_CODES);
-        httpRetryer.sendHTTPRequestRetryIfAllowed(mockPostRequest, testHttpRetryStatusConfig);
+        httpRetryer.sendHTTPRequestRetryIfAllowed(
+                mockPostRequest, testHttpRetryStatusConfig, eq("endpoint"));
 
         int mockHttpClientExpectedTimes = 1; // 1 for the initial attempt
         if (retryExpected) {
@@ -123,7 +126,7 @@ class HttpRetryerTest {
                         IOException.class,
                         () ->
                                 httpRetryer.sendHTTPRequestRetryIfAllowed(
-                                        mockPostRequest, testHttpRetryStatusConfig),
+                                        mockPostRequest, testHttpRetryStatusConfig, eq("endpoint")),
                         "Expected IOException");
 
         int mockHttpClientExpectedTimes = 1; // The initial attempt
@@ -162,7 +165,7 @@ class HttpRetryerTest {
 
     @Test
     void shouldCaptureSendErrorMetricIfRemoteAPIReturnsNonRetryableStatusDuringARetry()
-            throws IOException {
+            throws IOException, OAuthErrorResponseException {
 
         // Response with retryable status code
         CloseableHttpResponse initialRetryableCloseableHttpResponse =
@@ -180,7 +183,8 @@ class HttpRetryerTest {
         HttpRetryStatusConfig testHttpRetryStatusConfig =
                 HttpRetryStatusConfigFixtures.generateTestReplyStatusConfig(
                         TEST_RETRY_STATUS_CODES, TEST_SUCCESS_STATUS_CODES);
-        httpRetryer.sendHTTPRequestRetryIfAllowed(mockPostRequest, testHttpRetryStatusConfig);
+        httpRetryer.sendHTTPRequestRetryIfAllowed(
+                mockPostRequest, testHttpRetryStatusConfig, eq("endpoint"));
 
         InOrder inOrderMockEventProbeSequence = inOrder(mockEventProbe);
         inOrderMockEventProbeSequence
