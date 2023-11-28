@@ -1,8 +1,10 @@
 package uk.gov.di.ipv.cri.fraud.api.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.HttpException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContexts;
 import software.amazon.awssdk.awscore.defaultsmode.DefaultsMode;
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -13,9 +15,19 @@ import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.gateway.*;
 
+import javax.net.ssl.SSLContext;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.security.InvalidKeyException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.time.Clock;
+import java.util.Base64;
 
 public class ServiceFactory {
     private final IdentityVerificationService identityVerificationService;
@@ -30,14 +42,14 @@ public class ServiceFactory {
     private static final int MAX_HTTP_RETRIES = 0;
 
     public ServiceFactory(ObjectMapper objectMapper)
-            throws NoSuchAlgorithmException, InvalidKeyException {
+            throws NoSuchAlgorithmException, InvalidKeyException, HttpException {
         this.objectMapper = objectMapper;
         this.eventProbe = new EventProbe();
         this.personIdentityValidator = new PersonIdentityValidator();
         this.configurationService = createConfigurationService();
         this.contraindicationMapper = new ContraIndicatorRemoteMapper(configurationService);
         this.auditService = createAuditService(this.objectMapper);
-        this.identityVerificationService = createIdentityVerificationService(this.auditService);
+        this.identityVerificationService = createIdentityVerificationService(configurationService);
     }
 
     @ExcludeFromGeneratedCoverageReport
@@ -48,14 +60,14 @@ public class ServiceFactory {
             ContraindicationMapper contraindicationMapper,
             PersonIdentityValidator personIdentityValidator,
             AuditService auditService)
-            throws NoSuchAlgorithmException, InvalidKeyException {
+            throws NoSuchAlgorithmException, InvalidKeyException, HttpException {
         this.objectMapper = objectMapper;
         this.eventProbe = eventProbe;
         this.configurationService = configurationService;
         this.contraindicationMapper = contraindicationMapper;
         this.personIdentityValidator = personIdentityValidator;
         this.auditService = auditService;
-        this.identityVerificationService = createIdentityVerificationService(this.auditService);
+        this.identityVerificationService = createIdentityVerificationService(configurationService);
     }
 
     private ConfigurationService createConfigurationService() {
@@ -73,10 +85,11 @@ public class ServiceFactory {
         return this.identityVerificationService;
     }
 
-    private IdentityVerificationService createIdentityVerificationService(AuditService auditService)
-            throws NoSuchAlgorithmException, InvalidKeyException {
+    private IdentityVerificationService createIdentityVerificationService(
+            ConfigurationService configurationService)
+            throws NoSuchAlgorithmException, InvalidKeyException, HttpException {
 
-        final CloseableHttpClient closeableHttpClient = HttpClients.custom().build();
+        final CloseableHttpClient closeableHttpClient = generateHttpClient(configurationService);
 
         final HttpRetryer httpRetryer =
                 new HttpRetryer(closeableHttpClient, eventProbe, MAX_HTTP_RETRIES);
@@ -119,6 +132,35 @@ public class ServiceFactory {
                 auditService,
                 configurationService,
                 eventProbe);
+    }
+
+    private CloseableHttpClient generateHttpClient(ConfigurationService configurationService)
+            throws HttpException {
+        try {
+            byte[] decodedKeyStore =
+                    Base64.getDecoder().decode(configurationService.getEncodedKeyStore());
+
+            ByteArrayInputStream decodedKeystoreAsBytes = new ByteArrayInputStream(decodedKeyStore);
+            char[] keystorePassword = configurationService.getKeyStorePassword().toCharArray();
+
+            KeyStore keystore = KeyStore.getInstance("pkcs12");
+            keystore.load(decodedKeystoreAsBytes, keystorePassword);
+
+            SSLContext sslContext =
+                    SSLContexts.custom()
+                            .loadKeyMaterial(keystore, keystorePassword)
+                            .setProtocol("TLSv1.2")
+                            .build();
+
+            return HttpClients.custom().setSSLContext(sslContext).build();
+        } catch (NoSuchAlgorithmException
+                | KeyManagementException
+                | KeyStoreException
+                | UnrecoverableKeyException
+                | IOException
+                | CertificateException e) {
+            throw new HttpException(e.getMessage());
+        }
     }
 
     public AuditService getAuditService() {
