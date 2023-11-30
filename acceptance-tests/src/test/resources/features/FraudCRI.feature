@@ -166,26 +166,6 @@ Feature: Fraud CRI
       | DIPTI STUPPART          | 26/01/1989     | P02 |   2   |
       | JAMALA BROWER           | 27/10/1963     | P02 |   2   |
 
-#  @Search_user_with_MissingDetails_and_EditUser_Unhappypath
-#  Scenario Outline: Search for user with missing details and edit user UnHappy Path (STUB)'
-#    Given I navigate to the IPV Core Stub
-#    And I click the Fraud CRI for the <environment> environment
-#    And I search for user name Richard Gillis in the ThirdParty table
-#    When I click on Edit User link
-#    And I clear the postcode
-#    And I clear existing House number
-#    And I click on Go to Fraud CRI link after Edit
-#    Then I navigate to the verifiable issuer to check for a Invalid response from thirdParty
-#    And JSON response should contain error details and status code as 302
-#    And Validate User navigation back to core for invalid users
-#    And The test is complete and I close the driver
-#
-#    Examples:
-#      | environment |
-#      | Build       |
-#      | Staging     |
-#      | Integration |
-
   @test_PEP_user_with_multiple_addresses @staging-fraud
   Scenario Outline: Edit PEP User with multiple addresses (STUB)
     Given I navigate to the IPV Core Stub
@@ -239,7 +219,7 @@ Feature: Fraud CRI
       | name                    | dob            | ci  | score |
       | ANTHONY ROBERTS         | 25/06/1959     |     |   2   |
 
-  @build-fraud @test1
+  @build-fraud
   Scenario Outline:Crosscore Authenticate and PEP completed and user is a PEP
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -264,7 +244,7 @@ Feature: Fraud CRI
       | JAMALA BROWER           | 27/10/1963     |    |2    |
 
 
-  @build-fraud @test
+  @build-fraud
   Scenario Outline:Crosscore Authenticate and PEP completed and user not PEP
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -289,7 +269,7 @@ Feature: Fraud CRI
       | ALBERT PEPS             | 05/10/1943     |P01   | 2     |
 
 
-  @build-fraud @test
+  @build-fraud
   Scenario Outline: Mortality u-code returned
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -313,7 +293,7 @@ Feature: Fraud CRI
       | ALBERT GILT    | 05/10/1943       | T02  | 0     |
 
 
-  @build-fraud @test
+  @build-fraud
   Scenario Outline: Crosscore Authenticate completed and PEP not completed due to error from ThirdParty
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -337,7 +317,7 @@ Feature: Fraud CRI
       | name                         | dob              | ci   | score  |
       | ALBERT PEP_ERROR_RESPONSE    | 05/10/1943       |      | 1    |
 
-  @build-fraud @test
+  @build-fraud
   Scenario Outline: Crosscore Authenticate completed and PEP not completed due to technical failure
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -361,7 +341,7 @@ Feature: Fraud CRI
       | name                    | dob              | ci   | score  |
       | ALBERT PEP_TECH_FAIL    | 05/10/1943       |      | 1    |
 
-  @build-fraud @test
+  @build-fraud
   Scenario Outline: Decision score below 35
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
