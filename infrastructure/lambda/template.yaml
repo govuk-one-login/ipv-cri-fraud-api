@@ -158,10 +158,10 @@ Mappings:
   MemorySizeMapping:
     Environment:
       dev: 2048
-      build: 3072
-      staging: 3072
-      integration: 3072
-      production: 3072
+      build: 4096
+      staging: 2048
+      integration: 2048
+      production: 4096
 
   MaxJwtTtlMapping:
     Environment:
@@ -234,8 +234,8 @@ Resources:
           # Disable data trace in production to avoid logging customer sensitive information
           DataTraceEnabled: !If [IsProdEnvironment, false, true]
           MetricsEnabled: true
-          ThrottlingRateLimit: 5
-          ThrottlingBurstLimit: 10
+          ThrottlingRateLimit: 200
+          ThrottlingBurstLimit: 400
       AccessLogSetting:
         DestinationArn: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${PublicFraudApiAccessLogGroup}'
         Format: >-
@@ -316,8 +316,8 @@ Resources:
           # Disable data trace in production to avoid logging customer sensitive information
           DataTraceEnabled: !If [IsProdEnvironment, false, true]
           MetricsEnabled: true
-          ThrottlingRateLimit: 5
-          ThrottlingBurstLimit: 10
+          ThrottlingRateLimit: 200
+          ThrottlingBurstLimit: 400
       AccessLogSetting:
         DestinationArn: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${PrivateFraudApiAccessLogGroup}'
         Format: >-
@@ -616,8 +616,8 @@ Resources:
         Limit: 500000
         Period: DAY
       Throttle:
-        BurstLimit: 100 # requests the API can handle concurrently
-        RateLimit: 50 # allowed requests per second
+        RateLimit: 200 # allowed requests per second
+        BurstLimit: 400 # requests the API can handle concurrently
 
   PrivateFraudApiUsagePlan:
     Type: AWS::ApiGateway::UsagePlan
@@ -632,8 +632,8 @@ Resources:
         Limit: 500000
         Period: DAY
       Throttle:
-        BurstLimit: 100 # requests the API can handle concurrently
-        RateLimit: 50 # allowed requests per second
+        RateLimit: 200 # allowed requests per second
+        BurstLimit: 400 # requests the API can handle concurrently
 
   LinkUsagePlanApiKey1:
     Condition: IsDeployedFromPipeline
