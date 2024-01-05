@@ -34,6 +34,7 @@ import uk.gov.di.ipv.cri.common.library.util.ApiGatewayResponseGenerator;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.exception.CredentialRequestException;
 import uk.gov.di.ipv.cri.fraud.api.service.FraudRetrievalService;
+import uk.gov.di.ipv.cri.fraud.api.service.IssueCredentialConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.VerifiableCredentialService;
 import uk.gov.di.ipv.cri.fraud.api.util.IssueCredentialFraudAuditExtensionUtil;
 import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
@@ -59,7 +60,7 @@ public class IssueCredentialHandler
     private final SessionService sessionService;
     private EventProbe eventProbe;
     private final AuditService auditService;
-    private final uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService configurationService;
+    private final IssueCredentialConfigurationService issueCredentialConfigurationService;
 
     public IssueCredentialHandler(
             VerifiableCredentialService verifiableCredentialService,
@@ -68,14 +69,14 @@ public class IssueCredentialHandler
             AuditService auditService,
             PersonIdentityService personIdentityService,
             FraudRetrievalService fraudRetrievalService,
-            uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService configurationService) {
+            IssueCredentialConfigurationService issueCredentialConfigurationService) {
         this.verifiableCredentialService = verifiableCredentialService;
         this.personIdentityService = personIdentityService;
         this.sessionService = sessionService;
         this.eventProbe = eventProbe;
         this.auditService = auditService;
         this.fraudRetrievalService = fraudRetrievalService;
-        this.configurationService = configurationService;
+        this.issueCredentialConfigurationService = issueCredentialConfigurationService;
     }
 
     public IssueCredentialHandler() {
@@ -99,8 +100,8 @@ public class IssueCredentialHandler
                         new ObjectMapper(),
                         new AuditEventFactory(commonConfigurationService, Clock.systemUTC()));
         this.fraudRetrievalService = new FraudRetrievalService();
-        this.configurationService =
-                new uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService(
+        this.issueCredentialConfigurationService =
+                new IssueCredentialConfigurationService(
                         ParamManager.getSecretsProvider(),
                         ParamManager.getSsmProvider(),
                         System.getenv("ENVIRONMENT"));
@@ -140,7 +141,7 @@ public class IssueCredentialHandler
                     IssueCredentialFraudAuditExtensionUtil.generateVCISSFraudAuditExtension(
                             verifiableCredentialService.getVerifiableCredentialIssuer(),
                             List.of(fraudResult),
-                            configurationService.isActivityHistoryEnabled()));
+                            issueCredentialConfigurationService.isActivityHistoryEnabled()));
 
             LOGGER.info("Credential generated");
 

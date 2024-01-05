@@ -17,11 +17,15 @@ public class ContraIndicatorRemoteMapper implements ContraindicationMapper {
     private static final String CIMAP = "CIMap";
 
     private final Map<String, String> uCodeCIMap;
+    private FraudCheckConfigurationService fraudCheckConfigurationService;
 
-    public ContraIndicatorRemoteMapper(ConfigurationService configurationService) {
+    public ContraIndicatorRemoteMapper(
+            FraudCheckConfigurationService fraudCheckConfigurationService) {
+        this.fraudCheckConfigurationService = fraudCheckConfigurationService;
+
         final String contraindicatorMappingString =
                 System.getenv().get(CIMAP) == null
-                        ? configurationService.getContraindicationMappings()
+                        ? fraudCheckConfigurationService.getContraindicationMappings()
                         : System.getenv().get(CIMAP);
 
         uCodeCIMap = parseUCodeCIMapString(contraindicatorMappingString);

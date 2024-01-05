@@ -16,18 +16,18 @@ jobs:
       - name: Step 1 - Checkout main branch from GitHub
         uses: actions/checkout@v2
 
-      - name: Step 2 - Set up JDK 11
+      - name: Step 2 - Set up JDK 17
         uses: actions/setup-java@v2
 
         with:
-          java-version: '11'
+          java-version: '17'
           distribution: 'temurin'
           server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
           settings-path: ${{ github.workspace }} # location for the settings.xml file
 
       - uses: gradle/gradle-build-action@v2
         with:
-          gradle-version: 7.6
+          gradle-version: wrapper
 
       - name: Run Fraud Smoke test against build environment
         env:

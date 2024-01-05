@@ -13,9 +13,9 @@ public class IdentityScoreCalculator {
     private List<String> zeroScoreUcodes;
     private Integer noFileFoundThreshold = 0;
 
-    public IdentityScoreCalculator(ConfigurationService configurationService) {
-        zeroScoreUcodes = configurationService.getZeroScoreUcodes();
-        noFileFoundThreshold = configurationService.getNoFileFoundThreshold();
+    public IdentityScoreCalculator(FraudCheckConfigurationService fraudCheckConfigurationService) {
+        zeroScoreUcodes = fraudCheckConfigurationService.getZeroScoreUcodes();
+        noFileFoundThreshold = fraudCheckConfigurationService.getNoFileFoundThreshold();
     }
 
     public int calculateIdentityScoreAfterFraudCheck(

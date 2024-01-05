@@ -1,4 +1,4 @@
 # Given you are using sdkman (https://sdkman.io/) to install and manage multiple java distributions
 # Enable sdkman_auto_env=true for automatic switching of java version
 # The default location of the configuration file is $HOME/.sdkman/etc/config
-java=11.0.14-zulu
+java=17.0.9-amzn

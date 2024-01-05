@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ServiceFactoryTest {
     @Mock private ObjectMapper mockObjectMapper;
-    @Mock private ConfigurationService mockConfigurationService;
+    @Mock private FraudCheckConfigurationService mockFraudCheckConfigurationService;
     @Mock private ContraindicationMapper mockContraindicationMapper;
     @Mock private PersonIdentityValidator mockPersonIdentityValidator;
     @Mock private HttpClient mockHttpClient;
@@ -41,22 +41,24 @@ class ServiceFactoryTest {
     void shouldCreateIdentityVerificationService()
             throws NoSuchAlgorithmException, InvalidKeyException, HttpException, KeyStoreException,
                     CertificateException, IOException {
-        when(mockConfigurationService.getHmacKey()).thenReturn("hmac key");
-        when(mockConfigurationService.getEndpointUrl()).thenReturn("https://test-endpoint");
+        when(mockFraudCheckConfigurationService.getHmacKey()).thenReturn("hmac key");
+        when(mockFraudCheckConfigurationService.getEndpointUrl())
+                .thenReturn("https://test-endpoint");
 
         // Test needs a real keystore as it is auto mapped from strings
         final char[] unitTestKeyStorePassword = UUID.randomUUID().toString().toCharArray();
         String testKeyStore = generateUnitTestKeyStore(unitTestKeyStorePassword);
         String testKeyStorePassword = new String(unitTestKeyStorePassword);
 
-        when(mockConfigurationService.getEncodedKeyStore()).thenReturn(testKeyStore);
-        when(mockConfigurationService.getKeyStorePassword()).thenReturn(testKeyStorePassword);
+        when(mockFraudCheckConfigurationService.getEncodedKeyStore()).thenReturn(testKeyStore);
+        when(mockFraudCheckConfigurationService.getKeyStorePassword())
+                .thenReturn(testKeyStorePassword);
 
         ServiceFactory serviceFactory =
                 new ServiceFactory(
                         mockObjectMapper,
                         mockEventProbe,
-                        mockConfigurationService,
+                        mockFraudCheckConfigurationService,
                         mockContraindicationMapper,
                         mockPersonIdentityValidator,
                         mockAuditService);
@@ -65,9 +67,9 @@ class ServiceFactoryTest {
                 serviceFactory.getIdentityVerificationService();
 
         assertNotNull(identityVerificationService);
-        verify(mockConfigurationService, times(2)).getTenantId();
-        verify(mockConfigurationService, times(2)).getHmacKey();
-        verify(mockConfigurationService, times(2)).getEndpointUrl();
+        verify(mockFraudCheckConfigurationService, times(2)).getTenantId();
+        verify(mockFraudCheckConfigurationService, times(2)).getHmacKey();
+        verify(mockFraudCheckConfigurationService, times(2)).getEndpointUrl();
     }
 
     private String generateUnitTestKeyStore(char[] unitTestKeyStorePassword)

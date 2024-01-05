@@ -2,6 +2,22 @@
 
 This folder has be created as a central location for any work related to Fraud CRI testing.
 
+## SDKMan
+This project has an `.sdkmanrc` file
+
+Install SDKMan via the instructions on `https://sdkman.io/install`
+
+For auto-switching between JDK versions, edit your `~/.sdkman/etc/config` and set `sdkman_auto_env=true`
+
+Then use sdkman to install Java JDK listed in this projects `.sdkmanrc`
+e.g `sdk install java x.y.z-amzn`
+
+Restart your terminal
+
+## Gradle
+
+Gradle 8 is used on this project
+
 ## Build
 
 Build with `./gradlew`

@@ -1,6 +1,10 @@
-package uk.gov.di.ipv.cri.fraud.api.util;
+package uk.gov.di.ipv.cri.fraud.library;
 
-import uk.gov.di.ipv.cri.common.library.domain.personidentity.*;
+import uk.gov.di.ipv.cri.common.library.domain.personidentity.BirthDate;
+import uk.gov.di.ipv.cri.common.library.domain.personidentity.Name;
+import uk.gov.di.ipv.cri.common.library.domain.personidentity.NamePart;
+import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
+import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentityDetailed;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,24 +22,15 @@ public class FraudPersonIdentityDetailedMapper {
         List<NamePart> nameParts = new ArrayList<>();
 
         if (Objects.nonNull(personIdentity.getFirstName())) {
-            NamePart givenName1 = new NamePart();
-            givenName1.setValue(personIdentity.getFirstName());
-            givenName1.setType("GivenName");
-            nameParts.add(givenName1);
+            nameParts.add(setNamePart(personIdentity.getFirstName(), "GivenName"));
         }
 
         if (Objects.nonNull(personIdentity.getMiddleNames())) {
-            NamePart givenName2 = new NamePart();
-            givenName2.setValue(personIdentity.getMiddleNames());
-            givenName2.setType("GivenName");
-            nameParts.add(givenName2);
+            nameParts.add(setNamePart(personIdentity.getMiddleNames(), "GivenName"));
         }
 
         if (Objects.nonNull(personIdentity.getSurname())) {
-            NamePart familyName = new NamePart();
-            familyName.setValue(personIdentity.getSurname());
-            familyName.setType("FamilyName");
-            nameParts.add(familyName);
+            nameParts.add(setNamePart(personIdentity.getSurname(), "FamilyName"));
         }
 
         Name name1 = new Name();
@@ -46,5 +41,12 @@ public class FraudPersonIdentityDetailedMapper {
 
         return new PersonIdentityDetailed(
                 List.of(name1), List.of(birthDate), personIdentity.getAddresses());
+    }
+
+    private static NamePart setNamePart(String value, String type) {
+        NamePart namePart = new NamePart();
+        namePart.setValue(value);
+        namePart.setType(type);
+        return namePart;
     }
 }

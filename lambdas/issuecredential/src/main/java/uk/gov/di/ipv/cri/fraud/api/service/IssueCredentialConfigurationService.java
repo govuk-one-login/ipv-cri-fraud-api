@@ -9,7 +9,7 @@ import software.amazon.lambda.powertools.parameters.SecretsProvider;
 import java.util.Objects;
 import java.util.Optional;
 
-public class ConfigurationService {
+public class IssueCredentialConfigurationService {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -19,7 +19,7 @@ public class ConfigurationService {
     private final String parameterPrefix;
     private final String stackParameterPrefix;
 
-    public ConfigurationService(
+    public IssueCredentialConfigurationService(
             SecretsProvider secretsProvider, ParamProvider paramProvider, String env) {
         Objects.requireNonNull(secretsProvider, "secretsProvider must not be null");
         Objects.requireNonNull(paramProvider, "paramProvider must not be null");

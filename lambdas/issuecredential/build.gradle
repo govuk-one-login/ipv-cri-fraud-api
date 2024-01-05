@@ -1,35 +1,100 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
 plugins {
 	id "java"
+	id "idea"
 	id "jacoco"
-	id "io.freefair.aspectj.post-compile-weaving" version "6.6.3"
+	id 'io.freefair.aspectj.post-compile-weaving' version '8.4'
 }
 
 dependencies {
 	implementation project(":lib"),
-			configurations.cri_common_lib,
-			configurations.aws,
-			configurations.lambda,
-			configurations.nimbus,
-			configurations.dynamodb,
-			configurations.jackson,
-			configurations.sqs,
-			configurations.kms
+			"uk.gov.account:cri-common-lib:${dependencyVersions.cri_common_lib_version}",
+			"com.nimbusds:oauth2-oidc-sdk:${dependencyVersions.nimbusds_oauth_version}",
+			"com.nimbusds:nimbus-jose-jwt:${dependencyVersions.nimbusds_jwt_version}",
+			"com.amazonaws:aws-lambda-java-core:${dependencyVersions.aws_lambda_core_version}",
+			"com.amazonaws:aws-lambda-java-events:${dependencyVersions.aws_lambda_events_version}",
+			"software.amazon.awssdk:lambda:${dependencyVersions.aws_sdk_version}",
+			"software.amazon.awssdk:dynamodb-enhanced:${dependencyVersions.aws_sdk_version}",
+			"software.amazon.awssdk:kms:${dependencyVersions.aws_sdk_version}",
+			"software.amazon.awssdk:sqs:${dependencyVersions.aws_sdk_version}",
+			"com.fasterxml.jackson.core:jackson-core:${dependencyVersions.jackson_version}",
+			"com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${dependencyVersions.jackson_version}",
+			"com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${dependencyVersions.jackson_version}",
+			"com.fasterxml.jackson.core:jackson-databind:${dependencyVersions.jackson_version}",
+			"com.fasterxml.jackson.core:jackson-annotations:${dependencyVersions.jackson_version}"
 
-	aspect configurations.powertools
+	aspect "software.amazon.lambda:powertools-logging:${dependencyVersions.aws_powertools_logging_version}",
+			"software.amazon.lambda:powertools-metrics:${dependencyVersions.aws_powertools_metrics_version}",
+			"software.amazon.lambda:powertools-parameters:${dependencyVersions.aws_powertools_parameters_version}",
+			"org.aspectj:aspectjrt:${dependencyVersions.aspectjrt_version}"
 
-	testImplementation configurations.tests
+	testImplementation testFixtures(project(":lib")),"org.junit.jupiter:junit-jupiter-engine:${dependencyVersions.junit_version}",
+			"org.junit.jupiter:junit-jupiter-api:${dependencyVersions.junit_version}",
+			"org.junit.jupiter:junit-jupiter-params:${dependencyVersions.junit_version}",
+			"org.mockito:mockito-junit-jupiter:${dependencyVersions.mockito_version}",
+			"org.mockito:mockito-inline:${dependencyVersions.mockito_version}",
+			"org.hamcrest:hamcrest:${dependencyVersions.hamcrest_version}",
+			"com.github.tomakehurst:wiremock-jre8:${dependencyVersions.wiremock_version}",
+			"uk.org.webcompere:system-stubs-core:${dependencyVersions.webcompere_version}",
+			"uk.org.webcompere:system-stubs-jupiter:${dependencyVersions.webcompere_version}"
+}
 
-	testRuntimeOnly configurations.test_runtime
+tasks.register('buildZip', Zip) {
+	from compileJava
+	from processResources
+	destinationDirectory = file("$rootDir/dist")
+	into("lib") {
+		from configurations.runtimeClasspath
+	}
 }
 
 test {
-	useJUnitPlatform()
-	finalizedBy jacocoTestReport
+	useJUnitPlatform ()
+	finalizedBy jacocoTestReport, jacocoTestCoverageVerification
 }
 
 jacocoTestReport {
 	dependsOn test
 	reports {
 		xml.required.set(true)
+	}
+}
+
+tasks.withType(Test).configureEach {
+	testLogging {
+		events TestLogEvent.FAILED,
+				TestLogEvent.PASSED,
+				TestLogEvent.SKIPPED
+
+		exceptionFormat TestExceptionFormat.FULL
+		showExceptions true
+		showCauses true
+		showStackTraces true
+
+		afterSuite { suite, result ->
+			if (!suite.parent) {
+				def output = "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped)"
+				def startItem = "|  ", endItem = "  |"
+				def repeatLength = startItem.length() + output.length() + endItem.length()
+				println("\n" + ("-" * repeatLength) + "\n" + startItem + output + endItem + "\n" + ("-" * repeatLength))
+			}
+		}
+	}
+}
+
+jacocoTestCoverageVerification {
+	violationRules {
+		rule {
+			limit {
+				counter = 'LINE'
+				minimum = minUnitTestLineCoverage
+			}
+			limit {
+				counter = 'BRANCH'
+				minimum = minUnitTestBranchCoverage
+			}
+		}
 	}
 }

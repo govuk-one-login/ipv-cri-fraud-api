@@ -17,7 +17,7 @@
 <!-- List any related ADRs or RFCs -->
 <!-- Delete/copy as appropriate -->
 
-- [KBV-XXXX](https://govukverify.atlassian.net/browse/KBV-XXX)
+- [LIME-XXXX](https://govukverify.atlassian.net/browse/LIME-XXX)
 
 ## Checklists
 

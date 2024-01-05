@@ -13,7 +13,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class IdentityScoreCalculatorTest {
-    @Mock private ConfigurationService mockConfigurationService;
+    @Mock private FraudCheckConfigurationService mockFraudCheckConfigurationService;
 
     private IdentityScoreCalculator identityScoreCalculator;
 
@@ -25,9 +25,10 @@ class IdentityScoreCalculatorTest {
         fraudCheckResult.setExecutedSuccessfully(true);
         fraudCheckResult.setTransactionId("123456789");
 
-        when(mockConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("U001"));
-        when(mockConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
-        this.identityScoreCalculator = new IdentityScoreCalculator(mockConfigurationService);
+        when(mockFraudCheckConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("U001"));
+        when(mockFraudCheckConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
+        this.identityScoreCalculator =
+                new IdentityScoreCalculator(mockFraudCheckConfigurationService);
 
         int identityScore =
                 identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(
@@ -46,9 +47,10 @@ class IdentityScoreCalculatorTest {
         fraudCheckResult.setExecutedSuccessfully(true);
         fraudCheckResult.setTransactionId("123456789");
 
-        when(mockConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("U001"));
-        when(mockConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
-        this.identityScoreCalculator = new IdentityScoreCalculator(mockConfigurationService);
+        when(mockFraudCheckConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("U001"));
+        when(mockFraudCheckConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
+        this.identityScoreCalculator =
+                new IdentityScoreCalculator(mockFraudCheckConfigurationService);
 
         int identityScore =
                 identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(
@@ -66,9 +68,10 @@ class IdentityScoreCalculatorTest {
         fraudCheckResult.setExecutedSuccessfully(true);
         fraudCheckResult.setTransactionId("123456789");
 
-        when(mockConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("U001"));
-        when(mockConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
-        this.identityScoreCalculator = new IdentityScoreCalculator(mockConfigurationService);
+        when(mockFraudCheckConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("U001"));
+        when(mockFraudCheckConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
+        this.identityScoreCalculator =
+                new IdentityScoreCalculator(mockFraudCheckConfigurationService);
 
         int identityScore =
                 identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(
@@ -86,9 +89,10 @@ class IdentityScoreCalculatorTest {
         fraudCheckResult.setExecutedSuccessfully(false);
         fraudCheckResult.setTransactionId("123456789");
 
-        when(mockConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("U001"));
-        when(mockConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
-        this.identityScoreCalculator = new IdentityScoreCalculator(mockConfigurationService);
+        when(mockFraudCheckConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("U001"));
+        when(mockFraudCheckConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
+        this.identityScoreCalculator =
+                new IdentityScoreCalculator(mockFraudCheckConfigurationService);
 
         int identityScore =
                 identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(
@@ -106,9 +110,10 @@ class IdentityScoreCalculatorTest {
         fraudCheckResult.setExecutedSuccessfully(false);
         fraudCheckResult.setTransactionId("123456789");
 
-        when(mockConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("U001"));
-        when(mockConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
-        this.identityScoreCalculator = new IdentityScoreCalculator(mockConfigurationService);
+        when(mockFraudCheckConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("U001"));
+        when(mockFraudCheckConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
+        this.identityScoreCalculator =
+                new IdentityScoreCalculator(mockFraudCheckConfigurationService);
 
         int identityScore =
                 identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(

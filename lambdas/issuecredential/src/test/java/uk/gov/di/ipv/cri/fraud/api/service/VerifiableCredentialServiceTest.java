@@ -23,8 +23,8 @@ import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.util.SignedJWTFactory;
 import uk.gov.di.ipv.cri.common.library.util.VerifiableCredentialClaimsSetBuilder;
 import uk.gov.di.ipv.cri.fraud.api.service.fixtures.TestFixtures;
-import uk.gov.di.ipv.cri.fraud.api.util.FraudPersonIdentityDetailedMapper;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
+import uk.gov.di.ipv.cri.fraud.library.FraudPersonIdentityDetailedMapper;
 import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
 
 import java.security.NoSuchAlgorithmException;
@@ -50,7 +50,7 @@ class VerifiableCredentialServiceTest implements TestFixtures {
     private final String UNIT_TEST_SUBJECT = "UNIT_TEST_SUBJECT";
 
     @Mock private ConfigurationService mockCommonConfigurationService;
-    @Mock private uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService mockConfigurationService;
+    @Mock private IssueCredentialConfigurationService mockIssueCredentialConfigurationService;
 
     private ObjectMapper objectMapper;
 
@@ -73,7 +73,7 @@ class VerifiableCredentialServiceTest implements TestFixtures {
                         mockCommonConfigurationService,
                         objectMapper,
                         verifiableCredentialClaimsSetBuilder,
-                        mockConfigurationService);
+                        mockIssueCredentialConfigurationService);
     }
 
     @ParameterizedTest

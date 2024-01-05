@@ -26,10 +26,10 @@ import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.ApiGatewayResponseGenerator;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
-import uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService;
+import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationService;
 import uk.gov.di.ipv.cri.fraud.api.service.ServiceFactory;
-import uk.gov.di.ipv.cri.fraud.api.util.FraudPersonIdentityDetailedMapper;
+import uk.gov.di.ipv.cri.fraud.api.util.RequestSentAuditHelper;
 import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
 
 import java.security.InvalidKeyException;
@@ -50,7 +50,7 @@ public class FraudHandler
     private final PersonIdentityService personIdentityService;
     private final SessionService sessionService;
     private final DataStore<FraudResultItem> dataStore;
-    private final ConfigurationService configurationService;
+    private final FraudCheckConfigurationService fraudCheckConfigurationService;
     private final AuditService auditService;
 
     public FraudHandler() throws NoSuchAlgorithmException, InvalidKeyException, HttpException {
@@ -60,10 +60,10 @@ public class FraudHandler
         this.identityVerificationService = serviceFactory.getIdentityVerificationService();
         this.personIdentityService = new PersonIdentityService();
         this.sessionService = new SessionService();
-        this.configurationService = serviceFactory.getConfigurationService();
+        this.fraudCheckConfigurationService = serviceFactory.getFraudCheckConfigurationService();
         this.dataStore =
                 new DataStore<>(
-                        configurationService.getFraudResultTableName(),
+                        fraudCheckConfigurationService.getFraudResultTableName(),
                         FraudResultItem.class,
                         DataStore.getClient());
         this.auditService = serviceFactory.getAuditService();
@@ -77,14 +77,14 @@ public class FraudHandler
             PersonIdentityService personIdentityService,
             SessionService sessionService,
             DataStore<FraudResultItem> dataStore,
-            ConfigurationService configurationService,
+            FraudCheckConfigurationService fraudCheckConfigurationService,
             AuditService auditService) {
         this.identityVerificationService = serviceFactory.getIdentityVerificationService();
         this.objectMapper = objectMapper;
         this.eventProbe = eventProbe;
         this.personIdentityService = personIdentityService;
         this.sessionService = sessionService;
-        this.configurationService = configurationService;
+        this.fraudCheckConfigurationService = fraudCheckConfigurationService;
         this.dataStore = dataStore;
         this.auditService = auditService;
     }
@@ -123,7 +123,7 @@ public class FraudHandler
             auditService.sendAuditEvent(
                     AuditEventType.REQUEST_SENT,
                     new AuditEventContext(
-                            FraudPersonIdentityDetailedMapper.generatePersonIdentityDetailed(
+                            RequestSentAuditHelper.personIdentityToAuditRestrictedFormat(
                                     personIdentity),
                             input.getHeaders(),
                             sessionItem));
@@ -153,7 +153,8 @@ public class FraudHandler
                             result.getIdentityCheckScore(),
                             result.getActivityHistoryScore(),
                             result.getDecisionScore());
-            fraudResultItem.setTtl(configurationService.getFraudResultItemExpirationEpoch());
+            fraudResultItem.setTtl(
+                    fraudCheckConfigurationService.getFraudResultItemExpirationEpoch());
             fraudResultItem.setTransactionId(result.getTransactionId());
             fraudResultItem.setPepTransactionId(result.getPepTransactionId());
 

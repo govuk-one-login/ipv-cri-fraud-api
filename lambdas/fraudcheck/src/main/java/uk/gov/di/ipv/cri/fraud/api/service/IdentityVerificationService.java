@@ -59,7 +59,7 @@ public class IdentityVerificationService {
     private final ContraindicationMapper contraindicationMapper;
     private final IdentityScoreCalculator identityScoreCalculator;
     private final ActivityHistoryScoreCalculator activityHistoryScoreCalculator;
-    private final ConfigurationService configurationService;
+    private final FraudCheckConfigurationService fraudCheckConfigurationService;
     private final AuditService auditService;
 
     private final EventProbe eventProbe;
@@ -74,7 +74,7 @@ public class IdentityVerificationService {
             IdentityScoreCalculator identityScoreCalculator,
             ActivityHistoryScoreCalculator activityHistoryScoreCalculator,
             AuditService auditService,
-            ConfigurationService configurationService,
+            FraudCheckConfigurationService fraudCheckConfigurationService,
             EventProbe eventProbe) {
         this.thirdPartyGateway = thirdPartyGateway;
         this.thirdPartyPepGateway = thirdPartyPepGateway;
@@ -83,7 +83,7 @@ public class IdentityVerificationService {
         this.identityScoreCalculator = identityScoreCalculator;
         this.activityHistoryScoreCalculator = activityHistoryScoreCalculator;
         this.auditService = auditService;
-        this.configurationService = configurationService;
+        this.fraudCheckConfigurationService = fraudCheckConfigurationService;
         this.eventProbe = eventProbe;
 
         this.objectMapper = new ObjectMapper();
@@ -116,7 +116,7 @@ public class IdentityVerificationService {
                 fraudIdentityVerificationResult.isSuccess()
                         && fraudIdentityVerificationResult.getChecksFailed().isEmpty();
 
-        if (pepValidToPerform && configurationService.getPepEnabled()) {
+        if (pepValidToPerform && fraudCheckConfigurationService.getPepEnabled()) {
             pepIdentityVerificationResult =
                     pepCheckStep(
                             personIdentity,
@@ -291,7 +291,7 @@ public class IdentityVerificationService {
                 fraudIdentityCheckScore);
         eventProbe.counterMetric(FRAUD_CHECK_REQUEST_SUCCEEDED);
 
-        if (decisionScore <= configurationService.getNoFileFoundThreshold()) {
+        if (decisionScore <= fraudCheckConfigurationService.getNoFileFoundThreshold()) {
 
             // Fraud Checks that have failed if decisionScore <= NoFileFoundThreshold
             checksFailed.add(MORTALITY_CHECK.toString());

@@ -38,13 +38,13 @@ public class VerifiableCredentialService {
 
     private final SignedJWTFactory signedJwtFactory;
     private final ConfigurationService commonConfigurationService;
-    private final uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService configurationService;
+    private final IssueCredentialConfigurationService issueCredentialConfigurationService;
     private final ObjectMapper objectMapper;
     private final VerifiableCredentialClaimsSetBuilder vcClaimsSetBuilder;
 
     public VerifiableCredentialService(ConfigurationService commonConfigurationService) {
-        this.configurationService =
-                new uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService(
+        this.issueCredentialConfigurationService =
+                new IssueCredentialConfigurationService(
                         ParamManager.getSecretsProvider(),
                         ParamManager.getSsmProvider(),
                         System.getenv("ENVIRONMENT"));
@@ -77,12 +77,12 @@ public class VerifiableCredentialService {
             ConfigurationService commonConfigurationService,
             ObjectMapper objectMapper,
             VerifiableCredentialClaimsSetBuilder vcClaimsSetBuilder,
-            uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService configurationService) {
+            IssueCredentialConfigurationService issueCredentialConfigurationService) {
         this.signedJwtFactory = signedClaimSetJwt;
         this.commonConfigurationService = commonConfigurationService;
         this.objectMapper = objectMapper;
         this.vcClaimsSetBuilder = vcClaimsSetBuilder;
-        this.configurationService = configurationService;
+        this.issueCredentialConfigurationService = issueCredentialConfigurationService;
     }
 
     public SignedJWT generateSignedVerifiableCredentialJwt(
@@ -140,7 +140,8 @@ public class VerifiableCredentialService {
 
         Evidence evidence =
                 EvidenceHelper.fraudCheckResultItemToEvidence(
-                        fraudResultItem, configurationService.isActivityHistoryEnabled());
+                        fraudResultItem,
+                        issueCredentialConfigurationService.isActivityHistoryEnabled());
 
         // DecisionScore not currently requested to be in VC
         evidence.setDecisionScore(null);
