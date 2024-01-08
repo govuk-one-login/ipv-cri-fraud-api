@@ -39,12 +39,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_IDENTITY_CHECK_COMPLETED_OK;
 
 @ExtendWith(MockitoExtension.class)
-class CredentialHandlerTest {
+class FraudHandlerTest {
     @Mock private ServiceFactory mockServiceFactory;
     @Mock private ObjectMapper mockObjectMapper;
     @Mock private IdentityVerificationService mockIdentityVerificationService;
@@ -52,7 +54,7 @@ class CredentialHandlerTest {
     @Mock private Context context;
     @Mock private PersonIdentityService personIdentityService;
     @Mock private SessionService sessionService;
-    @Mock private DataStore dataStore;
+    @Mock private DataStore mockDataStore;
     @Mock private FraudCheckConfigurationService mockFraudCheckConfigurationService;
     @Mock private AuditService auditService;
     private FraudHandler fraudHandler;
@@ -68,7 +70,7 @@ class CredentialHandlerTest {
                         mockEventProbe,
                         personIdentityService,
                         sessionService,
-                        dataStore,
+                        mockDataStore,
                         mockFraudCheckConfigurationService,
                         auditService);
     }
@@ -122,13 +124,124 @@ class CredentialHandlerTest {
         final FraudResultItem fraudResultItem =
                 populateFraudResultItem(testIdentityVerificationResult, sessionItem);
 
-        verify(dataStore).create(fraudResultItem);
+        verify(mockDataStore).create(fraudResultItem);
 
         assertNotNull(responseEvent);
         assertEquals(200, responseEvent.getStatusCode());
-        assertEquals(
-                "{\"success\":true,\"validationErrors\":null,\"error\":null,\"contraIndicators\":[\"A01\"],\"identityCheckScore\":1,\"activityHistoryScore\":0,\"activityFrom\":null,\"transactionId\":null,\"pepTransactionId\":null,\"decisionScore\":\"90\",\"thirdPartyFraudCodes\":[],\"checksSucceeded\":[\"check_one\",\"check_two\",\"check_three\"],\"checksFailed\":[]}",
-                responseEvent.getBody());
+    }
+
+    @Test
+    void handleResponseShouldReturnOkResponseWhenSessionAttemptGreaterThanOneAndResultFound()
+            throws IOException, SqsException {
+        String testRequestBody = "request body";
+        PersonIdentity testPersonIdentity = TestDataCreator.createTestPersonIdentity();
+
+        IdentityVerificationResult testIdentityVerificationResult =
+                new IdentityVerificationResult();
+        testIdentityVerificationResult.setSuccess(true);
+        testIdentityVerificationResult.setContraIndicators(List.of("A01"));
+        testIdentityVerificationResult.setIdentityCheckScore(1);
+        testIdentityVerificationResult.setDecisionScore("90");
+        testIdentityVerificationResult.setChecksSucceeded(
+                List.of("check_one", "check_two", "check_three"));
+        testIdentityVerificationResult.setChecksFailed(new ArrayList<>());
+
+        APIGatewayProxyRequestEvent mockRequestEvent =
+                Mockito.mock(APIGatewayProxyRequestEvent.class);
+
+        UUID sessionId = UUID.randomUUID();
+        Map<String, String> requestHeaders = Map.of("session_id", sessionId.toString());
+
+        when(mockRequestEvent.getBody()).thenReturn(testRequestBody);
+        when(mockRequestEvent.getHeaders()).thenReturn(requestHeaders);
+
+        final var sessionItem = new SessionItem();
+        sessionItem.setSessionId(sessionId);
+        sessionItem.setAttemptCount(1);
+        when(sessionService.validateSessionId(anyString())).thenReturn(sessionItem);
+
+        final FraudResultItem fraudResultItem =
+                populateFraudResultItem(testIdentityVerificationResult, sessionItem);
+        when(mockDataStore.getItem(sessionItem.getSessionId().toString()))
+                .thenReturn(fraudResultItem);
+
+        // No mapping of person identity
+        verifyNoInteractions(mockObjectMapper);
+
+        // No audit events for send/recived
+        verifyNoInteractions(auditService);
+
+        // No Check Down
+        verifyNoInteractions(mockIdentityVerificationService);
+
+        when(context.getFunctionName()).thenReturn("functionName");
+        when(context.getFunctionVersion()).thenReturn("1.0");
+        APIGatewayProxyResponseEvent responseEvent =
+                fraudHandler.handleRequest(mockRequestEvent, context);
+
+        verify(mockEventProbe).counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_OK);
+
+        // No saving of existing result
+        verifyNoMoreInteractions(mockDataStore);
+
+        assertNotNull(responseEvent);
+        assertEquals(200, responseEvent.getStatusCode());
+    }
+
+    @Test
+    void handleResponseShouldReturnOkResponseWhenSessionAttemptGreaterThanOneAndResultNotFound()
+            throws IOException, SqsException {
+        String testRequestBody = "request body";
+        PersonIdentity testPersonIdentity = TestDataCreator.createTestPersonIdentity();
+
+        IdentityVerificationResult testIdentityVerificationResult =
+                new IdentityVerificationResult();
+        testIdentityVerificationResult.setSuccess(true);
+        testIdentityVerificationResult.setContraIndicators(List.of("A01"));
+        testIdentityVerificationResult.setIdentityCheckScore(1);
+        testIdentityVerificationResult.setDecisionScore("90");
+        testIdentityVerificationResult.setChecksSucceeded(
+                List.of("check_one", "check_two", "check_three"));
+        testIdentityVerificationResult.setChecksFailed(new ArrayList<>());
+
+        APIGatewayProxyRequestEvent mockRequestEvent =
+                Mockito.mock(APIGatewayProxyRequestEvent.class);
+
+        UUID sessionId = UUID.randomUUID();
+        Map<String, String> requestHeaders = Map.of("session_id", sessionId.toString());
+
+        when(mockRequestEvent.getBody()).thenReturn(testRequestBody);
+        when(mockRequestEvent.getHeaders()).thenReturn(requestHeaders);
+
+        final var sessionItem = new SessionItem();
+        sessionItem.setSessionId(sessionId);
+        sessionItem.setAttemptCount(1);
+        when(sessionService.validateSessionId(anyString())).thenReturn(sessionItem);
+
+        when(mockObjectMapper.readValue(testRequestBody, PersonIdentity.class))
+                .thenReturn(testPersonIdentity);
+
+        doNothing()
+                .when(auditService)
+                .sendAuditEvent(eq(AuditEventType.REQUEST_SENT), any(AuditEventContext.class));
+
+        when(mockIdentityVerificationService.verifyIdentity(
+                        testPersonIdentity, sessionItem, requestHeaders))
+                .thenReturn(testIdentityVerificationResult);
+
+        when(context.getFunctionName()).thenReturn("functionName");
+        when(context.getFunctionVersion()).thenReturn("1.0");
+        APIGatewayProxyResponseEvent responseEvent =
+                fraudHandler.handleRequest(mockRequestEvent, context);
+
+        verify(mockEventProbe).counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_OK);
+        final FraudResultItem fraudResultItem =
+                populateFraudResultItem(testIdentityVerificationResult, sessionItem);
+
+        verify(mockDataStore).create(fraudResultItem);
+
+        assertNotNull(responseEvent);
+        assertEquals(200, responseEvent.getStatusCode());
     }
 
     @Test
