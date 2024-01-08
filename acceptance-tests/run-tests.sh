@@ -5,7 +5,6 @@ set -e
 REPORT_DIR="${TEST_REPORT_DIR:=$PWD}"
 
 export BROWSER="${BROWSER:-chrome-headless}"
-export ENVIRONMENT="${ENVIRONMENT:-build}"
 export NO_CHROME_SANDBOX=true
 
 
