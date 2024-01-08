@@ -22,7 +22,7 @@ import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
-import uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService;
+import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationService;
 import uk.gov.di.ipv.cri.fraud.api.service.ServiceFactory;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
@@ -53,7 +53,7 @@ class CredentialHandlerTest {
     @Mock private PersonIdentityService personIdentityService;
     @Mock private SessionService sessionService;
     @Mock private DataStore dataStore;
-    @Mock private ConfigurationService configurationService;
+    @Mock private FraudCheckConfigurationService mockFraudCheckConfigurationService;
     @Mock private AuditService auditService;
     private FraudHandler fraudHandler;
 
@@ -69,7 +69,7 @@ class CredentialHandlerTest {
                         personIdentityService,
                         sessionService,
                         dataStore,
-                        configurationService,
+                        mockFraudCheckConfigurationService,
                         auditService);
     }
 

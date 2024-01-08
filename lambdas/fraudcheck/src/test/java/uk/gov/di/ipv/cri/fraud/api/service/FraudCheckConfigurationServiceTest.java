@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 import static software.amazon.lambda.powertools.parameters.transform.Transformer.json;
 
 @ExtendWith(MockitoExtension.class)
-class ConfigurationServiceTest {
+class FraudCheckConfigurationServiceTest {
     private static final String KEY_FORMAT = "/%s/credentialIssuers/fraud/%s";
     @Mock private SecretsProvider mockSecretsProvider;
     @Mock private ParamProvider mockParamProvider;
@@ -36,8 +36,8 @@ class ConfigurationServiceTest {
         String thirdPartyIdValue = "third-party-id";
         String keyStoreKey = "thirdPartyApiKeyStore";
 
-        ConfigurationService.KeyStoreParams testKeyStoreParams =
-                new ConfigurationService.KeyStoreParams();
+        FraudCheckConfigurationService.KeyStoreParams testKeyStoreParams =
+                new FraudCheckConfigurationService.KeyStoreParams();
         testKeyStoreParams.setKeyStore("keystore");
         testKeyStoreParams.setKeyStorePassword("pwd");
 
@@ -56,14 +56,14 @@ class ConfigurationServiceTest {
                 .thenReturn(testHmacKeyValue);
         when(mockSecretsProvider.get(
                         String.format(KEY_FORMAT, env, keyStoreKey),
-                        ConfigurationService.KeyStoreParams.class))
+                        FraudCheckConfigurationService.KeyStoreParams.class))
                 .thenReturn(testKeyStoreParams);
         when(mockSecretsProvider.withTransformation(json)).thenReturn(mockSecretsProvider);
 
-        ConfigurationService configurationService =
-                new ConfigurationService(mockSecretsProvider, mockParamProvider, env);
+        FraudCheckConfigurationService fraudCheckConfigurationService =
+                new FraudCheckConfigurationService(mockSecretsProvider, mockParamProvider, env);
 
-        assertNotNull(configurationService);
+        assertNotNull(fraudCheckConfigurationService);
         verify(mockParamProvider).get(String.format(KEY_FORMAT, env, tenantIdKey));
         verify(mockParamProvider).get(String.format(KEY_FORMAT, env, endpointKey));
         verify(mockParamProvider).get(String.format(KEY_FORMAT, env, thirdPartyIdKey));
@@ -71,22 +71,25 @@ class ConfigurationServiceTest {
         verify(mockSecretsProvider)
                 .get(
                         String.format(KEY_FORMAT, env, keyStoreKey),
-                        ConfigurationService.KeyStoreParams.class);
-        assertEquals(testKeyStoreParams.getKeyStore(), configurationService.getEncodedKeyStore());
+                        FraudCheckConfigurationService.KeyStoreParams.class);
+        assertEquals(
+                testKeyStoreParams.getKeyStore(),
+                fraudCheckConfigurationService.getEncodedKeyStore());
         assertEquals(
                 testKeyStoreParams.getKeyStorePassword(),
-                configurationService.getKeyStorePassword());
-        assertEquals(testHmacKeyValue, configurationService.getHmacKey());
-        assertEquals(thirdPartyIdValue, configurationService.getThirdPartyId());
-        assertEquals(endpointValue, configurationService.getEndpointUrl());
-        assertEquals(tenantIdValue, configurationService.getTenantId());
+                fraudCheckConfigurationService.getKeyStorePassword());
+        assertEquals(testHmacKeyValue, fraudCheckConfigurationService.getHmacKey());
+        assertEquals(thirdPartyIdValue, fraudCheckConfigurationService.getThirdPartyId());
+        assertEquals(endpointValue, fraudCheckConfigurationService.getEndpointUrl());
+        assertEquals(tenantIdValue, fraudCheckConfigurationService.getTenantId());
     }
 
     @Test
     void shouldThrowNullPointerExceptionWhenSecretsProviderNull() {
         NullPointerException thrownException =
                 assertThrows(
-                        NullPointerException.class, () -> new ConfigurationService(null, null, ""));
+                        NullPointerException.class,
+                        () -> new FraudCheckConfigurationService(null, null, ""));
         assertEquals("secretsProvider must not be null", thrownException.getMessage());
     }
 
@@ -95,7 +98,7 @@ class ConfigurationServiceTest {
         NullPointerException thrownException =
                 assertThrows(
                         NullPointerException.class,
-                        () -> new ConfigurationService(mockSecretsProvider, null, ""));
+                        () -> new FraudCheckConfigurationService(mockSecretsProvider, null, ""));
         assertEquals("paramProvider must not be null", thrownException.getMessage());
     }
 
@@ -108,7 +111,7 @@ class ConfigurationServiceTest {
                                     assertThrows(
                                             IllegalArgumentException.class,
                                             () ->
-                                                    new ConfigurationService(
+                                                    new FraudCheckConfigurationService(
                                                             mockSecretsProvider,
                                                             mockParamProvider,
                                                             env));

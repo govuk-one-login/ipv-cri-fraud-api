@@ -1,18 +1,7 @@
-pluginManagement {
-	plugins {
-		id "org.sonarqube" version "3.3"
-		id "com.diffplug.spotless" version "6.1.0"
-	}
-}
-
 rootProject.name = "di-ipv-cri-fraud-api"
 
-// Internal CRI Lib
-include "lib"
-
-include "acceptance-tests"
-
-// CRI specific lambdas
-include "issuecredential", "fraudcheck"
-project(':fraudcheck').projectDir = new File('./lambdas/fraudcheck')
-project(':issuecredential').projectDir = new File('./lambdas/issuecredential')
+include "lib",
+		"lambdas",
+		"lambdas:fraudcheck",
+		"lambdas:issuecredential",
+		"acceptance-tests"

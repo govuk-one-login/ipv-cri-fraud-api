@@ -2,12 +2,14 @@ package uk.gov.di.ipv.cri.fraud.library.persistence.item;
 
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 @DynamoDbBean
+@ExcludeFromGeneratedCoverageReport
 public class FraudResultItem {
     private UUID sessionId;
     private List<String> contraIndicators;

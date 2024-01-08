@@ -66,7 +66,7 @@ class IdentityVerificationServiceTest {
     @Mock private AuditService mockAuditService;
     @Mock private SessionItem sessionItem;
     @Mock private Map<String, String> requestHeaders;
-    @Mock private ConfigurationService mockConfigurationService;
+    @Mock private FraudCheckConfigurationService mockFraudCheckConfigurationService;
 
     @Mock private EventProbe mockEventProbe;
 
@@ -75,8 +75,8 @@ class IdentityVerificationServiceTest {
     @BeforeEach
     void setup() {
         // Tests rely on real IdentityScoreCalculator not mock
-
-        when(mockConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("zero-score-ucode"));
+        when(mockFraudCheckConfigurationService.getZeroScoreUcodes())
+                .thenReturn(List.of("zero-score-ucode"));
 
         this.identityVerificationService =
                 new IdentityVerificationService(
@@ -84,10 +84,10 @@ class IdentityVerificationServiceTest {
                         mockThirdPartyPepGateway,
                         personIdentityValidator,
                         mockContraindicationMapper,
-                        new IdentityScoreCalculator(mockConfigurationService),
+                        new IdentityScoreCalculator(mockFraudCheckConfigurationService),
                         mockActivityHistoryScoreCalculator,
                         mockAuditService,
-                        mockConfigurationService,
+                        mockFraudCheckConfigurationService,
                         mockEventProbe);
     }
 
@@ -107,7 +107,7 @@ class IdentityVerificationServiceTest {
         when(personIdentityValidator.validate(testPersonIdentity))
                 .thenReturn(ValidationResult.createValidResult());
 
-        when(mockConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
+        when(mockFraudCheckConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
 
         when(mockThirdPartyFraudGateway.performFraudCheck(testPersonIdentity))
                 .thenReturn(testFraudCheckResult);
@@ -162,7 +162,7 @@ class IdentityVerificationServiceTest {
         when(personIdentityValidator.validate(testPersonIdentity))
                 .thenReturn(ValidationResult.createValidResult());
 
-        when(mockConfigurationService.getPepEnabled()).thenReturn(Boolean.TRUE);
+        when(mockFraudCheckConfigurationService.getPepEnabled()).thenReturn(Boolean.TRUE);
 
         when(mockThirdPartyFraudGateway.performFraudCheck(testPersonIdentity))
                 .thenReturn(testFraudCheckResult);
@@ -293,7 +293,8 @@ class IdentityVerificationServiceTest {
         when(personIdentityValidator.validate(testPersonIdentity))
                 .thenReturn(ValidationResult.createValidResult());
 
-        when(mockConfigurationService.getNoFileFoundThreshold()).thenReturn(noFileFoundThreshold);
+        when(mockFraudCheckConfigurationService.getNoFileFoundThreshold())
+                .thenReturn(noFileFoundThreshold);
 
         if (zeroScoreUCodePresent) {
             // Make the sample thirdPartyFraudCodes uCode a zero score one
@@ -309,7 +310,7 @@ class IdentityVerificationServiceTest {
         // Pep performed scenarios - (score above threshold and no zeroScoreUCode found)
         if ((expectedDecisionScore > noFileFoundThreshold) && !zeroScoreUCodePresent) {
             // Pep is checked to be enabled
-            when(mockConfigurationService.getPepEnabled()).thenReturn(Boolean.TRUE);
+            when(mockFraudCheckConfigurationService.getPepEnabled()).thenReturn(Boolean.TRUE);
 
             when(mockThirdPartyPepGateway.performPepCheck(testPersonIdentity))
                     .thenReturn(testPEPCheckResult);
@@ -472,7 +473,8 @@ class IdentityVerificationServiceTest {
         when(personIdentityValidator.validate(testPersonIdentity))
                 .thenReturn(ValidationResult.createValidResult());
 
-        when(mockConfigurationService.getNoFileFoundThreshold()).thenReturn(noFileFoundThreshold);
+        when(mockFraudCheckConfigurationService.getNoFileFoundThreshold())
+                .thenReturn(noFileFoundThreshold);
 
         when(mockThirdPartyFraudGateway.performFraudCheck(testPersonIdentity))
                 .thenReturn(testFraudCheckResult);
@@ -482,7 +484,7 @@ class IdentityVerificationServiceTest {
         when(mockActivityHistoryScoreCalculator.calculateActivityHistoryScore(366)).thenReturn(1);
 
         // Pep is checked to be enabled
-        when(mockConfigurationService.getPepEnabled()).thenReturn(Boolean.TRUE);
+        when(mockFraudCheckConfigurationService.getPepEnabled()).thenReturn(Boolean.TRUE);
 
         if (errorType.equals("OAuthErrorResponseException")) {
             when(mockThirdPartyPepGateway.performPepCheck(testPersonIdentity))

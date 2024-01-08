@@ -32,7 +32,7 @@ import java.util.Base64;
 public class ServiceFactory {
     private final IdentityVerificationService identityVerificationService;
     private final ContraindicationMapper contraindicationMapper;
-    private final ConfigurationService configurationService;
+    private final FraudCheckConfigurationService fraudCheckConfigurationService;
     private final PersonIdentityValidator personIdentityValidator;
     private final ObjectMapper objectMapper;
     private final AuditService auditService;
@@ -46,50 +46,54 @@ public class ServiceFactory {
         this.objectMapper = objectMapper;
         this.eventProbe = new EventProbe();
         this.personIdentityValidator = new PersonIdentityValidator();
-        this.configurationService = createConfigurationService();
-        this.contraindicationMapper = new ContraIndicatorRemoteMapper(configurationService);
+        this.fraudCheckConfigurationService = createFraudCheckConfigurationService();
+        this.contraindicationMapper =
+                new ContraIndicatorRemoteMapper(fraudCheckConfigurationService);
         this.auditService = createAuditService(this.objectMapper);
-        this.identityVerificationService = createIdentityVerificationService(configurationService);
+        this.identityVerificationService =
+                createIdentityVerificationService(fraudCheckConfigurationService);
     }
 
     @ExcludeFromGeneratedCoverageReport
     ServiceFactory(
             ObjectMapper objectMapper,
             EventProbe eventProbe,
-            ConfigurationService configurationService,
+            FraudCheckConfigurationService fraudCheckConfigurationService,
             ContraindicationMapper contraindicationMapper,
             PersonIdentityValidator personIdentityValidator,
             AuditService auditService)
             throws NoSuchAlgorithmException, InvalidKeyException, HttpException {
         this.objectMapper = objectMapper;
         this.eventProbe = eventProbe;
-        this.configurationService = configurationService;
+        this.fraudCheckConfigurationService = fraudCheckConfigurationService;
         this.contraindicationMapper = contraindicationMapper;
         this.personIdentityValidator = personIdentityValidator;
         this.auditService = auditService;
-        this.identityVerificationService = createIdentityVerificationService(configurationService);
+        this.identityVerificationService =
+                createIdentityVerificationService(fraudCheckConfigurationService);
     }
 
-    private ConfigurationService createConfigurationService() {
-        return new ConfigurationService(
+    private FraudCheckConfigurationService createFraudCheckConfigurationService() {
+        return new FraudCheckConfigurationService(
                 ParamManager.getSecretsProvider(),
                 ParamManager.getSsmProvider(),
                 System.getenv("ENVIRONMENT"));
     }
 
-    public ConfigurationService getConfigurationService() {
-        return configurationService;
+    public FraudCheckConfigurationService getFraudCheckConfigurationService() {
+        return fraudCheckConfigurationService;
     }
 
     public IdentityVerificationService getIdentityVerificationService() {
-        return this.identityVerificationService;
+        return identityVerificationService;
     }
 
     private IdentityVerificationService createIdentityVerificationService(
-            ConfigurationService configurationService)
+            FraudCheckConfigurationService fraudConfigurationService)
             throws NoSuchAlgorithmException, InvalidKeyException, HttpException {
 
-        final CloseableHttpClient closeableHttpClient = generateHttpClient(configurationService);
+        final CloseableHttpClient closeableHttpClient =
+                generateHttpClient(fraudCheckConfigurationService);
 
         final HttpRetryer httpRetryer =
                 new HttpRetryer(closeableHttpClient, eventProbe, MAX_HTTP_RETRIES);
@@ -98,26 +102,26 @@ public class ServiceFactory {
                 new ThirdPartyFraudGateway(
                         httpRetryer,
                         new IdentityVerificationRequestMapper(
-                                this.configurationService.getTenantId()),
+                                this.fraudCheckConfigurationService.getTenantId()),
                         new IdentityVerificationResponseMapper(eventProbe),
                         this.objectMapper,
-                        new HmacGenerator(configurationService.getHmacKey()),
-                        configurationService.getEndpointUrl(),
+                        new HmacGenerator(fraudConfigurationService.getHmacKey()),
+                        fraudConfigurationService.getEndpointUrl(),
                         eventProbe);
 
         final ThirdPartyPepGateway thirdPartyPepGateway =
                 new ThirdPartyPepGateway(
                         httpRetryer,
                         new IdentityVerificationRequestMapper(
-                                this.configurationService.getTenantId()),
+                                this.fraudCheckConfigurationService.getTenantId()),
                         new IdentityVerificationResponseMapper(eventProbe),
                         this.objectMapper,
-                        new HmacGenerator(configurationService.getHmacKey()),
-                        configurationService.getEndpointUrl(),
+                        new HmacGenerator(fraudConfigurationService.getHmacKey()),
+                        fraudConfigurationService.getEndpointUrl(),
                         eventProbe);
 
         final IdentityScoreCalculator identityScoreCalculator =
-                new IdentityScoreCalculator(configurationService);
+                new IdentityScoreCalculator(fraudConfigurationService);
 
         final ActivityHistoryScoreCalculator activityHistoryScoreCalculator =
                 new ActivityHistoryScoreCalculator();
@@ -130,18 +134,19 @@ public class ServiceFactory {
                 identityScoreCalculator,
                 activityHistoryScoreCalculator,
                 auditService,
-                configurationService,
+                fraudCheckConfigurationService,
                 eventProbe);
     }
 
-    private CloseableHttpClient generateHttpClient(ConfigurationService configurationService)
-            throws HttpException {
+    private CloseableHttpClient generateHttpClient(
+            FraudCheckConfigurationService fraudCheckConfigurationService) throws HttpException {
         try {
             byte[] decodedKeyStore =
-                    Base64.getDecoder().decode(configurationService.getEncodedKeyStore());
+                    Base64.getDecoder().decode(fraudCheckConfigurationService.getEncodedKeyStore());
 
             ByteArrayInputStream decodedKeystoreAsBytes = new ByteArrayInputStream(decodedKeyStore);
-            char[] keystorePassword = configurationService.getKeyStorePassword().toCharArray();
+            char[] keystorePassword =
+                    fraudCheckConfigurationService.getKeyStorePassword().toCharArray();
 
             KeyStore keystore = KeyStore.getInstance("pkcs12");
             keystore.load(decodedKeystoreAsBytes, keystorePassword);

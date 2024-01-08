@@ -44,8 +44,8 @@ sam deploy --stack-name "$stack_name" \
    CodeSigningEnabled=false \
    Environment=dev \
    AuditEventNamePrefix=$audit_event_name_prefix \
-   CriIdentifier=$cri_identifier \
    CommonStackName=fraud-common-cri-api-local \
+   CriIdentifier=$cri_identifier \
    ParameterPrefix="fraud-cri-api-v1" \
    UseApiKey="' '" \
    DeploymentType="not-pipeline"

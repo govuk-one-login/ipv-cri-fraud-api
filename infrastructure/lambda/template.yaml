@@ -3,14 +3,16 @@ Transform: "AWS::Serverless-2016-10-31"
 Description: "Digital Identity Fraud Credential Issuer API"
 
 Parameters:
-  CodeSigningEnabled:
-    Type: "String"
-    Default: "true"
   CodeSigningConfigArn:
     Type: String
     Default: "none"
     Description: >
       The ARN of the Code Signing Config to use, provided by the deployment pipeline
+  PermissionsBoundary:
+    Type: String
+    Description: >
+      The ARN of the permissions boundary to apply to any role created by the template
+    Default: "none"
   Environment:
     Description: "The environment type"
     Type: "String"
@@ -21,10 +23,6 @@ Parameters:
       - "integration"
       - "production"
     ConstraintDescription: must be dev, build, staging, integration or production
-  PermissionsBoundary:
-    Description: "The ARN of the permissions boundary to apply when creating IAM roles"
-    Type: String
-    Default: "none"
   AuditEventNamePrefix:
     Description: "The audit event name prefix"
     Type: AWS::SSM::Parameter::Value<String>
@@ -51,35 +49,35 @@ Parameters:
     Description: Value used to indicate if the public api should be protected by a api key.
 
 Conditions:
-  EnforceCodeSigning: !Equals
-    - !Ref CodeSigningEnabled
-    - true
-  IsProdEnvironment: !Equals
-    - !Ref Environment
-    - production
-  IsPerformance: !Or
-    - !Equals [ !Ref Environment, build ]
-    - !Equals [ !Ref Environment, production ]
-  UsePermissionsBoundary:
-    Fn::Not:
-      - Fn::Equals:
-          - !Ref PermissionsBoundary
-          - "none"
-
   IsDeployedFromPipeline: !Equals
     - !Ref DeploymentType
     - "pipeline"
-# Don't send logs in dev to avoid overwhelming the destination with debug
+  # Don't send logs in dev to avoid overwhelming the destination with debug
   LogSendingEnabled: !And
     - !Not [!Equals [!Ref Environment, "dev"]]
     - !Condition IsDeployedFromPipeline
-
+  IsProdEnvironment: !Equals
+    - !Ref Environment
+    - production
   # This is a special case fix to avoid setting this environment wide feature flag in dev.
   # As it becomes owned by the first stack using it. Remove once the feature flag is removed and feature is permanent.
   OverrideSettingOfEnvironmentWideFeatureFlag: !Equals
     - !Ref Environment
     - dev
-
+  UsingCodeSigning:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref CodeSigningConfigArn
+          - "none"
+  AddProvisionedConcurrency: !Not
+    - !Equals
+      - !FindInMap [ProvisionedConcurrency, Environment, !Ref 'Environment']
+      -  0
+  UsePermissionsBoundary:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref PermissionsBoundary
+          - "none"
   UseParameterPrefix:
     Fn::Not:
       - Fn::Equals:
@@ -87,20 +85,20 @@ Conditions:
           - "none"
 Globals:
   Function:
-    VpcConfig:
-      SecurityGroupIds:
-        - !ImportValue cri-vpc-LambdaSecurityGroup
-      SubnetIds: !Split [ ",", !ImportValue cri-vpc-PrivateSubnets ]
+    CodeSigningConfigArn: !If
+      - UsingCodeSigning
+      - !Ref CodeSigningConfigArn
+      - !Ref AWS::NoValue
     PermissionsBoundary: !If
       - UsePermissionsBoundary
       - !Ref PermissionsBoundary
       - !Ref AWS::NoValue
-    CodeSigningConfigArn: !If
-      - EnforceCodeSigning
-      - !Ref CodeSigningConfigArn
-      - !Ref AWS::NoValue
+    VpcConfig:
+      SecurityGroupIds:
+        - !ImportValue cri-vpc-LambdaSecurityGroup
+      SubnetIds: !Split [ ",", !ImportValue cri-vpc-PrivateSubnets ]
     Timeout: 30 # seconds
-    Runtime: java11
+    Runtime: java17
     AutoPublishAlias: live
     Tracing: Active
     MemorySize: !FindInMap [MemorySizeMapping, Environment, !Ref 'Environment']
@@ -134,9 +132,10 @@ Globals:
         COMMON_PARAMETER_NAME_PREFIX: !Ref CommonStackName
         ENVIRONMENT: !Ref Environment
         PARAMETER_PREFIX: !If [UseParameterPrefix, !Ref ParameterPrefix , !Ref AWS::StackName]
-    ProvisionedConcurrencyConfig: !If
-      - IsPerformance
-      - ProvisionedConcurrentExecutions: 1
+    ProvisionedConcurrencyConfig:
+      !If
+      - AddProvisionedConcurrency
+      - ProvisionedConcurrentExecutions: !FindInMap [ProvisionedConcurrency, Environment, !Ref 'Environment']
       - !Ref AWS::NoValue
     Layers:
       - !Sub
@@ -155,6 +154,15 @@ Mappings:
       dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
     production:
       dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables
+
+  ProvisionedConcurrency:
+    Environment:
+      dev: 0
+      build: 1
+      staging: 1
+      integration: 1
+      production: 1
+
   MemorySizeMapping:
     Environment:
       dev: 2048

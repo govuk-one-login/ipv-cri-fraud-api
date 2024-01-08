@@ -1,5 +1,7 @@
 package uk.gov.di.ipv.cri.fraud.library.metrics;
 
+import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
+
 public class Definitions {
     // These completed metrics record all escape routes from the lambdas.
     // OK for expected routes with ERROR being all others
@@ -65,6 +67,7 @@ public class Definitions {
     public static final String THIRD_PARTY_PEP_RESPONSE_TYPE_INFO_VALIDATION_FAIL =
             "third_party_pep_response_type_info_validation_fail";
 
+    @ExcludeFromGeneratedCoverageReport
     private Definitions() {
         throw new IllegalStateException("Instantiation is not valid for this class.");
     }

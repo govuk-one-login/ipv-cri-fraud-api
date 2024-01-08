@@ -13,7 +13,7 @@ import java.util.Optional;
 
 import static software.amazon.lambda.powertools.parameters.transform.Transformer.json;
 
-public class ConfigurationService {
+public class FraudCheckConfigurationService {
 
     static class KeyStoreParams {
         private String keyStore;
@@ -57,7 +57,7 @@ public class ConfigurationService {
 
     private final Clock clock;
 
-    public ConfigurationService(
+    public FraudCheckConfigurationService(
             SecretsProvider secretsProvider, ParamProvider paramProvider, String env) {
         this.parameterPrefix =
                 Optional.ofNullable(System.getenv("PARAMETER_PREFIX"))

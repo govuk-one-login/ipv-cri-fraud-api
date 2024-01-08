@@ -1,18 +1,25 @@
 package uk.gov.di.ipv.cri.fraud.api.util;
 
-import uk.gov.di.ipv.cri.common.library.domain.personidentity.*;
+import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
+import uk.gov.di.ipv.cri.common.library.domain.personidentity.BirthDate;
+import uk.gov.di.ipv.cri.common.library.domain.personidentity.Name;
+import uk.gov.di.ipv.cri.common.library.domain.personidentity.NamePart;
+import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
+import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentityDetailed;
+import uk.gov.di.ipv.cri.common.library.service.PersonIdentityDetailedFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class FraudPersonIdentityDetailedMapper {
+public class RequestSentAuditHelper {
 
-    private FraudPersonIdentityDetailedMapper() {
+    @ExcludeFromGeneratedCoverageReport
+    private RequestSentAuditHelper() {
         throw new IllegalStateException("Instantiation is not valid for this class.");
     }
 
-    public static PersonIdentityDetailed generatePersonIdentityDetailed(
+    public static PersonIdentityDetailed personIdentityToAuditRestrictedFormat(
             PersonIdentity personIdentity) {
 
         List<NamePart> nameParts = new ArrayList<>();
@@ -35,7 +42,7 @@ public class FraudPersonIdentityDetailedMapper {
         BirthDate birthDate = new BirthDate();
         birthDate.setValue(personIdentity.getDateOfBirth());
 
-        return new PersonIdentityDetailed(
+        return PersonIdentityDetailedFactory.createPersonIdentityDetailedWithAddresses(
                 List.of(name1), List.of(birthDate), personIdentity.getAddresses());
     }
 

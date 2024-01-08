@@ -32,11 +32,11 @@ import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.audit.VCISSFraudAuditExtension;
-import uk.gov.di.ipv.cri.fraud.api.service.ConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.FraudRetrievalService;
+import uk.gov.di.ipv.cri.fraud.api.service.IssueCredentialConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.VerifiableCredentialService;
-import uk.gov.di.ipv.cri.fraud.api.util.FraudPersonIdentityDetailedMapper;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
+import uk.gov.di.ipv.cri.fraud.library.FraudPersonIdentityDetailedMapper;
 import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
 
 import java.util.List;
@@ -58,7 +58,7 @@ class IssueCredentialHandlerTest {
     @Mock private FraudRetrievalService mockFraudRetrievalService;
     @Mock private EventProbe mockEventProbe;
     @Mock private AuditService mockAuditService;
-    @Mock private ConfigurationService mockConfigurationService;
+    @Mock private IssueCredentialConfigurationService mockIssueCredentialConfigurationService;
     @InjectMocks private IssueCredentialHandler handler;
 
     @Test
@@ -86,7 +86,7 @@ class IssueCredentialHandlerTest {
         when(mockVerifiableCredentialService.generateSignedVerifiableCredentialJwt(
                         sessionItem.getSubject(), fraudResultItem, personIdentityDetailed))
                 .thenReturn(mock(SignedJWT.class));
-        when(mockConfigurationService.isActivityHistoryEnabled()).thenReturn(true);
+        when(mockIssueCredentialConfigurationService.isActivityHistoryEnabled()).thenReturn(true);
         doNothing()
                 .when(mockAuditService)
                 .sendAuditEvent(

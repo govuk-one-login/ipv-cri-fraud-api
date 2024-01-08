@@ -2,6 +2,7 @@ package uk.gov.di.ipv.cri.fraud.api.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import uk.gov.di.ipv.cri.fraud.library.config.GlobalConstants;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -19,7 +20,8 @@ public class ThirdPartyAddress {
 
     private String postalCode;
 
-    private String addressCountry;
+    // Ignore sonar do not make this static
+    private String addressCountry = GlobalConstants.ADDRESS_COUNTRY;
 
     public String getId() {
         return id;
@@ -86,10 +88,10 @@ public class ThirdPartyAddress {
     }
 
     public String getAddressCountry() {
-        return "GB";
+        return addressCountry;
     }
 
     public void setAddressCountry(String addressCountry) {
-        this.addressCountry = addressCountry;
+        /* DO NOTHING */
     }
 }

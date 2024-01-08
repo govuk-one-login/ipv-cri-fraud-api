@@ -1,27 +1,15 @@
 plugins {
 	id "java"
-	id "org.sonarqube"
-	id "com.diffplug.spotless"
-	id "io.freefair.lombok" version "6.6.3"
+	id "idea"
+	id "org.sonarqube" version "4.0.0.2929"
+	id "io.freefair.lombok" version "8.4"
+	id "jacoco"
+	id "jacoco-report-aggregation"
+	id "com.diffplug.spotless" version "6.23.3"
+	id "org.owasp.dependencycheck" version "8.4.0"
 }
 
 defaultTasks 'clean', 'spotlessApply', 'build'
-
-ext {
-	dependencyVersions = [
-		jackson_version             : "2.13.1",
-		aws_sdk_version             : "2.21.9",
-		aws_lambda_events_version   : "3.11.0",
-		aws_powertools_version      : "1.12.2",
-		nimbusds_oauth_version      : "9.25",
-		nimbusds_jwt_version        : "9.15.1",
-		protobuf_version            : "3.19.4",
-		junit                       : "5.8.2",
-		mockito                     : "4.3.1",
-		cri_common_lib              : "1.4.5",
-		lombok_version              : "1.18.22"
-	]
-}
 
 repositories {
 	maven {
@@ -29,93 +17,70 @@ repositories {
 	}
 }
 
-subprojects {
-	apply plugin: 'io.freefair.lombok'
+ext {
+	dependencyVersions = [
+		// Implementation
+		cri_common_lib_version             : "1.5.3",
+		nimbusds_oauth_version             : "11.2",
+		nimbusds_jwt_version               : "9.36",
+		aws_sdk_version                    : "2.21.9",
+		aws_lambda_core_version            : "1.2.1",
+		aws_lambda_events_version          : "3.11.3",
+		jackson_version                    : "2.15.0",
+		gson_version                       : "2.8.9",
+		httpcomponents_core_version        : "4.4.16",
+		httpcomponents_client_version      : "4.5.14",
+		// Aspect
+		aws_powertools_logging_version     : "1.17.0",
+		aws_powertools_metrics_version     : "1.17.0",
+		aws_powertools_parameters_version  : "1.17.0",
+		aspectjrt_version                  : "1.9.21",
+		// Compile/Annotation
+		lombok_version                     : "1.18.22",
+		// Test
+		junit_version                      : "5.8.2",
+		hamcrest_version                   : "2.2",
+		mockito_version                    : "4.3.1",
+		wiremock_version                   : "3.0.1",
+		webcompere_version                 : "2.0.2",
+		// testFixturesImplementation
+	]
 
-	java {
-		sourceCompatibility = JavaVersion.VERSION_11
-		targetCompatibility = JavaVersion.VERSION_11
-	}
+	// Sets the version used on the lambda + lib (ac tests have separate dependencies)
+	javaCompatibility = [
+		source : JavaVersion.VERSION_17,
+		target : JavaVersion.VERSION_17
+	]
 
-	repositories {
-		//		mavenCentral()
-		maven {
-			url 'https://gds.jfrog.io/artifactory/di-allowed-repos'
-		}
-	}
-
-	configurations {
-		aws
-		aws_apache_http_client
-		dynamodb
-		jackson
-		lambda
-		sqs
-		kms
-		lambda_tests
-		lettuce
-		nimbus
-		ssm
-		tests
-		test_runtime
-		powertools
-		mockito
-		logging_runtime
-		cri_common_lib
-		lombok
-	}
-
-	dependencies {
-		cri_common_lib "uk.gov.account:cri-common-lib:${dependencyVersions.cri_common_lib}"
-
-		aws platform("software.amazon.awssdk:bom:${dependencyVersions.aws_sdk_version}")
-
-		aws_apache_http_client "software.amazon.awssdk:apache-client:${dependencyVersions.aws_sdk_version}"
-
-		dynamodb "software.amazon.awssdk:dynamodb",
-				"software.amazon.awssdk:dynamodb-enhanced"
-
-		lambda "software.amazon.awssdk:lambda",
-				"com.amazonaws:aws-lambda-java-events:${dependencyVersions.aws_lambda_events_version}",
-				"software.amazon.lambda:powertools-parameters:${dependencyVersions.aws_powertools_version}"
-
-		lambda_tests "software.amazon.awssdk:aws-lambda-java-tests:1.1.1"
-
-		sqs "software.amazon.awssdk:sqs"
-
-		kms "software.amazon.awssdk:kms"
-
-		jackson "com.fasterxml.jackson.core:jackson-core:${dependencyVersions.jackson_version}",
-				"com.fasterxml.jackson.core:jackson-databind:${dependencyVersions.jackson_version}",
-				"com.fasterxml.jackson.core:jackson-annotations:${dependencyVersions.jackson_version}",
-				"com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${dependencyVersions.jackson_version}",
-				"com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${dependencyVersions.jackson_version}",
-				"jakarta.xml.bind:jakarta.xml.bind-api:3.0.1",
-				"com.sun.xml.bind:jaxb-impl:3.0.2"
-
-		powertools "software.amazon.lambda:powertools-logging:${dependencyVersions.aws_powertools_version}",
-				"software.amazon.lambda:powertools-metrics:${dependencyVersions.aws_powertools_version}"
-
-		nimbus "com.nimbusds:oauth2-oidc-sdk:${dependencyVersions.nimbusds_oauth_version}",
-				"com.nimbusds:nimbus-jose-jwt:${dependencyVersions.nimbusds_jwt_version}"
-
-		tests "org.junit.jupiter:junit-jupiter-api:${dependencyVersions.junit}",
-				"org.junit.jupiter:junit-jupiter-params:${dependencyVersions.junit}",
-				"org.mockito:mockito-junit-jupiter:${dependencyVersions.mockito}",
-				"org.mockito:mockito-inline:${dependencyVersions.mockito}",
-				"org.hamcrest:hamcrest:2.2"
-
-		test_runtime "org.junit.jupiter:junit-jupiter-engine:${dependencyVersions.junit}"
-	}
-	apply plugin: 'java'
+	// Code Coverage (Lines/Branches) cannot be below this value on a per sub project basis
+	minUnitTestLineCoverage = 0.7
+	minUnitTestBranchCoverage = 0.7
 }
 
-sonarqube {
+sonar {
 	properties {
 		property "sonar.projectKey", "ipv-cri-fraud-api"
 		property "sonar.organization", "govuk-one-login"
 		property "sonar.host.url", "https://sonarcloud.io"
+		property "sonar.java.coveragePlugin", "jacoco"
+		property "sonar.coverage.jacoco.xmlReportPath", "${buildDir}/reports/jacoco/reports/reports.xml"
+		property "sonar.dependencyCheck.htmlReportPath", "${buildDir}/reports/dependency-check-report.html"
 	}
+}
+
+// This generates an aggregate test report at "${buildDir}/reports/jacoco/reports/reports.xml"
+reporting {
+	reports {
+		reports(JacocoCoverageReport) {
+			testType = TestSuiteType.UNIT_TEST
+		}
+	}
+}
+
+dependencies {
+	jacocoAggregation project(':lib'),
+			project("lambdas:fraudcheck"),
+			project("lambdas:issuecredential")
 }
 
 spotless {
@@ -124,6 +89,8 @@ spotless {
 		googleJavaFormat("1.13.0").aosp()
 		importOrder "", "javax", "java", "\\#"
 		endWithNewline()
+		sourceCompatibility = "${javaCompatibility.source}"
+		targetCompatibility = "${javaCompatibility.target}"
 	}
 	groovyGradle {
 		target '**/*.gradle'
@@ -131,6 +98,39 @@ spotless {
 		trimTrailingWhitespace()
 		endWithNewline()
 	}
+}
+
+dependencyCheck {
+	failBuildOnCVSS=7
+	suppressionFiles= List.of("dependencyCheckAnalyzeSuppressionFiles/Netty-CVE-2023-4586.xml")
+	autoUpdate=true
+}
+
+subprojects {
+	apply plugin: 'org.sonarqube'
+	apply plugin: 'io.freefair.lombok'
+	apply plugin: 'org.owasp.dependencycheck'
+
+	repositories {
+		maven {
+			url 'https://gds.jfrog.io/artifactory/di-allowed-repos'
+		}
+		//flatDir {
+		//	dirs '<Location of your projects absolute path>/di-ipv-cri-lib/build/libs'
+		//}
+	}
+
+	plugins.withId('java') {
+		sourceCompatibility = "${javaCompatibility.source}"
+		targetCompatibility = "${javaCompatibility.target}"
+	}
+
+	plugins.withId('java-library') {
+		sourceCompatibility = "${javaCompatibility.source}"
+		targetCompatibility = "${javaCompatibility.target}"
+	}
+
+	task allDeps(type: DependencyReportTask) {}
 }
 
 clean.doFirst {

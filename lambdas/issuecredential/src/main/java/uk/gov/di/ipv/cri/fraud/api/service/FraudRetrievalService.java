@@ -12,23 +12,24 @@ public class FraudRetrievalService {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private final DataStore<FraudResultItem> dataStore;
-    private final ConfigurationService configurationService;
+    private final IssueCredentialConfigurationService issueCredentialConfigurationService;
 
     FraudRetrievalService(
-            DataStore<FraudResultItem> dataStore, ConfigurationService configurationService) {
-        this.configurationService = configurationService;
+            DataStore<FraudResultItem> dataStore,
+            IssueCredentialConfigurationService issueCredentialConfigurationService) {
+        this.issueCredentialConfigurationService = issueCredentialConfigurationService;
         this.dataStore = dataStore;
     }
 
     public FraudRetrievalService() {
-        this.configurationService =
-                new ConfigurationService(
+        this.issueCredentialConfigurationService =
+                new IssueCredentialConfigurationService(
                         ParamManager.getSecretsProvider(),
                         ParamManager.getSsmProvider(),
                         System.getenv("ENVIRONMENT"));
         this.dataStore =
                 new DataStore<FraudResultItem>(
-                        configurationService.getFraudResultTableName(),
+                        issueCredentialConfigurationService.getFraudResultTableName(),
                         FraudResultItem.class,
                         DataStore.getClient());
     }
