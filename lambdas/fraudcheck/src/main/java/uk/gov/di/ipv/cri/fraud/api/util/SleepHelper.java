@@ -41,6 +41,27 @@ public class SleepHelper {
         return timeWaited;
     }
 
+    public long busyWaitMilliseconds(int milliseconds) {
+
+        long waitDuration = Math.min(milliseconds, maxSleepTimeMs);
+
+        long startTime = System.currentTimeMillis();
+        long futureTime = startTime + waitDuration;
+
+        LOGGER.info("busyWaitMilliseconds start time : {}", startTime);
+
+        while (System.currentTimeMillis() < futureTime) {
+            // Intended
+        }
+
+        long endTime = System.currentTimeMillis();
+        long timeWaited = (endTime - startTime);
+
+        LOGGER.info("busyWaitMilliseconds end time : {}", endTime);
+
+        return timeWaited;
+    }
+
     private long calculateExponentialBackOffTimeMS(int callNumber) {
 
         if (callNumber == 0) {

@@ -57,4 +57,13 @@ class SleepHelperTest {
 
         assertEquals(expectedWait, waitTime, EPSILON);
     }
+
+    @ParameterizedTest
+    @ValueSource(ints = {250, 500, 750, 1000})
+    void shouldBusyWaitNMilliseconds(int expectedWaitTime) {
+
+        long waitTime = sleepHelper.busyWaitMilliseconds(expectedWaitTime);
+
+        assertEquals(expectedWaitTime, waitTime, EPSILON);
+    }
 }

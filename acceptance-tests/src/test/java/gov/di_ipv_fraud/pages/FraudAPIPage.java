@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FraudAPIPage {
 
+    private static String CLIENT_ID;
     private static String SESSION_REQUEST_BODY;
     private static String SESSION_ID;
     private static String STATE;
@@ -57,15 +58,6 @@ public class FraudAPIPage {
         return getClaimsForUser(coreStubUrl, criId, rowNumber);
     }
 
-    public void userIdentityAsJwtString(String criId)
-            throws URISyntaxException, IOException, InterruptedException {
-        String jsonString = getAuthorisationJwtFromStub(criId, null);
-        LOGGER.info("jsonString = " + jsonString);
-        String coreStubUrl = configurationService.getCoreStubUrl(false);
-        SESSION_REQUEST_BODY = createRequest(coreStubUrl, criId, jsonString);
-        LOGGER.info("SESSION_REQUEST_BODY = " + SESSION_REQUEST_BODY);
-    }
-
     public void userIdentityAsJwtStringForupdatedUser(
             String givenName, String familyName, String criId, String rowNumber)
             throws URISyntaxException, IOException, InterruptedException {
@@ -83,6 +75,12 @@ public class FraudAPIPage {
         LOGGER.info("updatedJsonString = " + updatedJsonString);
         SESSION_REQUEST_BODY = createRequest(coreStubUrl, criId, updatedJsonString);
         LOGGER.info("SESSION_REQUEST_BODY = " + SESSION_REQUEST_BODY);
+
+        // Capture client id for using later in the auth request
+        Map<String, String> deserialisedSessionResponse =
+                objectMapper.readValue(SESSION_REQUEST_BODY, new TypeReference<>() {});
+        CLIENT_ID = deserialisedSessionResponse.get("client_id");
+        LOGGER.info("CLIENT_ID = " + CLIENT_ID);
     }
 
     public void updateSessionRequestFieldWithValue(
@@ -145,8 +143,7 @@ public class FraudAPIPage {
         LOGGER.info("fraudCheckResponse = " + fraudCheckResponse);
     }
 
-    public void getAuthorisationCode(final String clientId)
-            throws IOException, InterruptedException {
+    public void getAuthorisationCode() throws IOException, InterruptedException {
         String privateApiGatewayUrl = configurationService.getPrivateAPIEndpoint();
         String coreStubUrl = configurationService.getCoreStubUrl(false);
 
@@ -160,7 +157,7 @@ public class FraudAPIPage {
                                                 + "/callback&state="
                                                 + STATE
                                                 + "&scope=openid&response_type=code&client_id="
-                                                + clientId))
+                                                + CLIENT_ID))
                         .setHeader("Accept", "application/json")
                         .setHeader("Content-Type", "application/json")
                         .setHeader("session-id", SESSION_ID)

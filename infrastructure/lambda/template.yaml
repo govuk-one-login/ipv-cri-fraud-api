@@ -429,6 +429,8 @@ Resources:
             TableName: !Sub "{{resolve:ssm:/${CommonStackName}/SessionTableName}}"
         - DynamoDBReadPolicy:
             TableName: !Sub "{{resolve:ssm:/${CommonStackName}/PersonIdentityTableName}}"
+        - DynamoDBReadPolicy:
+            TableName: !Ref FraudTable
         - DynamoDBWritePolicy:
             TableName: !Ref FraudTable
         - Statement:

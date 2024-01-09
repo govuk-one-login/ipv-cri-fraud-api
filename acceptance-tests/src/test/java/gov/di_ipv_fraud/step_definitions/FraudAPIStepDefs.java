@@ -13,12 +13,6 @@ import java.util.List;
 
 public class FraudAPIStepDefs extends FraudAPIPage {
 
-    @Given("user has the user identity in the form of a signed JWT string for CRI Id (.*)$")
-    public void user_has_the_user_identity_in_the_form_of_a_signed_jwt_string(String criId)
-            throws URISyntaxException, IOException, InterruptedException {
-        userIdentityAsJwtString(criId);
-    }
-
     @Given(
             "user (.*) (.*) row number (.*) has the user identity in the form of a signed JWT string for CRI Id (.*)$")
     public void user_has_the_user_identity_in_the_form_of_a_signed_jwt_string(
@@ -44,10 +38,15 @@ public class FraudAPIStepDefs extends FraudAPIPage {
         postRequestToFraudEndpoint();
     }
 
-    @And("user gets authorisation code for client (.*)$")
-    public void user_gets_authorisation_code(String clientId)
+    @When("user sends a second POST request to Fraud endpoint")
+    public void user_sends_a_second_post_request_to_fraud_end_point()
             throws IOException, InterruptedException {
-        getAuthorisationCode(clientId);
+        postRequestToFraudEndpoint();
+    }
+
+    @And("user gets authorisation code")
+    public void user_gets_authorisation_code() throws IOException, InterruptedException {
+        getAuthorisationCode();
     }
 
     @And("user sends a POST request to Access Token endpoint (.*)$")
