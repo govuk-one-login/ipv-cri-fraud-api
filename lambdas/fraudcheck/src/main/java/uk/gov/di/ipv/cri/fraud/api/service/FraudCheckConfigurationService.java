@@ -50,7 +50,10 @@ public class FraudCheckConfigurationService {
     private final String parameterPrefix;
     private final String stackParameterPrefix;
     private final String commonParameterPrefix;
+
+    private final boolean crosscoreV2Enabled;
     private final boolean pepEnabled;
+
     private List<String> zeroScoreUcodes;
     private Integer noFileFoundThreshold;
     private final long fraudResultItemTtl;
@@ -93,6 +96,9 @@ public class FraudCheckConfigurationService {
                 Long.parseLong(paramProvider.get(getCommonParameterName("SessionTtl")));
 
         // *****************************Feature Toggles*******************************
+
+        this.crosscoreV2Enabled =
+                Boolean.valueOf(paramProvider.get(getStackParameterName("CrosscoreV2/enabled")));
 
         this.pepEnabled = Boolean.valueOf(paramProvider.get(getStackParameterName("pepEnabled")));
 
@@ -139,6 +145,10 @@ public class FraudCheckConfigurationService {
 
     public String getContraindicationMappings() {
         return contraindicationMappings;
+    }
+
+    public boolean crosscoreV2Enabled() {
+        return crosscoreV2Enabled;
     }
 
     public boolean getPepEnabled() {
