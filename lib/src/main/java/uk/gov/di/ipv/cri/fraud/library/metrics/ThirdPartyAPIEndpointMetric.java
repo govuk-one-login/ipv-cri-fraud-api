@@ -18,8 +18,28 @@ import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetri
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetricType.REQUEST_SEND_OK;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIMetricEndpointPrefix.FRAUD_V1;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIMetricEndpointPrefix.PEP_V1;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIMetricEndpointPrefix.TOKEN;
 
 public enum ThirdPartyAPIEndpointMetric {
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // Authenticate End Point Metrics
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    TOKEN_REQUEST_REUSING_CACHED_TOKEN(TOKEN, "reusing_cached_token"),
+    TOKEN_REQUEST_CREATED(TOKEN, REQUEST_CREATED),
+    TOKEN_REQUEST_SEND_OK(TOKEN, REQUEST_SEND_OK),
+    TOKEN_REQUEST_SEND_ERROR(TOKEN, REQUEST_SEND_ERROR),
+    TOKEN_RESPONSE_TYPE_VALID(TOKEN, API_RESPONSE_TYPE_VALID),
+    TOKEN_RESPONSE_TYPE_INVALID(TOKEN, API_RESPONSE_TYPE_INVALID),
+    TOKEN_RESPONSE_TYPE_EXPECTED_HTTP_STATUS(TOKEN, API_RESPONSE_TYPE_EXPECTED_HTTP_STATUS),
+    TOKEN_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS(TOKEN, API_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS),
+    TOKEN_RESPONSE_STATUS_CODE_ALERT_METRIC(TOKEN, "status_code_alert_metric"),
+    TOKEN_HTTP_RETRYER_REQUEST_SEND_OK(TOKEN, HTTP_RETRYER_REQUEST_SEND_OK),
+    TOKEN_HTTP_RETRYER_REQUEST_SEND_FAIL(TOKEN, HTTP_RETRYER_REQUEST_SEND_FAIL),
+    TOKEN_HTTP_RETRYER_REQUEST_SEND_RETRY(TOKEN, HTTP_RETRYER_REQUEST_SEND_RETRY),
+    TOKEN_HTTP_RETRYER_SEND_MAX_RETRIES(TOKEN, HTTP_RETRYER_SEND_MAX_RETRIES),
+    TOKEN_HTTP_RETRYER_SEND_ERROR(TOKEN, HTTP_RETRYER_SEND_ERROR),
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // FRAUD End Point Metrics                                                                   //

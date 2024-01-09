@@ -441,6 +441,10 @@ Resources:
             TableName: !Ref FraudTable
         - DynamoDBWritePolicy:
             TableName: !Ref FraudTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref ExperianTokenTable
+        - DynamoDBWritePolicy:
+            TableName: !Ref ExperianTokenTable
         - Statement:
             - Sid: ReadParameterStorePolicy
               Effect: Allow
@@ -484,10 +488,14 @@ Resources:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/FraudTableName"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/CrosscoreV2/enabled"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/pepEnabled"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/CrosscoreV2/tokenTableName"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/SessionTableName"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/SessionTtl"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/verifiable-credential/issuer"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/PersonIdentityTableName"
+                - !Sub
+                  - "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${PREFIX}/CrosscoreV2*"
+                  - PREFIX: !If [ UseParameterPrefix, !Ref ParameterPrefix , !Ref AWS::StackName ]
         - Statement:
             - Effect: Allow
               Action:
@@ -616,6 +624,24 @@ Resources:
         AttributeName: "ttl"
         Enabled: true
 
+  ExperianTokenTable:
+    Type: "AWS::DynamoDB::Table" # enable encryption with customer managed kms key. Will need new kms key
+    Properties:
+      TableName: !Sub "crosscorev2-experian-token-${AWS::StackName}"
+      BillingMode: "PAY_PER_REQUEST"
+      AttributeDefinitions:
+        - AttributeName: "id"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "id"
+          KeyType: "HASH"
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+
 ####################################################################
 #                                                                  #
 # API config                                                 #
@@ -694,6 +720,14 @@ Resources:
       Value: !Sub fraud-${AWS::StackName}
       Type: String
       Description: Fraud item dynamodb table name
+
+  ParameterTokenItemTableName:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/CrosscoreV2/tokenTableName"
+      Value: !Sub crosscorev2-experian-token-${AWS::StackName}
+      Type: String
+      Description: Token item dynamodb table name
 
   MaxJwtTtlParameter:
     Type: AWS::SSM::Parameter

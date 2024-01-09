@@ -17,6 +17,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIMetricEndpointPrefix.TOKEN;
 
 @ExtendWith(MockitoExtension.class)
 class ThirdPartyAPIEndpointMetricTest {
@@ -62,30 +63,16 @@ class ThirdPartyAPIEndpointMetricTest {
             }
         }
 
-        //        // Remove the two generate error types not created in ThirdPartyAPIEndpointMetric
-        //        expectedMetricsCaptureList.remove(
-        //                "dvad_third_party_api_health_endpoint_api_response_type_error"); // Not
-        // Used
-        //        expectedMetricsCaptureList.remove(
-        //                "dvad_third_party_api_token_endpoint_api_response_type_error"); // Not
-        // Used
-        //
-        //        // Add the two special case health status metrics added via string in
-        //        // ThirdPartyAPIEndpointMetric
-        //        expectedMetricsCaptureList.add(
-        //                String.format(expectedFormat, DVAD_THIRD_PARTY_API_HEALTH_ENDPOINT, "UP")
-        //                        .toLowerCase());
-        //        expectedMetricsCaptureList.add(
-        //                String.format(expectedFormat, DVAD_THIRD_PARTY_API_HEALTH_ENDPOINT,
-        // "DOWN")
-        //                        .toLowerCase());
-        //        // Add Special case token reuse metric
-        //        expectedMetricsCaptureList.add(
-        //                String.format(
-        //                                expectedFormat,
-        //                                DVAD_THIRD_PARTY_API_TOKEN_ENDPOINT,
-        //                                "reusing_cached_token")
-        //                        .toLowerCase());
+        // Auto generate error types, that are not created/used
+        expectedMetricsCaptureList.remove("token_api_response_type_error"); // not used
+
+        // Add special case token reuse metric
+        expectedMetricsCaptureList.add(
+                String.format(expectedFormat, TOKEN, "reusing_cached_token").toLowerCase());
+
+        // Add special case token status code alert metric
+        expectedMetricsCaptureList.add(
+                String.format(expectedFormat, TOKEN, "status_code_alert_metric").toLowerCase());
 
         // Sort the two lists so the orders are the same
         Collections.sort(expectedMetricsCaptureList);

@@ -74,6 +74,27 @@ class FraudCheckConfigurationServiceTest {
         String sessionTtlKey = "SessionTtl";
         long sessionTtlValue = 7200L;
 
+        String experianTokenTableNameKey = "CrosscoreV2/tokenTableName";
+        String experianTokenTableValue = "ExperianTokenTableValue";
+
+        String tokenEndpointKey = "CrosscoreV2/tokenEndpoint";
+        String tokenEndpointValue = "tokenEndpointValue";
+
+        String tokenClientIdKey = "CrosscoreV2/clientId";
+        String tokenClientIdValue = "clientIdValue";
+
+        String tokenClientSecretKey = "CrosscoreV2/clientSecret";
+        String tokenClientSecretValue = "clientSecretValue";
+
+        String tokenUserNameKey = "CrosscoreV2/Username";
+        String tokenUserNameValue = "tokenUserValue";
+
+        String tokenPasswordKey = "CrosscoreV2/Password";
+        String tokenPasswordValue = "tokenPasswordValue";
+
+        String tokenUserDomainKey = "CrosscoreV2/userDomain";
+        String tokenUserDomainValue = "tokenUserDomainValue";
+
         String crosscoreV2Enabled = "CrosscoreV2/enabled";
         boolean crosscoreV2EnabledValue = false;
 
@@ -112,10 +133,44 @@ class FraudCheckConfigurationServiceTest {
                                 sessionTtlKey)))
                 .thenReturn(String.valueOf(sessionTtlValue));
 
+        // **********************************CrossCoreV2
+        // Params*********************************************
+
+        when(mockParamProvider.get(
+                        String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenEndpointKey)))
+                .thenReturn(tokenEndpointValue);
+
+        when(mockParamProvider.get(
+                        String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenClientIdKey)))
+                .thenReturn(tokenClientIdValue);
+
+        when(mockParamProvider.get(
+                        String.format(
+                                STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenClientSecretKey)))
+                .thenReturn(tokenClientSecretValue);
+
+        when(mockParamProvider.get(
+                        String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenUserNameKey)))
+                .thenReturn(tokenUserNameValue);
+
+        when(mockParamProvider.get(
+                        String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenPasswordKey)))
+                .thenReturn(tokenPasswordValue);
+
+        when(mockParamProvider.get(
+                        String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenUserDomainKey)))
+                .thenReturn(tokenUserDomainValue);
+
+        when(mockParamProvider.get(
+                        String.format(
+                                STACK_PARAMETER_FORMAT, AWS_STACK_NAME, experianTokenTableNameKey)))
+                .thenReturn(experianTokenTableValue);
+
         when(mockParamProvider.get(
                         String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, crosscoreV2Enabled)))
                 .thenReturn(String.valueOf(crosscoreV2EnabledValue));
 
+        // ***************************************************************************************************
         when(mockSecretsProvider.get(String.format(KEY_FORMAT, ENVIRONMENT, hmacKey)))
                 .thenReturn(testHmacKeyValue);
         when(mockSecretsProvider.get(
@@ -154,9 +209,29 @@ class FraudCheckConfigurationServiceTest {
                                 STACK_PARAMETER_FORMAT,
                                 COMMON_PARAMETER_NAME_PREFIX,
                                 sessionTtlKey));
+        // **********************************CrossCoreV2
+        // Params*********************************************
 
         verify(mockParamProvider)
+                .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenEndpointKey));
+        verify(mockParamProvider)
+                .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenClientIdKey));
+        verify(mockParamProvider)
+                .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenClientSecretKey));
+        verify(mockParamProvider)
+                .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenUserNameKey));
+        verify(mockParamProvider)
+                .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenPasswordKey));
+        verify(mockParamProvider)
+                .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenUserDomainKey));
+        verify(mockParamProvider)
+                .get(
+                        String.format(
+                                STACK_PARAMETER_FORMAT, AWS_STACK_NAME, experianTokenTableNameKey));
+        verify(mockParamProvider)
                 .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, crosscoreV2Enabled));
+
+        // ***************************************************************************************************
 
         verify(mockSecretsProvider)
                 .get(
@@ -183,7 +258,19 @@ class FraudCheckConfigurationServiceTest {
                 fraudCheckConfigurationService.getNoFileFoundThreshold());
         assertEquals(sessionTtlValue, fraudCheckConfigurationService.getFraudResultItemTtl());
 
+        // **********************************CrossCoreV2
+        // Params*********************************************
+
+        assertEquals(tokenEndpointValue, fraudCheckConfigurationService.getTokenEndpoint());
+        assertEquals(tokenClientIdValue, fraudCheckConfigurationService.getClientId());
+        assertEquals(tokenClientSecretValue, fraudCheckConfigurationService.getClientSecret());
+        assertEquals(tokenUserNameValue, fraudCheckConfigurationService.getUsername());
+        assertEquals(tokenPasswordValue, fraudCheckConfigurationService.getPassword());
+        assertEquals(tokenUserDomainValue, fraudCheckConfigurationService.getUserDomain());
+        assertEquals(experianTokenTableValue, fraudCheckConfigurationService.getTokenTableName());
         assertEquals(crosscoreV2EnabledValue, fraudCheckConfigurationService.crosscoreV2Enabled());
+        // ***************************************************************************************************
+
     }
 
     @Test
