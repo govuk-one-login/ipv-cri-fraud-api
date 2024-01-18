@@ -27,6 +27,15 @@ public enum ErrorResponse {
     ERROR_PEP_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE(
             3004, "error PEP check returned unexpected http status code"),
 
+    /**********************************Authenticate Call Specific Errors************************************/
+
+    ERROR_INVOKING_THIRD_PARTY_API_TOKEN_ENDPOINT(
+            4001, "Error occurred when attempting to invoke the third party api token endpoint"),
+    FAILED_TO_PREPARE_TOKEN_REQUEST_PAYLOAD(4002, "failed to prepare token request payload"),
+    FAILED_TO_MAP_TOKEN_ENDPOINT_RESPONSE_BODY(4003, "Failed to map token endpoint response body"),
+    ERROR_TOKEN_ENDPOINT_RETURNED_UNEXPECTED_HTTP_STATUS_CODE(
+            4004, "token endpoint returned unexpected http status code"),
+
     FINAL_ERROR(-1, "Final Error");
 
     private final int code;
