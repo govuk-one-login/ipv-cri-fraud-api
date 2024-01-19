@@ -125,6 +125,8 @@ jobs:
           path: |
             */build/jacoco/
             */build/reports/
+      - name: Generate Aggregate Coverage Report
+        run: ./gradlew report
       - name: Run SonarCloud Analysis
         if: ${{ github.actor != 'dependabot[bot]' }}
         env:

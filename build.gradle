@@ -66,6 +66,10 @@ sonar {
 		property "sonar.java.coveragePlugin", "jacoco"
 		property "sonar.coverage.jacoco.xmlReportPath", "${buildDir}/reports/jacoco/reports/reports.xml"
 		property "sonar.dependencyCheck.htmlReportPath", "${buildDir}/reports/dependency-check-report.html"
+		property "sonar.dependencyCheck.htmlReportPath", "${buildDir}/reports/dependency-check-report.html"
+		property "sonar.issue.ignore.multicriteria", "s106"
+		property "sonar.issue.ignore.multicriteria.s106.ruleKey", "java:S106"
+		property "sonar.issue.ignore.multicriteria.s106.resourceKey", "lambdas/fraudcheck/src/main/java/*.java"
 	}
 }
 

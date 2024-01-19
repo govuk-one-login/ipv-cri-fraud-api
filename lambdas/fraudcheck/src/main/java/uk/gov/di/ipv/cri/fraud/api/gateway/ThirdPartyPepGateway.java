@@ -15,6 +15,7 @@ import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.check.PepCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PEPRequest;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.PEPResponse;
+import uk.gov.di.ipv.cri.fraud.api.service.CrosscoreV2Configuration;
 import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryer;
 import uk.gov.di.ipv.cri.fraud.api.service.PepCheckHttpRetryStatusConfig;
@@ -46,6 +47,9 @@ public class ThirdPartyPepGateway {
 
     private static final String REQUEST_NAME = "Pep Check";
 
+    private static final String APPLICATION_JSON_HEADER = "application/json";
+
+    private final CrosscoreV2Configuration crosscoreV2Configuration;
     private final IdentityVerificationRequestMapper requestMapper;
     private final IdentityVerificationResponseMapper responseMapper;
     private final ObjectMapper objectMapper;
@@ -73,6 +77,7 @@ public class ThirdPartyPepGateway {
             ObjectMapper objectMapper,
             HmacGenerator hmacGenerator,
             String endpointUrl,
+            CrosscoreV2Configuration crosscoreV2Configuration,
             EventProbe eventProbe) {
         Objects.requireNonNull(httpRetryer, "httpClient must not be null");
         Objects.requireNonNull(requestMapper, "requestMapper must not be null");
@@ -89,6 +94,7 @@ public class ThirdPartyPepGateway {
         this.objectMapper = objectMapper;
         this.hmacGenerator = hmacGenerator;
         this.endpointUri = URI.create(endpointUrl);
+        this.crosscoreV2Configuration = crosscoreV2Configuration;
         this.eventProbe = eventProbe;
         this.clock = Clock.systemUTC();
 
@@ -101,17 +107,8 @@ public class ThirdPartyPepGateway {
                         PEP_HTTP_RESPONSE_TIMEOUT_MS);
     }
 
-    private HttpPost httpRequestBuilder(String requestBody) {
-        String requestBodyHmacSignature = hmacGenerator.generateHmac(requestBody);
-
-        HttpPost request = new HttpPost(endpointUri);
-        request.addHeader("Content-Type", "application/json");
-        request.addHeader("hmac-signature", requestBodyHmacSignature);
-        request.setEntity(new StringEntity(requestBody, ContentType.APPLICATION_JSON));
-        return request;
-    }
-
-    public PepCheckResult performPepCheck(PersonIdentity personIdentity)
+    public PepCheckResult performPepCheck(
+            PersonIdentity personIdentity, boolean crosscoreV2Enabled, String token)
             throws OAuthErrorResponseException {
         LOGGER.info("Mapping person to {} request", REQUEST_NAME);
         PEPRequest apiRequest = requestMapper.mapPEPPersonIdentity(personIdentity);
@@ -133,7 +130,7 @@ public class ThirdPartyPepGateway {
         }
 
         LOGGER.debug("{} Request {}", REQUEST_NAME, requestBody);
-        HttpPost postRequest = httpRequestBuilder(requestBody);
+        HttpPost postRequest = httpRequestBuilder(requestBody, crosscoreV2Enabled, token);
 
         // Enforce connection timeout values
         postRequest.setConfig(pepCheckRequestConfig);
@@ -163,6 +160,26 @@ public class ThirdPartyPepGateway {
         LOGGER.info("{} latency {}", REQUEST_NAME, latency);
 
         return pepCheckResponseHandler(httpReply);
+    }
+
+    private HttpPost httpRequestBuilder(
+            String requestBody, boolean crosscoreV2Enabled, String token) {
+        HttpPost request;
+        if (crosscoreV2Enabled) {
+            request = new HttpPost(crosscoreV2Configuration.getEndpointUri());
+            request.addHeader("Content-Type", APPLICATION_JSON_HEADER);
+            request.addHeader("Accept", APPLICATION_JSON_HEADER);
+            request.addHeader("Authorization", "Bearer " + token);
+            request.setEntity(new StringEntity(requestBody, ContentType.APPLICATION_JSON));
+        } else { // EMTODO: Remove conditional in post v2 cleanup
+            String requestBodyHmacSignature = hmacGenerator.generateHmac(requestBody);
+
+            request = new HttpPost(endpointUri);
+            request.addHeader("Content-Type", APPLICATION_JSON_HEADER);
+            request.addHeader("hmac-signature", requestBodyHmacSignature);
+            request.setEntity(new StringEntity(requestBody, ContentType.APPLICATION_JSON));
+        }
+        return request;
     }
 
     private PepCheckResult pepCheckResponseHandler(HTTPReply httpReply)

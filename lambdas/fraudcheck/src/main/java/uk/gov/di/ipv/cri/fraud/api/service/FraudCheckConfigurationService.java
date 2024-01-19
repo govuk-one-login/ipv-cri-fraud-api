@@ -57,13 +57,8 @@ public class FraudCheckConfigurationService {
     private List<String> zeroScoreUcodes;
     private Integer noFileFoundThreshold;
     private final long fraudResultItemTtl;
-    private final String tokenEndpoint;
-    private final String clientId;
-    private final String clientSecret;
-    private final String username;
-    private final String password;
-    private final String tokenTableName;
-    private final String userDomain;
+
+    private final CrosscoreV2Configuration crosscoreV2Configuration;
 
     private final Clock clock;
 
@@ -102,17 +97,10 @@ public class FraudCheckConfigurationService {
         this.fraudResultItemTtl =
                 Long.parseLong(paramProvider.get(getCommonParameterName("SessionTtl")));
 
-        // *************************Authenticate Parameters***************************
+        // *************************CrosscoreV2 Parameters***************************
 
-        this.tokenEndpoint = paramProvider.get(getParameterName("CrosscoreV2/tokenEndpoint"));
-        this.clientId = paramProvider.get(getParameterName("CrosscoreV2/clientId"));
-        this.clientSecret = paramProvider.get(getParameterName("CrosscoreV2/clientSecret"));
-        this.username = paramProvider.get(getParameterName("CrosscoreV2/Username"));
-        this.password = paramProvider.get(getParameterName("CrosscoreV2/Password"));
-        this.userDomain = paramProvider.get(getParameterName("CrosscoreV2/userDomain"));
-
-        this.tokenTableName =
-                paramProvider.get(getStackParameterName("CrosscoreV2/tokenTableName"));
+        this.crosscoreV2Configuration =
+                new CrosscoreV2Configuration(paramProvider, parameterPrefix, stackParameterPrefix);
 
         // *****************************Feature Toggles*******************************
 
@@ -166,6 +154,10 @@ public class FraudCheckConfigurationService {
         return contraindicationMappings;
     }
 
+    public CrosscoreV2Configuration getCrosscoreV2Configuration() {
+        return crosscoreV2Configuration;
+    }
+
     public boolean crosscoreV2Enabled() {
         return crosscoreV2Enabled;
     }
@@ -192,34 +184,6 @@ public class FraudCheckConfigurationService {
 
     public void setNoFileFoundThreshold(Integer noFileFoundThreshold) {
         this.noFileFoundThreshold = noFileFoundThreshold;
-    }
-
-    public String getTokenEndpoint() {
-        return tokenEndpoint;
-    }
-
-    public String getClientId() {
-        return clientId;
-    }
-
-    public String getClientSecret() {
-        return clientSecret;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public String getUserDomain() {
-        return userDomain;
-    }
-
-    public String getTokenTableName() {
-        return tokenTableName;
     }
 
     public long getFraudResultItemExpirationEpoch() {
