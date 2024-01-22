@@ -24,12 +24,12 @@ dependencies {
 			"com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${dependencyVersions.jackson_version}",
 			"com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${dependencyVersions.jackson_version}",
 			"com.fasterxml.jackson.core:jackson-databind:${dependencyVersions.jackson_version}",
-			"com.fasterxml.jackson.core:jackson-annotations:${dependencyVersions.jackson_version}"
+			"com.fasterxml.jackson.core:jackson-annotations:${dependencyVersions.jackson_version}",
+			"org.aspectj:aspectjrt:${dependencyVersions.aspectjrt_version}"
 
 	aspect "software.amazon.lambda:powertools-logging:${dependencyVersions.aws_powertools_logging_version}",
 			"software.amazon.lambda:powertools-metrics:${dependencyVersions.aws_powertools_metrics_version}",
-			"software.amazon.lambda:powertools-parameters:${dependencyVersions.aws_powertools_parameters_version}",
-			"org.aspectj:aspectjrt:${dependencyVersions.aspectjrt_version}"
+			"software.amazon.lambda:powertools-parameters:${dependencyVersions.aws_powertools_parameters_version}"
 
 	testImplementation testFixtures(project(":lib")),"org.junit.jupiter:junit-jupiter-engine:${dependencyVersions.junit_version}",
 			"org.junit.jupiter:junit-jupiter-api:${dependencyVersions.junit_version}",

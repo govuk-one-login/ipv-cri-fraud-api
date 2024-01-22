@@ -25,14 +25,13 @@ dependencies {
 			"com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${dependencyVersions.jackson_version}",
 			"com.fasterxml.jackson.core:jackson-databind:${dependencyVersions.jackson_version}",
 			"com.fasterxml.jackson.core:jackson-annotations:${dependencyVersions.jackson_version}",
-			"com.google.code.gson:gson:${dependencyVersions.gson_version}",
 			"org.apache.httpcomponents:httpcore:${dependencyVersions.httpcomponents_core_version}",
-			"org.apache.httpcomponents:httpclient:${dependencyVersions.httpcomponents_client_version}"
+			"org.apache.httpcomponents:httpclient:${dependencyVersions.httpcomponents_client_version}",
+			"org.aspectj:aspectjrt:${dependencyVersions.aspectjrt_version}"
 
 	aspect "software.amazon.lambda:powertools-logging:${dependencyVersions.aws_powertools_logging_version}",
 			"software.amazon.lambda:powertools-metrics:${dependencyVersions.aws_powertools_metrics_version}",
-			"software.amazon.lambda:powertools-parameters:${dependencyVersions.aws_powertools_parameters_version}",
-			"org.aspectj:aspectjrt:${dependencyVersions.aspectjrt_version}"
+			"software.amazon.lambda:powertools-parameters:${dependencyVersions.aws_powertools_parameters_version}"
 
 	testImplementation testFixtures(project(":lib")), testFixtures(this.project),"org.junit.jupiter:junit-jupiter-engine:${dependencyVersions.junit_version}",
 			"org.junit.jupiter:junit-jupiter-api:${dependencyVersions.junit_version}",
@@ -45,8 +44,7 @@ dependencies {
 			"uk.org.webcompere:system-stubs-jupiter:${dependencyVersions.webcompere_version}",
 			"com.amazonaws:aws-lambda-java-core:${dependencyVersions.aws_lambda_core_version}"
 
-	testFixturesImplementation "org.aspectj:aspectjrt:${dependencyVersions.aspectjrt_version}",
-			"com.fasterxml.jackson.core:jackson-core:${dependencyVersions.jackson_version}",
+	testFixturesImplementation "com.fasterxml.jackson.core:jackson-core:${dependencyVersions.jackson_version}",
 			"com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${dependencyVersions.jackson_version}",
 			"com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${dependencyVersions.jackson_version}",
 			"com.fasterxml.jackson.core:jackson-databind:${dependencyVersions.jackson_version}",

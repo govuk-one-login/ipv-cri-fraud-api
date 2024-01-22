@@ -20,30 +20,40 @@ configurations {
 dependencies {
 
 	var dependencyVersions = [
-		// Implementation
+		// ---------------------------------------------------------
+		// cri_common_lib dependencies should match the ipv-cri-lib version
+		// Workaround until dependency resolution is fix.
+		// ---------------------------------------------------------
 		cri_common_lib_version             : "1.5.3",
+
+		// CRI_LIB aws
+		aws_sdk_version                    : "2.20.162",
+		aws_lambda_events_version          : "3.11.0",
+		aws_embedded_metrics_version       : "1.0.6",
+
+		// CRI_LIB nimbus
 		nimbusds_oauth_version             : "11.2",
 		nimbusds_jwt_version               : "9.36",
-		aws_sdk_version                    : "2.20.162",
+
+		// CRI_LIB powertools
+		aws_powertools_logging_version     : "1.12.0",
+		aws_powertools_metrics_version     : "1.12.0",
+		aws_powertools_parameters_version  : "1.12.0",
+
+		// ---------------------------------------------------------
+		// AC Test Dependencies (Fraud CRI)
+		// ---------------------------------------------------------
+
 		aws_lambda_core_version            : "1.2.1",
-		aws_lambda_events_version          : "3.11.3",
-		jackson_version                    : "2.14.0",
-		gson_version                       : "2.8.9",
-		httpcomponents_core_version        : "4.4.16",
-		httpcomponents_client_version      : "4.5.14",
-		// Aspect
-		aws_powertools_logging_version     : "1.17.0",
-		aws_powertools_metrics_version     : "1.17.0",
-		aws_powertools_parameters_version  : "1.17.0",
+		// Object mapper
+		jackson_version                    : "2.15.0",
+		// Code weaving (lombok+powertools)
 		aspectjrt_version                  : "1.9.21",
-		// Compile/Annotation
-		lombok_version                     : "1.18.22",
+
 		// Test
 		junit_version                      : "5.8.2",
 		hamcrest_version                   : "2.2",
 		mockito_version                    : "4.3.1",
-		wiremock_version                   : "3.0.1",
-		webcompere_version                 : "2.0.2",
 		// testFixturesImplementation
 
 		// acceptance tests Implementation
@@ -70,9 +80,8 @@ dependencies {
 			"org.mockito:mockito-junit-jupiter:${dependencyVersions.mockito_version}",
 			"org.mockito:mockito-inline:${dependencyVersions.mockito_version}",
 			"org.hamcrest:hamcrest:${dependencyVersions.hamcrest_version}",
-			"com.google.code.gson:gson:${dependencyVersions.gson_version}",
-			"org.json:json:20230618"
-
+			"org.json:json:20230618",
+			"org.aspectj:aspectjrt:${dependencyVersions.aspectjrt_version}"
 
 	implementation "io.cucumber:cucumber-java:${dependencyVersions.cucumber_version}",
 			"org.seleniumhq.selenium:selenium-java:${dependencyVersions.selenium_version}",
@@ -84,8 +93,7 @@ dependencies {
 
 	aspect "software.amazon.lambda:powertools-logging:${dependencyVersions.aws_powertools_logging_version}",
 			"software.amazon.lambda:powertools-metrics:${dependencyVersions.aws_powertools_metrics_version}",
-			"software.amazon.lambda:powertools-parameters:${dependencyVersions.aws_powertools_parameters_version}",
-			"org.aspectj:aspectjrt:${dependencyVersions.aspectjrt_version}"
+			"software.amazon.lambda:powertools-parameters:${dependencyVersions.aws_powertools_parameters_version}"
 }
 
 java {
