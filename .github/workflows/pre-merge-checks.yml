@@ -76,7 +76,7 @@ jobs:
       - name: Run Unit Tests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew --parallel test jacocoTestReport -x spotlessApply -x spotlessCheck
+        run: ./gradlew --parallel test report jacocoTestReport -x spotlessApply -x spotlessCheck
       - name: Upload Unit Test Reports
         uses: actions/upload-artifact@v2
         if: failure()
@@ -125,8 +125,6 @@ jobs:
           path: |
             */build/jacoco/
             */build/reports/
-      - name: Generate Aggregate Coverage Report
-        run: ./gradlew report
       - name: Run SonarCloud Analysis
         if: ${{ github.actor != 'dependabot[bot]' }}
         env:
