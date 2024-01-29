@@ -3,6 +3,8 @@ package uk.gov.di.ipv.cri.fraud.api.service;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import uk.gov.di.ipv.cri.fraud.api.domain.ValidationResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.IdentityVerificationResponse;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.ResponseType;
@@ -2814,12 +2816,74 @@ public class IdentityVerificationInfoResponseValidatorTest {
         assertTrue(validationResult.isValid());
     }
 
+    @ParameterizedTest
+    @CsvSource({
+        // responseType value, expected value for validationResult.isValid()
+        "INFO, true",
+        "Info, true",
+        "info, true",
+        "WARN, true",
+        "Warn, true",
+        "warn, true",
+        "WARNING, true",
+        "Warning, true",
+        "warning, true",
+        "null, true",
+        "8, true",
+        "ERROR, false",
+        "Error, false",
+        "error, false",
+    })
+    void clientPayloadDecisionElementsDecisionElementWarningsErrorsResponseTypeStringsAreOK(
+            String responseTypeScenario, boolean expectedIsValid) {
+        final WarningsErrors warningError = new WarningsErrors();
+        warningError.setResponseCode(len10String.repeat(4));
+        warningError.setResponseMessage("Message");
+
+        String responseType = responseTypeScenario.equals("null") ? null : responseTypeScenario;
+
+        warningError.setResponseType(responseType);
+
+        testIVResponse
+                .getClientResponsePayload()
+                .getDecisionElements()
+                .get(0)
+                .setWarningsErrors(List.of(warningError));
+
+        ValidationResult<List<String>> validationResult =
+                infoResponseValidator.validate(testIVResponse);
+
+        assertEquals(
+                1,
+                testIVResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .getWarningsErrors()
+                        .size());
+        assertEquals(
+                warningError,
+                testIVResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .getWarningsErrors()
+                        .get(0));
+
+        if (expectedIsValid) {
+            assertEquals(0, validationResult.getError().size());
+        } else {
+            assertEquals(1, validationResult.getError().size());
+        }
+        assertEquals(expectedIsValid, validationResult.isValid());
+    }
+
     @Test
     void clientPayloadDecisionElementsDecisionElementWarningsErrorsResponseCodeMaxLenOK() {
         final WarningsErrors warningError = new WarningsErrors();
         warningError.setResponseCode(len10String.repeat(4));
         warningError.setResponseMessage("Message");
-        warningError.setResponseType(ResponseType.INFO);
+        warningError.setResponseType(ResponseType.INFO.toString());
 
         testIVResponse
                 .getClientResponsePayload()
@@ -2855,7 +2919,7 @@ public class IdentityVerificationInfoResponseValidatorTest {
         final WarningsErrors warningError = new WarningsErrors();
         warningError.setResponseCode(len10String.repeat(4) + "1");
         warningError.setResponseMessage("Message");
-        warningError.setResponseType(ResponseType.INFO);
+        warningError.setResponseType(ResponseType.INFO.toString());
 
         testIVResponse
                 .getClientResponsePayload()
@@ -2892,11 +2956,47 @@ public class IdentityVerificationInfoResponseValidatorTest {
     }
 
     @Test
+    void clientPayloadDecisionElementsDecisionElementWarningsErrorsResponseCodeNullIsOK() {
+        final WarningsErrors warningError = new WarningsErrors();
+        warningError.setResponseCode(null);
+        warningError.setResponseMessage("Message");
+        warningError.setResponseType(ResponseType.INFO.toString());
+
+        testIVResponse
+                .getClientResponsePayload()
+                .getDecisionElements()
+                .get(0)
+                .setWarningsErrors(List.of(warningError));
+
+        ValidationResult<List<String>> validationResult =
+                infoResponseValidator.validate(testIVResponse);
+
+        assertEquals(
+                1,
+                testIVResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .getWarningsErrors()
+                        .size());
+        assertEquals(
+                warningError,
+                testIVResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .getWarningsErrors()
+                        .get(0));
+        assertEquals(0, validationResult.getError().size());
+        assertTrue(validationResult.isValid());
+    }
+
+    @Test
     void clientPayloadDecisionElementsDecisionElementWarningsErrorsResponseMessageMaxLenOK() {
         final WarningsErrors warningError = new WarningsErrors();
         warningError.setResponseCode("1");
         warningError.setResponseMessage(len10String.repeat(30));
-        warningError.setResponseType(ResponseType.INFO);
+        warningError.setResponseType(ResponseType.INFO.toString());
 
         testIVResponse
                 .getClientResponsePayload()
@@ -2933,7 +3033,7 @@ public class IdentityVerificationInfoResponseValidatorTest {
         final WarningsErrors warningError = new WarningsErrors();
         warningError.setResponseCode("1");
         warningError.setResponseMessage(len10String.repeat(30) + "1");
-        warningError.setResponseType(ResponseType.INFO);
+        warningError.setResponseType(ResponseType.INFO.toString());
 
         testIVResponse
                 .getClientResponsePayload()
@@ -2970,12 +3070,48 @@ public class IdentityVerificationInfoResponseValidatorTest {
     }
 
     @Test
+    void clientPayloadDecisionElementsDecisionElementWarningsErrorsResponseMessageNullIsOK() {
+        final WarningsErrors warningError = new WarningsErrors();
+        warningError.setResponseCode("1");
+        warningError.setResponseMessage(null);
+        warningError.setResponseType(ResponseType.INFO.toString());
+
+        testIVResponse
+                .getClientResponsePayload()
+                .getDecisionElements()
+                .get(0)
+                .setWarningsErrors(List.of(warningError));
+
+        ValidationResult<List<String>> validationResult =
+                infoResponseValidator.validate(testIVResponse);
+
+        assertEquals(
+                1,
+                testIVResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .getWarningsErrors()
+                        .size());
+        assertEquals(
+                warningError,
+                testIVResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .getWarningsErrors()
+                        .get(0));
+        assertEquals(0, validationResult.getError().size());
+        assertTrue(validationResult.isValid());
+    }
+
+    @Test
     void
             clientPayloadDecisionElementsDecisionElementWarningsErrorsResponseTypeErrorIsFailWithSafeToLogWarningError() {
         WarningsErrors warningError = new WarningsErrors();
         warningError.setResponseCode("1");
         warningError.setResponseMessage("Message");
-        warningError.setResponseType(ResponseType.ERROR);
+        warningError.setResponseType(ResponseType.ERROR.toString());
 
         testIVResponse
                 .getClientResponsePayload()
@@ -2987,7 +3123,7 @@ public class IdentityVerificationInfoResponseValidatorTest {
                 infoResponseValidator.validate(testIVResponse);
 
         final String EXPECTED_ERROR =
-                "DecisionElement:ResponseType:Error, ResponseCode:"
+                "DecisionElement:ResponseType:ERROR listed in WarningsErrors, ResponseCode:"
                         + warningError.getResponseCode()
                         + ", ResponseMessage:"
                         + warningError.getResponseMessage();
@@ -3020,7 +3156,7 @@ public class IdentityVerificationInfoResponseValidatorTest {
         final String CODE = len10String.repeat(4) + "1";
         warningError.setResponseCode(CODE);
         warningError.setResponseMessage("Message");
-        warningError.setResponseType(ResponseType.ERROR);
+        warningError.setResponseType(ResponseType.ERROR.toString());
 
         testIVResponse
                 .getClientResponsePayload()
@@ -3032,7 +3168,10 @@ public class IdentityVerificationInfoResponseValidatorTest {
                 infoResponseValidator.validate(testIVResponse);
 
         final String EXPECTED_ERROR =
-                IdentityVerificationInfoResponseValidator.WARNINGS_ERRORS_FALL_BACK_ERROR_MESAGE;
+                String.format(
+                        IdentityVerificationInfoResponseValidator
+                                .WARNINGS_ERRORS_FALL_BACK_ERROR_MESSAGE_FORMAT,
+                        "ERROR");
 
         assertEquals(
                 1,
@@ -3063,7 +3202,7 @@ public class IdentityVerificationInfoResponseValidatorTest {
         final String MESSAGE = len10String.repeat(30) + "1";
         warningError.setResponseCode("1");
         warningError.setResponseMessage(MESSAGE);
-        warningError.setResponseType(ResponseType.ERROR);
+        warningError.setResponseType(ResponseType.ERROR.toString());
 
         testIVResponse
                 .getClientResponsePayload()
@@ -3075,7 +3214,10 @@ public class IdentityVerificationInfoResponseValidatorTest {
                 infoResponseValidator.validate(testIVResponse);
 
         final String EXPECTED_ERROR =
-                IdentityVerificationInfoResponseValidator.WARNINGS_ERRORS_FALL_BACK_ERROR_MESAGE;
+                String.format(
+                        IdentityVerificationInfoResponseValidator
+                                .WARNINGS_ERRORS_FALL_BACK_ERROR_MESSAGE_FORMAT,
+                        "ERROR");
 
         assertEquals(
                 1,
@@ -3097,113 +3239,5 @@ public class IdentityVerificationInfoResponseValidatorTest {
         assertEquals(2, validationResult.getError().size());
         assertEquals(EXPECTED_ERROR, validationResult.getError().get(1));
         assertFalse(validationResult.isValid());
-    }
-
-    @Test
-    void clientPayloadDecisionElementsDecisionElementWarningsErrorsResponseTypeInfoIsOK() {
-        final WarningsErrors warningError = new WarningsErrors();
-        warningError.setResponseCode("1");
-        warningError.setResponseMessage("Message");
-        warningError.setResponseType(ResponseType.INFO);
-
-        testIVResponse
-                .getClientResponsePayload()
-                .getDecisionElements()
-                .get(0)
-                .setWarningsErrors(List.of(warningError));
-
-        ValidationResult<List<String>> validationResult =
-                infoResponseValidator.validate(testIVResponse);
-
-        assertEquals(
-                1,
-                testIVResponse
-                        .getClientResponsePayload()
-                        .getDecisionElements()
-                        .get(0)
-                        .getWarningsErrors()
-                        .size());
-        assertEquals(
-                warningError,
-                testIVResponse
-                        .getClientResponsePayload()
-                        .getDecisionElements()
-                        .get(0)
-                        .getWarningsErrors()
-                        .get(0));
-        assertEquals(0, validationResult.getError().size());
-        assertTrue(validationResult.isValid());
-    }
-
-    @Test
-    void clientPayloadDecisionElementsDecisionElementWarningsErrorsResponseTypeWarnIsOK() {
-        WarningsErrors warningError = new WarningsErrors();
-        warningError.setResponseCode("1");
-        warningError.setResponseMessage("Message");
-        warningError.setResponseType(ResponseType.WARN);
-
-        testIVResponse
-                .getClientResponsePayload()
-                .getDecisionElements()
-                .get(0)
-                .setWarningsErrors(List.of(warningError));
-
-        ValidationResult<List<String>> validationResult =
-                infoResponseValidator.validate(testIVResponse);
-
-        assertEquals(
-                1,
-                testIVResponse
-                        .getClientResponsePayload()
-                        .getDecisionElements()
-                        .get(0)
-                        .getWarningsErrors()
-                        .size());
-        assertEquals(
-                warningError,
-                testIVResponse
-                        .getClientResponsePayload()
-                        .getDecisionElements()
-                        .get(0)
-                        .getWarningsErrors()
-                        .get(0));
-        assertEquals(0, validationResult.getError().size());
-        assertTrue(validationResult.isValid());
-    }
-
-    @Test
-    void clientPayloadDecisionElementsDecisionElementWarningsErrorsResponseTypeWarningIsOK() {
-        WarningsErrors warningError = new WarningsErrors();
-        warningError.setResponseCode("1");
-        warningError.setResponseMessage("Message");
-        warningError.setResponseType(ResponseType.WARNING);
-
-        testIVResponse
-                .getClientResponsePayload()
-                .getDecisionElements()
-                .get(0)
-                .setWarningsErrors(List.of(warningError));
-
-        ValidationResult<List<String>> validationResult =
-                infoResponseValidator.validate(testIVResponse);
-
-        assertEquals(
-                1,
-                testIVResponse
-                        .getClientResponsePayload()
-                        .getDecisionElements()
-                        .get(0)
-                        .getWarningsErrors()
-                        .size());
-        assertEquals(
-                warningError,
-                testIVResponse
-                        .getClientResponsePayload()
-                        .getDecisionElements()
-                        .get(0)
-                        .getWarningsErrors()
-                        .get(0));
-        assertEquals(0, validationResult.getError().size());
-        assertTrue(validationResult.isValid());
     }
 }

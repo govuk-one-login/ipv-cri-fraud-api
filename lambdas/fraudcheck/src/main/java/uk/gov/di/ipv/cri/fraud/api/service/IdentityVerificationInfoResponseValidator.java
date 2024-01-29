@@ -60,8 +60,11 @@ public class IdentityVerificationInfoResponseValidator {
             "Header Response Type INFO not found - ";
     public static final String NULL_CLIENT_RESPONSE_PAYLOAD_ERROR_MESSAGE =
             "ClientResponsePayload not found.";
-    public static final String WARNINGS_ERRORS_FALL_BACK_ERROR_MESAGE =
-            "DecisionElement:ResponseType:Error listed in WarningsErrors (Cannot log as values also had validation errors).";
+
+    private static final String WARNINGS_ERRORS_LOG_FORMAT =
+            "DecisionElement:ResponseType:%s listed in WarningsErrors, ResponseCode:%s, ResponseMessage:%s";
+    public static final String WARNINGS_ERRORS_FALL_BACK_ERROR_MESSAGE_FORMAT =
+            "DecisionElement:ResponseType:%s listed in WarningsErrors (Cannot log as values also had validation errors).";
 
     public ValidationResult<List<String>> validate(IdentityVerificationResponse response) {
 
@@ -412,30 +415,45 @@ public class IdentityVerificationInfoResponseValidator {
 
                 boolean warningErrorSafeToLog = true;
 
-                if (warningError.getResponseCode().length()
-                        > DECISION_ELEMENTS_WARNING_RESPONSE_CODE_MAX_LEN) {
+                String responseType =
+                        warningError.getResponseType() == null
+                                ? "null"
+                                : warningError.getResponseType();
+                String responseMessage =
+                        warningError.getResponseMessage() == null
+                                ? "null"
+                                : warningError.getResponseMessage();
+                String responseCode =
+                        warningError.getResponseCode() == null
+                                ? "null"
+                                : warningError.getResponseCode();
+
+                if (responseCode.length() > DECISION_ELEMENTS_WARNING_RESPONSE_CODE_MAX_LEN) {
                     validationErrors.add(
                             "DecisionElement:WarningsErrors:ResponseCode is too long.");
 
                     warningErrorSafeToLog = false;
                 }
-                if (warningError.getResponseMessage().length()
-                        > DECISION_ELEMENTS_WARNING_RESPONSE_MESSAGE_MAX_LEN) {
+                if (responseMessage.length() > DECISION_ELEMENTS_WARNING_RESPONSE_MESSAGE_MAX_LEN) {
                     validationErrors.add(
                             "DecisionElement:WarningsErrors:ResponseMessage is too long.");
                     warningErrorSafeToLog = false;
                 }
 
                 // Only fail for ERROR responses
-                if (warningError.getResponseType() == ResponseType.ERROR) {
+                if ("error".equalsIgnoreCase(responseType)) {
                     if (warningErrorSafeToLog) {
                         validationErrors.add(
-                                "DecisionElement:ResponseType:Error, ResponseCode:"
-                                        + warningError.getResponseCode()
-                                        + ", ResponseMessage:"
-                                        + warningError.getResponseMessage());
+                                String.format(
+                                        WARNINGS_ERRORS_LOG_FORMAT,
+                                        responseType,
+                                        responseCode,
+                                        responseMessage));
                     } else {
-                        validationErrors.add(WARNINGS_ERRORS_FALL_BACK_ERROR_MESAGE);
+                        validationErrors.add(
+                                String.format(
+                                        WARNINGS_ERRORS_FALL_BACK_ERROR_MESSAGE_FORMAT,
+                                        responseType));
                     }
                 }
             }
