@@ -95,6 +95,12 @@ class FraudCheckConfigurationServiceTest {
         String tokenUserDomainKey = "CrosscoreV2/userDomain";
         String tokenUserDomainValue = "tokenUserDomainValue";
 
+        String crosscoreV2EndpointUrlKey = "CrosscoreV2/endpointUrl";
+        String crosscoreV2EndpointUrlValue = "crosscoreV2EndpointUrlValue";
+
+        String crosscoreV2TenantIdKey = "CrosscoreV2/tenantId";
+        String crosscoreV2TenantIdValue = "crosscoreV2TenantId";
+
         String crosscoreV2Enabled = "CrosscoreV2/enabled";
         boolean crosscoreV2EnabledValue = false;
 
@@ -133,8 +139,7 @@ class FraudCheckConfigurationServiceTest {
                                 sessionTtlKey)))
                 .thenReturn(String.valueOf(sessionTtlValue));
 
-        // **********************************CrossCoreV2
-        // Params*********************************************
+        // **********************************CrossCoreV2Params*********************************************
 
         when(mockParamProvider.get(
                         String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenEndpointKey)))
@@ -165,6 +170,16 @@ class FraudCheckConfigurationServiceTest {
                         String.format(
                                 STACK_PARAMETER_FORMAT, AWS_STACK_NAME, experianTokenTableNameKey)))
                 .thenReturn(experianTokenTableValue);
+
+        when(mockParamProvider.get(
+                        String.format(
+                                STACK_PARAMETER_FORMAT, AWS_STACK_NAME, crosscoreV2EndpointUrlKey)))
+                .thenReturn(crosscoreV2EndpointUrlValue);
+
+        when(mockParamProvider.get(
+                        String.format(
+                                STACK_PARAMETER_FORMAT, AWS_STACK_NAME, crosscoreV2TenantIdKey)))
+                .thenReturn(crosscoreV2TenantIdValue);
 
         when(mockParamProvider.get(
                         String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, crosscoreV2Enabled)))
@@ -261,13 +276,33 @@ class FraudCheckConfigurationServiceTest {
         // **********************************CrossCoreV2
         // Params*********************************************
 
-        assertEquals(tokenEndpointValue, fraudCheckConfigurationService.getTokenEndpoint());
-        assertEquals(tokenClientIdValue, fraudCheckConfigurationService.getClientId());
-        assertEquals(tokenClientSecretValue, fraudCheckConfigurationService.getClientSecret());
-        assertEquals(tokenUserNameValue, fraudCheckConfigurationService.getUsername());
-        assertEquals(tokenPasswordValue, fraudCheckConfigurationService.getPassword());
-        assertEquals(tokenUserDomainValue, fraudCheckConfigurationService.getUserDomain());
-        assertEquals(experianTokenTableValue, fraudCheckConfigurationService.getTokenTableName());
+        assertEquals(
+                tokenEndpointValue,
+                fraudCheckConfigurationService.getCrosscoreV2Configuration().getTokenEndpoint());
+        assertEquals(
+                tokenClientIdValue,
+                fraudCheckConfigurationService.getCrosscoreV2Configuration().getClientId());
+        assertEquals(
+                tokenClientSecretValue,
+                fraudCheckConfigurationService.getCrosscoreV2Configuration().getClientSecret());
+        assertEquals(
+                tokenUserNameValue,
+                fraudCheckConfigurationService.getCrosscoreV2Configuration().getUsername());
+        assertEquals(
+                tokenPasswordValue,
+                fraudCheckConfigurationService.getCrosscoreV2Configuration().getPassword());
+        assertEquals(
+                tokenUserDomainValue,
+                fraudCheckConfigurationService.getCrosscoreV2Configuration().getUserDomain());
+        assertEquals(
+                experianTokenTableValue,
+                fraudCheckConfigurationService.getCrosscoreV2Configuration().getTokenTableName());
+        assertEquals(
+                experianTokenTableValue,
+                fraudCheckConfigurationService.getCrosscoreV2Configuration().getTokenTableName());
+        assertEquals(
+                experianTokenTableValue,
+                fraudCheckConfigurationService.getCrosscoreV2Configuration().getTokenTableName());
         assertEquals(crosscoreV2EnabledValue, fraudCheckConfigurationService.crosscoreV2Enabled());
         // ***************************************************************************************************
 

@@ -80,7 +80,6 @@ public class IdentityVerificationInfoResponseValidator {
         return new ValidationResult<>(validationErrors.isEmpty(), validationErrors);
     }
 
-    // TODO: will need to be reviewed in LIME-37
     public ValidationResult<List<String>> validatePEP(PEPResponse response) {
 
         final List<String> validationErrors = new ArrayList<>();

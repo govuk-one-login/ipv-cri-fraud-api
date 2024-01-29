@@ -73,7 +73,7 @@ public class TokenRequestService {
             "Token expiry window not valid";
 
     public TokenRequestService(
-            FraudCheckConfigurationService fraudCheckConfigurationService,
+            CrosscoreV2Configuration crosscoreV2Configuration,
             DynamoDbEnhancedClient dynamoDbEnhancedClient,
             HttpRetryer httpRetryer,
             RequestConfig requestConfig,
@@ -81,15 +81,15 @@ public class TokenRequestService {
             EventProbe eventProbe) {
 
         // Token Table
-        this.tokenTableName = fraudCheckConfigurationService.getTokenTableName();
+        this.tokenTableName = crosscoreV2Configuration.getTokenTableName();
         this.dataStore = new DataStore<>(tokenTableName, TokenItem.class, dynamoDbEnhancedClient);
 
-        this.clientSecret = fraudCheckConfigurationService.getClientSecret();
-        this.clientId = fraudCheckConfigurationService.getClientId();
-        this.requestURI = URI.create(fraudCheckConfigurationService.getTokenEndpoint());
-        this.username = fraudCheckConfigurationService.getUsername();
-        this.password = fraudCheckConfigurationService.getPassword();
-        this.userDomain = fraudCheckConfigurationService.getUserDomain();
+        this.clientSecret = crosscoreV2Configuration.getClientSecret();
+        this.clientId = crosscoreV2Configuration.getClientId();
+        this.requestURI = URI.create(crosscoreV2Configuration.getTokenEndpoint());
+        this.username = crosscoreV2Configuration.getUsername();
+        this.password = crosscoreV2Configuration.getPassword();
+        this.userDomain = crosscoreV2Configuration.getUserDomain();
 
         this.httpRetryer = httpRetryer;
         this.requestConfig = requestConfig;

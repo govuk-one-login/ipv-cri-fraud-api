@@ -56,7 +56,7 @@ Feature: Fraud CRI
   @userSearch_by_invalid_userName @staging-fraud
   Scenario: User Search By Invalid UserName(STUB)
     Given I navigate to the IPV Core Stub
-    And I click the Fraud CRI for the Staging environment
+    And I click the Fraud CRI for the testEnvironment
     When I search for user name Debra Kiritharnathan in the ThirdParty table
     And I click on Go to Fraud CRI link
     Then I navigate to the verifiable issuer to check for a Invalid response from thirdParty
@@ -88,9 +88,9 @@ Feature: Fraud CRI
     And The test is complete and I close the driver
 
   @happy_path_with_ci_fraud @staging-fraud
-  Scenario: User Journey Happy Path with A01 CI (STUB)
+  Scenario: User Journey Happy Path with A01 CI
     Given I navigate to the IPV Core Stub
-    And I click the Fraud CRI for the Staging environment
+    And I click the Fraud CRI for the testEnvironment
     Then I search for user number 34 in the ThirdParty table
     And I navigate to the verifiable issuer to check for a Valid response from thirdParty
     And JSON payload should contain ci A01 and score 2
@@ -122,7 +122,7 @@ Feature: Fraud CRI
   @pep_test_all_users @staging-fraud
   Scenario Outline: Edit User Happy Path with pep CI (STUB)
     Given I navigate to the IPV Core Stub
-    And I click the Fraud CRI for the Staging environment
+    And I click the Fraud CRI for the testEnvironment
     And I search for user name LINDA DUFF in the ThirdParty table
     When I click on Edit User link
     And I am on Edit User page
@@ -169,7 +169,7 @@ Feature: Fraud CRI
   @test_PEP_user_with_multiple_addresses @staging-fraud
   Scenario Outline: Edit PEP User with multiple addresses (STUB)
     Given I navigate to the IPV Core Stub
-    And I click the Fraud CRI for the Staging environment
+    And I click the Fraud CRI for the testEnvironment
     And I search for user name LINDA DUFF in the ThirdParty table
     When I click on Edit User link
     Then I am on Edit User page

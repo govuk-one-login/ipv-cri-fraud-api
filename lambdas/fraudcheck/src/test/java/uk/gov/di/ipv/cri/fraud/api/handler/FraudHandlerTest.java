@@ -26,6 +26,7 @@ import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationService;
 import uk.gov.di.ipv.cri.fraud.api.service.ServiceFactory;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
+import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
 
 import java.io.IOException;
@@ -77,7 +78,7 @@ class FraudHandlerTest {
 
     @Test
     void handleResponseShouldReturnOkResponseWhenValidInputProvided()
-            throws IOException, SqsException {
+            throws IOException, SqsException, OAuthErrorResponseException {
         String testRequestBody = "request body";
         PersonIdentity testPersonIdentity = TestDataCreator.createTestPersonIdentity();
 
@@ -190,7 +191,7 @@ class FraudHandlerTest {
 
     @Test
     void handleResponseShouldReturnOkResponseWhenSessionAttemptGreaterThanOneAndResultNotFound()
-            throws IOException, SqsException {
+            throws IOException, SqsException, OAuthErrorResponseException {
         String testRequestBody = "request body";
         PersonIdentity testPersonIdentity = TestDataCreator.createTestPersonIdentity();
 
@@ -246,7 +247,7 @@ class FraudHandlerTest {
 
     @Test
     void handleResponseShouldReturnInternalServerErrorResponseWhenUnableToContactThirdPartyApi()
-            throws JsonProcessingException, SqsException {
+            throws JsonProcessingException, SqsException, OAuthErrorResponseException {
         String testRequestBody = "request body";
         String errorMessage = "error message";
         PersonIdentity testPersonIdentity = new PersonIdentity();

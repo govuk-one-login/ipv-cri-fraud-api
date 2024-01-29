@@ -75,7 +75,7 @@ class TokenRequestServiceTest {
     private static final String expectedClientId = "test-clientId";
     private static final String expectedClientSecret = "test-clientSecret";
 
-    @Mock FraudCheckConfigurationService mockFraudConfigurationService;
+    @Mock CrosscoreV2Configuration mockCrosscoreV2Configuration;
     @Mock DynamoDbEnhancedClient mockDynamoDbEnhancedClient;
     @Mock HttpRetryer mockHttpRetryer;
     @Mock private RequestConfig mockRequestConfig;
@@ -91,13 +91,13 @@ class TokenRequestServiceTest {
     void setUp() {
         realObjectMapper = new ObjectMapper();
 
-        when(mockFraudConfigurationService.getTokenEndpoint()).thenReturn(TEST_END_POINT);
-        when(mockFraudConfigurationService.getTokenTableName()).thenReturn(TEST_TOKEN_TABLE_NAME);
-        when(mockFraudConfigurationService.getUsername()).thenReturn(TEST_USER_NAME);
-        when(mockFraudConfigurationService.getPassword()).thenReturn(TEST_PASSWORD);
-        when(mockFraudConfigurationService.getClientId()).thenReturn(expectedClientId);
-        when(mockFraudConfigurationService.getClientSecret()).thenReturn(expectedClientSecret);
-        when(mockFraudConfigurationService.getUserDomain()).thenReturn(TEST_USER_DOMAIN);
+        when(mockCrosscoreV2Configuration.getTokenEndpoint()).thenReturn(TEST_END_POINT);
+        when(mockCrosscoreV2Configuration.getTokenTableName()).thenReturn(TEST_TOKEN_TABLE_NAME);
+        when(mockCrosscoreV2Configuration.getUsername()).thenReturn(TEST_USER_NAME);
+        when(mockCrosscoreV2Configuration.getPassword()).thenReturn(TEST_PASSWORD);
+        when(mockCrosscoreV2Configuration.getClientId()).thenReturn(expectedClientId);
+        when(mockCrosscoreV2Configuration.getClientSecret()).thenReturn(expectedClientSecret);
+        when(mockCrosscoreV2Configuration.getUserDomain()).thenReturn(TEST_USER_DOMAIN);
 
         // Datastore is wrapper around DynamoDbEnhancedClient
         when(mockDynamoDbEnhancedClient.table(eq(TEST_TOKEN_TABLE_NAME), any(TableSchema.class)))
@@ -105,7 +105,7 @@ class TokenRequestServiceTest {
 
         tokenRequestService =
                 new TokenRequestService(
-                        mockFraudConfigurationService,
+                        mockCrosscoreV2Configuration,
                         mockDynamoDbEnhancedClient,
                         mockHttpRetryer,
                         mockRequestConfig,

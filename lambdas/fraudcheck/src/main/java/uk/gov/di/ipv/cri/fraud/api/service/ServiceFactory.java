@@ -10,10 +10,12 @@ import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.lambda.powertools.parameters.ParamManager;
 import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
+import uk.gov.di.ipv.cri.common.library.persistence.DataStore;
 import uk.gov.di.ipv.cri.common.library.service.AuditEventFactory;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.gateway.*;
+import uk.gov.di.ipv.cri.fraud.library.config.HttpRequestConfig;
 
 import javax.net.ssl.SSLContext;
 
@@ -98,26 +100,43 @@ public class ServiceFactory {
         final HttpRetryer httpRetryer =
                 new HttpRetryer(closeableHttpClient, eventProbe, MAX_HTTP_RETRIES);
 
+        final TokenRequestService tokenRequestService =
+                new TokenRequestService(
+                        fraudCheckConfigurationService.getCrosscoreV2Configuration(),
+                        DataStore.getClient(),
+                        httpRetryer,
+                        HttpRequestConfig.getCustomRequestConfig(1000, 1000, 10000),
+                        objectMapper,
+                        eventProbe);
+
+        // EMTODO: Remove below conditional in post CrosscoreV2 cleanup
+        final String tenantId;
+        if (this.fraudCheckConfigurationService.crosscoreV2Enabled()) {
+            tenantId = fraudConfigurationService.getCrosscoreV2Configuration().getTenantId();
+        } else {
+            tenantId = fraudConfigurationService.getTenantId();
+        }
+
         final ThirdPartyFraudGateway thirdPartyFraudGateway =
                 new ThirdPartyFraudGateway(
                         httpRetryer,
-                        new IdentityVerificationRequestMapper(
-                                this.fraudCheckConfigurationService.getTenantId()),
+                        new IdentityVerificationRequestMapper(tenantId),
                         new IdentityVerificationResponseMapper(eventProbe),
                         this.objectMapper,
                         new HmacGenerator(fraudConfigurationService.getHmacKey()),
-                        fraudConfigurationService.getEndpointUrl(),
+                        fraudCheckConfigurationService.getEndpointUrl(),
+                        fraudConfigurationService.getCrosscoreV2Configuration(),
                         eventProbe);
 
         final ThirdPartyPepGateway thirdPartyPepGateway =
                 new ThirdPartyPepGateway(
                         httpRetryer,
-                        new IdentityVerificationRequestMapper(
-                                this.fraudCheckConfigurationService.getTenantId()),
+                        new IdentityVerificationRequestMapper(tenantId),
                         new IdentityVerificationResponseMapper(eventProbe),
                         this.objectMapper,
                         new HmacGenerator(fraudConfigurationService.getHmacKey()),
                         fraudConfigurationService.getEndpointUrl(),
+                        fraudConfigurationService.getCrosscoreV2Configuration(),
                         eventProbe);
 
         final IdentityScoreCalculator identityScoreCalculator =
@@ -135,7 +154,8 @@ public class ServiceFactory {
                 activityHistoryScoreCalculator,
                 auditService,
                 fraudCheckConfigurationService,
-                eventProbe);
+                eventProbe,
+                tokenRequestService);
     }
 
     private CloseableHttpClient generateHttpClient(
