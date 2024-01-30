@@ -7,7 +7,7 @@ public class WarningsErrors {
     private String responseCode;
 
     @JsonProperty("responseType")
-    private ResponseType responseType;
+    private String responseType;
 
     @JsonProperty("responseMessage")
     private String responseMessage;
@@ -20,11 +20,11 @@ public class WarningsErrors {
         return responseCode;
     }
 
-    public void setResponseType(ResponseType responseType) {
+    public void setResponseType(String responseType) {
         this.responseType = responseType;
     }
 
-    public ResponseType getResponseType() {
+    public String getResponseType() {
         return responseType;
     }
 
