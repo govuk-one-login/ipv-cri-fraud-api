@@ -39,7 +39,7 @@ class PersonIdentityValidator {
 
         if (Objects.isNull(personIdentity.getAddresses())) {
             validationErrors.add("Addresses" + JsonValidationUtility.IS_NULL_ERROR_MESSAGE_SUFFIX);
-        } else if (JsonValidationUtility.validateIntegerRangeData(
+        } else if (JsonValidationUtility.validateIntegerRangeDataNullIsFail(
                 personIdentity.getAddresses().size(),
                 MIN_SUPPORTED_ADDRESSES,
                 MAX_SUPPORTED_ADDRESSES,

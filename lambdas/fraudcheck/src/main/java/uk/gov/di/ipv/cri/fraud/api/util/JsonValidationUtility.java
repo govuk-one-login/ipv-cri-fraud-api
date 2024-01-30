@@ -166,8 +166,17 @@ public final class JsonValidationUtility {
      * @param validationErrors A list in which to collect validation errors
      * @return true if validation passed or false if not.
      */
-    public static boolean validateIntegerRangeData(
-            int variable, int min, int max, String name, final List<String> validationErrors) {
+    public static boolean validateIntegerRangeDataNullIsFail(
+            Integer variable,
+            Integer min,
+            Integer max,
+            String name,
+            final List<String> validationErrors) {
+        if (variable == null) {
+            validationErrors.add(name + IS_NULL_ERROR_MESSAGE_SUFFIX);
+            return false;
+        }
+
         if (variable < min || variable > max) {
             validationErrors.add(createIntegerRangeErrorMessage(variable, min, max, name));
             return false;
@@ -177,7 +186,7 @@ public final class JsonValidationUtility {
     }
 
     public static String createIntegerRangeErrorMessage(
-            int variable, int min, int max, String name) {
+            Integer variable, Integer min, Integer max, String name) {
         return String.format(
                 JsonValidationUtility.INVALID_VALUE_RANGE_ERROR_MESSAGE_FORMAT,
                 name,

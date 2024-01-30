@@ -72,7 +72,7 @@ public class IdentityVerificationInfoResponseValidatorTest {
 
     @Test
     void headerTenantIDCannotBeTooLong() {
-        final String TEST_STRING = len10String.repeat(3) + "1";
+        final String TEST_STRING = len10String.repeat(3) + "1234567";
         testIVResponse.getResponseHeader().setTenantID(TEST_STRING);
 
         ValidationResult<List<String>> validationResult =
@@ -89,7 +89,7 @@ public class IdentityVerificationInfoResponseValidatorTest {
 
     @Test
     void headerTenantIDMaxLenOK() {
-        final String TEST_STRING = len10String.repeat(3);
+        final String TEST_STRING = len10String.repeat(3) + "123456";
         testIVResponse.getResponseHeader().setTenantID(TEST_STRING);
 
         ValidationResult<List<String>> validationResult =
@@ -506,23 +506,18 @@ public class IdentityVerificationInfoResponseValidatorTest {
     }
 
     @Test
-    void headerOverallResponseDecisionTextCannotBeEmpty() {
+    void headerOverallResponseDecisionTextEmptyIsOk() {
         final String TEST_STRING = "";
         testIVResponse.getResponseHeader().getOverallResponse().setDecisionText(TEST_STRING);
 
         ValidationResult<List<String>> validationResult =
                 infoResponseValidator.validate(testIVResponse);
 
-        final String EXPECTED_ERROR =
-                "OverallResponse:DecisionText"
-                        + JsonValidationUtility.IS_EMPTY_ERROR_MESSAGE_SUFFIX;
-
         assertEquals(
                 TEST_STRING,
                 testIVResponse.getResponseHeader().getOverallResponse().getDecisionText());
-        assertEquals(1, validationResult.getError().size());
-        assertEquals(EXPECTED_ERROR, validationResult.getError().get(0));
-        assertFalse(validationResult.isValid());
+        assertEquals(0, validationResult.getError().size());
+        assertTrue(validationResult.isValid());
     }
 
     @Test
