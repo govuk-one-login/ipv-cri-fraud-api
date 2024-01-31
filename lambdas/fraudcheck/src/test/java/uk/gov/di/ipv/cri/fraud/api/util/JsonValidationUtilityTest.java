@@ -18,7 +18,7 @@ class JsonValidationUtilityTest {
 
     private static List<String> TEST_LIST;
     private static String TEST_STRING;
-    private static int TEST_INT;
+    private static Integer TEST_INT;
     private static final int TEST_INT_RANGE_MIN = 0;
     private static final int TEST_INT_RANGE_MAX = 127;
     private static List<String> validationErrors;
@@ -390,7 +390,7 @@ class JsonValidationUtilityTest {
         TEST_INT = 63;
 
         boolean result =
-                JsonValidationUtility.validateIntegerRangeData(
+                JsonValidationUtility.validateIntegerRangeDataNullIsFail(
                         TEST_INT,
                         TEST_INT_RANGE_MIN,
                         TEST_INT_RANGE_MAX,
@@ -406,7 +406,7 @@ class JsonValidationUtilityTest {
         TEST_INT = TEST_INT_RANGE_MIN;
 
         boolean result =
-                JsonValidationUtility.validateIntegerRangeData(
+                JsonValidationUtility.validateIntegerRangeDataNullIsFail(
                         TEST_INT,
                         TEST_INT_RANGE_MIN,
                         TEST_INT_RANGE_MAX,
@@ -422,7 +422,7 @@ class JsonValidationUtilityTest {
         TEST_INT = TEST_INT_RANGE_MAX;
 
         boolean result =
-                JsonValidationUtility.validateIntegerRangeData(
+                JsonValidationUtility.validateIntegerRangeDataNullIsFail(
                         TEST_INT,
                         TEST_INT_RANGE_MIN,
                         TEST_INT_RANGE_MAX,
@@ -438,7 +438,7 @@ class JsonValidationUtilityTest {
         TEST_INT = TEST_INT_RANGE_MIN - 1;
 
         boolean result =
-                JsonValidationUtility.validateIntegerRangeData(
+                JsonValidationUtility.validateIntegerRangeDataNullIsFail(
                         TEST_INT,
                         TEST_INT_RANGE_MIN,
                         TEST_INT_RANGE_MAX,
@@ -459,7 +459,7 @@ class JsonValidationUtilityTest {
         TEST_INT = TEST_INT_RANGE_MAX + 1;
 
         boolean result =
-                JsonValidationUtility.validateIntegerRangeData(
+                JsonValidationUtility.validateIntegerRangeDataNullIsFail(
                         TEST_INT,
                         TEST_INT_RANGE_MIN,
                         TEST_INT_RANGE_MAX,
@@ -469,6 +469,26 @@ class JsonValidationUtilityTest {
         final String EXPECTED_ERROR =
                 JsonValidationUtility.createIntegerRangeErrorMessage(
                         TEST_INT, TEST_INT_RANGE_MIN, TEST_INT_RANGE_MAX, TEST_INTEGER_NAME);
+
+        assertEquals(1, validationErrors.size());
+        assertEquals(EXPECTED_ERROR, validationErrors.get(0));
+        assertFalse(result);
+    }
+
+    @Test
+    void validateIntegerRangeData_FailsIfNull() {
+        TEST_INT = null;
+
+        boolean result =
+                JsonValidationUtility.validateIntegerRangeDataNullIsFail(
+                        TEST_INT,
+                        TEST_INT_RANGE_MIN,
+                        TEST_INT_RANGE_MAX,
+                        TEST_INTEGER_NAME,
+                        validationErrors);
+
+        final String EXPECTED_ERROR =
+                TEST_INTEGER_NAME + JsonValidationUtility.IS_NULL_ERROR_MESSAGE_SUFFIX;
 
         assertEquals(1, validationErrors.size());
         assertEquals(EXPECTED_ERROR, validationErrors.get(0));

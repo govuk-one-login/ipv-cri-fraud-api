@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class IdentityVerificationInfoResponseValidator {
-    public static final int HEADER_TENANT_ID_MAX_LEN = 30;
+    public static final int HEADER_TENANT_ID_MAX_LEN = 36; // CC2 UUID
     public static final int HEADER_REQUEST_TYPE_MAX_LEN = 40;
     public static final int HEADER_CLIENT_REF_ID_MAX_LEN = 90;
     public static final int HEADER_EXP_REQUEST_ID_MAX_LEN = 90;
@@ -165,31 +165,30 @@ public class IdentityVerificationInfoResponseValidator {
                     subObjectName + DECISION_FIELD_NAME,
                     validationErrors);
 
-            JsonValidationUtility.validateIntegerRangeData(
+            JsonValidationUtility.validateIntegerRangeDataNullIsFail(
                     overallResponse.getScore(),
                     OVERALL_RESPONSE_DECISION_SCORE_MIN_VALUE,
                     OVERALL_RESPONSE_DECISION_SCORE_MAX_VALUE,
                     subObjectName + SCORE_FIELD_NAME,
                     validationErrors);
 
-            JsonValidationUtility.validateStringDataEmptyIsFail(
+            JsonValidationUtility.validateStringDataNullAndEmptyIsAllowed(
                     overallResponse.getDecisionText(),
                     OVERALL_RESPONSE_DECISION_TEXT_MAX_LEN,
                     subObjectName + DECISION_TEXT_FIELD_NAME,
                     validationErrors);
 
-            if (!pepEnabled) {
-                if (JsonValidationUtility.validateListDataEmptyIsFail(
-                        overallResponse.getDecisionReasons(),
-                        subObjectName + "DecisionReasons",
-                        validationErrors)) {
-                    for (String reason : overallResponse.getDecisionReasons()) {
-                        JsonValidationUtility.validateStringDataEmptyIsFail(
-                                reason,
-                                OVERALL_RESPONSE_DECISION_REASONS_MAX_REASON_LEN,
-                                subObjectName + "DecisionReasons:Reason",
-                                validationErrors);
-                    }
+            if (!pepEnabled
+                    && (JsonValidationUtility.validateListDataEmptyIsFail(
+                            overallResponse.getDecisionReasons(),
+                            subObjectName + "DecisionReasons",
+                            validationErrors))) {
+                for (String reason : overallResponse.getDecisionReasons()) {
+                    JsonValidationUtility.validateStringDataEmptyIsFail(
+                            reason,
+                            OVERALL_RESPONSE_DECISION_REASONS_MAX_REASON_LEN,
+                            subObjectName + "DecisionReasons:Reason",
+                            validationErrors);
                 }
             }
 
@@ -290,7 +289,7 @@ public class IdentityVerificationInfoResponseValidator {
             }
         }
 
-        JsonValidationUtility.validateIntegerRangeData(
+        JsonValidationUtility.validateIntegerRangeDataNullIsFail(
                 orchestrationDecision.getScore(),
                 ORCHESTRATION_DECISION_SCORE_MIN_VALUE,
                 ORCHESTRATION_DECISION_SCORE_MAX_VALUE,
@@ -365,7 +364,7 @@ public class IdentityVerificationInfoResponseValidator {
                 subObjectName + "ServiceName",
                 validationErrors);
 
-        JsonValidationUtility.validateIntegerRangeData(
+        JsonValidationUtility.validateIntegerRangeDataNullIsFail(
                 decisionElement.getScore(),
                 DECISION_ELEMENTS_SCORE_MIN_VALUE,
                 DECISION_ELEMENTS_SCORE_MAX_VALUE,
@@ -397,7 +396,7 @@ public class IdentityVerificationInfoResponseValidator {
         String subObjectName = "DecisionElement:Rules:Rule:";
 
         if (rule.getRuleScore() != null) {
-            JsonValidationUtility.validateIntegerRangeData(
+            JsonValidationUtility.validateIntegerRangeDataNullIsFail(
                     rule.getRuleScore(),
                     DECISION_ELEMENTS_RULE_NAME_SERVICE_LEVEL_SCORE_MIN,
                     DECISION_ELEMENTS_RULE_NAME_SERVICE_LEVEL_SCORE_MAX,
@@ -412,50 +411,47 @@ public class IdentityVerificationInfoResponseValidator {
         if (JsonValidationUtility.validateListDataEmptyIsAllowed(
                 warningsErrors, "DecisionElement:WarningsErrors", validationErrors)) {
             for (WarningsErrors warningError : warningsErrors) {
+                checkIfWarningsErrorsContainsErrorResponseType(warningError, validationErrors);
+            }
+        }
+    }
 
-                boolean warningErrorSafeToLog = true;
+    private void checkIfWarningsErrorsContainsErrorResponseType(
+            WarningsErrors warningError, List<String> validationErrors) {
+        boolean warningErrorSafeToLog = true;
 
-                String responseType =
-                        warningError.getResponseType() == null
-                                ? "null"
-                                : warningError.getResponseType();
-                String responseMessage =
-                        warningError.getResponseMessage() == null
-                                ? "null"
-                                : warningError.getResponseMessage();
-                String responseCode =
-                        warningError.getResponseCode() == null
-                                ? "null"
-                                : warningError.getResponseCode();
+        String responseType =
+                warningError.getResponseType() == null ? "null" : warningError.getResponseType();
+        String responseMessage =
+                warningError.getResponseMessage() == null
+                        ? "null"
+                        : warningError.getResponseMessage();
+        String responseCode =
+                warningError.getResponseCode() == null ? "null" : warningError.getResponseCode();
 
-                if (responseCode.length() > DECISION_ELEMENTS_WARNING_RESPONSE_CODE_MAX_LEN) {
-                    validationErrors.add(
-                            "DecisionElement:WarningsErrors:ResponseCode is too long.");
+        if (responseCode.length() > DECISION_ELEMENTS_WARNING_RESPONSE_CODE_MAX_LEN) {
+            validationErrors.add("DecisionElement:WarningsErrors:ResponseCode is too long.");
 
-                    warningErrorSafeToLog = false;
-                }
-                if (responseMessage.length() > DECISION_ELEMENTS_WARNING_RESPONSE_MESSAGE_MAX_LEN) {
-                    validationErrors.add(
-                            "DecisionElement:WarningsErrors:ResponseMessage is too long.");
-                    warningErrorSafeToLog = false;
-                }
+            warningErrorSafeToLog = false;
+        }
+        if (responseMessage.length() > DECISION_ELEMENTS_WARNING_RESPONSE_MESSAGE_MAX_LEN) {
+            validationErrors.add("DecisionElement:WarningsErrors:ResponseMessage is too long.");
+            warningErrorSafeToLog = false;
+        }
 
-                // Only fail for ERROR responses
-                if ("error".equalsIgnoreCase(responseType)) {
-                    if (warningErrorSafeToLog) {
-                        validationErrors.add(
-                                String.format(
-                                        WARNINGS_ERRORS_LOG_FORMAT,
-                                        responseType,
-                                        responseCode,
-                                        responseMessage));
-                    } else {
-                        validationErrors.add(
-                                String.format(
-                                        WARNINGS_ERRORS_FALL_BACK_ERROR_MESSAGE_FORMAT,
-                                        responseType));
-                    }
-                }
+        // Only fail for ERROR responses
+        if ("error".equalsIgnoreCase(responseType)) {
+            if (warningErrorSafeToLog) {
+                validationErrors.add(
+                        String.format(
+                                WARNINGS_ERRORS_LOG_FORMAT,
+                                responseType,
+                                responseCode,
+                                responseMessage));
+            } else {
+                validationErrors.add(
+                        String.format(
+                                WARNINGS_ERRORS_FALL_BACK_ERROR_MESSAGE_FORMAT, responseType));
             }
         }
     }
