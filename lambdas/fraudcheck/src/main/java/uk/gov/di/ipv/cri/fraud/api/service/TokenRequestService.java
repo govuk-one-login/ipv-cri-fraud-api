@@ -16,6 +16,7 @@ import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.RequestHeaderKeys;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.TokenRequestPayload;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.TokenResponse;
 import uk.gov.di.ipv.cri.fraud.api.persistence.item.TokenItem;
+import uk.gov.di.ipv.cri.fraud.api.util.AccessTokenValidator;
 import uk.gov.di.ipv.cri.fraud.api.util.HTTPReply;
 import uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
@@ -37,6 +38,7 @@ public class TokenRequestService {
     private static final String ENDPOINT_NAME = "token endpoint";
     private static final String REQUEST_NAME = "Token";
 
+    private CrosscoreV2Configuration crosscoreV2Configuration;
     private final String tokenTableName;
     private DataStore<TokenItem> dataStore;
 
@@ -80,6 +82,8 @@ public class TokenRequestService {
             ObjectMapper objectMapper,
             EventProbe eventProbe) {
 
+        this.crosscoreV2Configuration = crosscoreV2Configuration;
+
         // Token Table
         this.tokenTableName = crosscoreV2Configuration.getTokenTableName();
         this.dataStore = new DataStore<>(tokenTableName, TokenItem.class, dynamoDbEnhancedClient);
@@ -101,7 +105,6 @@ public class TokenRequestService {
     }
 
     public String requestToken(boolean alwaysRequestNewToken) throws OAuthErrorResponseException {
-
         LOGGER.info("Checking Table {} for existing cached token", tokenTableName);
 
         TokenItem tokenItem = getTokenItemFromTable();
@@ -125,14 +128,29 @@ public class TokenRequestService {
 
         // Request an Access Token
         if (newTokenRequest) {
+            try {
+                TokenResponse newTokenResponse = performNewTokenRequest();
+                LOGGER.debug("Saving Token {}", newTokenResponse.getAccessToken());
 
-            TokenResponse newTokenResponse = performNewTokenRequest();
+                tokenItem = new TokenItem(newTokenResponse.getAccessToken());
 
-            LOGGER.info("Saving Token {}", newTokenResponse.getAccessToken());
-
-            tokenItem = new TokenItem(newTokenResponse.getAccessToken());
-
-            saveTokenItem(tokenItem);
+                saveTokenItem(tokenItem);
+            } catch (Exception exception) {
+                LOGGER.error(
+                        "Failed to generate new token. Continuing to use existing token ",
+                        exception);
+                // Alarm Firing
+                eventProbe.counterMetric(
+                        ThirdPartyAPIEndpointMetric
+                                .TOKEN_RESPONSE_FAILED_TO_GENERATE_NEW_TOKEN_METRIC
+                                .withEndpointPrefix());
+                if (tokenItem == null) {
+                    LOGGER.error(
+                            "Failed to generate new token. No valid tokens present returning error ",
+                            exception);
+                    throw exception;
+                }
+            }
         } else {
             long ttl = tokenItem.getTtl();
 
@@ -178,6 +196,10 @@ public class TokenRequestService {
         } catch (JsonProcessingException e) {
             LOGGER.error("JsonProcessingException creating request body");
             LOGGER.debug(e.getMessage());
+
+            eventProbe.counterMetric(
+                    ThirdPartyAPIEndpointMetric.TOKEN_RESPONSE_TYPE_INVALID.withEndpointPrefix());
+
             throw new OAuthErrorResponseException(
                     HttpStatusCode.INTERNAL_SERVER_ERROR,
                     ErrorResponse.FAILED_TO_PREPARE_TOKEN_REQUEST_PAYLOAD);
@@ -231,8 +253,24 @@ public class TokenRequestService {
                 TokenResponse response =
                         objectMapper.readValue(httpReply.responseBody, TokenResponse.class);
 
-                eventProbe.counterMetric(
-                        ThirdPartyAPIEndpointMetric.TOKEN_RESPONSE_TYPE_VALID.withEndpointPrefix());
+                // Validate token JWT
+                boolean isValidToken =
+                        AccessTokenValidator.isTokenValid(
+                                response.getAccessToken(), objectMapper, crosscoreV2Configuration);
+
+                if (!isValidToken) {
+                    eventProbe.counterMetric(
+                            ThirdPartyAPIEndpointMetric.TOKEN_RESPONSE_TYPE_INVALID
+                                    .withEndpointPrefix());
+                    throw new OAuthErrorResponseException(
+                            HttpStatusCode.FORBIDDEN,
+                            ErrorResponse
+                                    .TOKEN_ENDPOINT_RETURNED_JWT_WITH_UNEXPECTED_VALUES_IN_RESPONSE);
+                } else {
+                    eventProbe.counterMetric(
+                            ThirdPartyAPIEndpointMetric.TOKEN_RESPONSE_TYPE_VALID
+                                    .withEndpointPrefix());
+                }
 
                 return response;
             } catch (JsonProcessingException e) {
@@ -261,11 +299,6 @@ public class TokenRequestService {
 
             if (alertStatusCodes.contains(httpReply.statusCode)) {
                 LOGGER.warn("Status code {}, triggered alert metric", httpReply.statusCode);
-
-                // Alarm Firing
-                eventProbe.counterMetric(
-                        ThirdPartyAPIEndpointMetric.TOKEN_RESPONSE_STATUS_CODE_ALERT_METRIC
-                                .withEndpointPrefix());
             }
 
             throw new OAuthErrorResponseException(
