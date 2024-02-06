@@ -206,9 +206,9 @@ Mappings:
 
   FraudCriCrosscoreV2EnabledMapping:
     Environment:
-      dev: "false"
-      build: "false"
-      staging: "false"
+      dev: "true"
+      build: "true"
+      staging: "true"
       integration: "false"
       production: "false"
 
