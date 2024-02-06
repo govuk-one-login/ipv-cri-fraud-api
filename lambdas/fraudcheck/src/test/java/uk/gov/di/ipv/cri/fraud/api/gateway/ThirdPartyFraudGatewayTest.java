@@ -15,8 +15,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
@@ -54,7 +52,6 @@ import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetri
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_RESPONSE_TYPE_VALID;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class ThirdPartyFraudGatewayTest {
 
     private static final String TEST_API_RESPONSE_BODY = "test-api-response-content";
@@ -85,10 +82,7 @@ class ThirdPartyFraudGatewayTest {
                         TEST_ENDPOINT_URL,
                         fraudCheckConfigurationService,
                         mockEventProbe);
-        when(fraudCheckConfigurationService.getCrosscoreV2Configuration())
-                .thenReturn(mockCrosscoreV2Configuration);
         when(fraudCheckConfigurationService.getTenantId()).thenReturn("54321");
-        when(mockCrosscoreV2Configuration.getTenantId()).thenReturn("12345");
     }
 
     @Test
@@ -306,6 +300,9 @@ class ThirdPartyFraudGatewayTest {
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
         IdentityVerificationResponse testResponse = new IdentityVerificationResponse();
         FraudCheckResult testFraudCheckResult = new FraudCheckResult();
+        when(fraudCheckConfigurationService.getCrosscoreV2Configuration())
+                .thenReturn(mockCrosscoreV2Configuration);
+        when(mockCrosscoreV2Configuration.getTenantId()).thenReturn("12345");
         when(mockRequestMapper.mapPersonIdentity(personIdentity, "12345"))
                 .thenReturn(testApiRequest);
 
@@ -370,6 +367,9 @@ class ThirdPartyFraudGatewayTest {
 
         when(mockRequestMapper.mapPersonIdentity(personIdentity, "12345"))
                 .thenReturn(testApiRequest);
+        when(fraudCheckConfigurationService.getCrosscoreV2Configuration())
+                .thenReturn(mockCrosscoreV2Configuration);
+        when(mockCrosscoreV2Configuration.getTenantId()).thenReturn("12345");
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
         ArgumentCaptor<HttpEntityEnclosingRequestBase> httpRequestCaptor =
@@ -446,6 +446,9 @@ class ThirdPartyFraudGatewayTest {
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
         when(mockRequestMapper.mapPersonIdentity(personIdentity, "12345"))
                 .thenReturn(testApiRequest);
+        when(fraudCheckConfigurationService.getCrosscoreV2Configuration())
+                .thenReturn(mockCrosscoreV2Configuration);
+        when(mockCrosscoreV2Configuration.getTenantId()).thenReturn("12345");
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
 

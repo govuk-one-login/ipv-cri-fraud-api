@@ -74,10 +74,7 @@ class ThirdPartyFraudGatewayComponentTest {
                         TEST_ENDPOINT_URL,
                         mockFraudCheckConfigurationService,
                         mockEventProbe);
-        when(mockFraudCheckConfigurationService.getCrosscoreV2Configuration())
-                .thenReturn(mockCrosscoreV2ConfigurationService);
         when(mockFraudCheckConfigurationService.getTenantId()).thenReturn("54321");
-        when(mockCrosscoreV2ConfigurationService.getTenantId()).thenReturn("123456");
     }
 
     @Test
@@ -229,6 +226,9 @@ class ThirdPartyFraudGatewayComponentTest {
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
         PepCheckResult testPepCheckResult = new PepCheckResult();
+        when(mockFraudCheckConfigurationService.getCrosscoreV2Configuration())
+                .thenReturn(mockCrosscoreV2ConfigurationService);
+        when(mockCrosscoreV2ConfigurationService.getTenantId()).thenReturn("123456");
         when(mockRequestMapper.mapPEPPersonIdentity(personIdentity, "123456"))
                 .thenReturn(testApiRequest);
 
