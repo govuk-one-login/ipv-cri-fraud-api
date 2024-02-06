@@ -1,4 +1,4 @@
-@fraud_CRI_API
+@fraud_CRI_API @V2
 Feature: Fraud CRI API
 
   @intialJWT_happy_path @fraudCRI_API @pre-merge @dev

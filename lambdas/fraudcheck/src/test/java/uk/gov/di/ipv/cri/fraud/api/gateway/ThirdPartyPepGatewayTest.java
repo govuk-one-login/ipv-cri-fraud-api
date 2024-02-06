@@ -22,6 +22,7 @@ import uk.gov.di.ipv.cri.fraud.api.domain.check.PepCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PEPRequest;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.PEPResponse;
 import uk.gov.di.ipv.cri.fraud.api.service.CrosscoreV2Configuration;
+import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryer;
 import uk.gov.di.ipv.cri.fraud.api.service.PepCheckHttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.api.util.HTTPReply;
@@ -64,6 +65,7 @@ class ThirdPartyPepGatewayTest {
     private ThirdPartyPepGateway thirdPartyPepGateway;
 
     @Mock private HttpRetryer mockHttpRetryer;
+    @Mock private FraudCheckConfigurationService fraudCheckConfigurationService;
     @Mock private CrosscoreV2Configuration mockCrosscoreV2Configuration;
     @Mock private IdentityVerificationRequestMapper mockRequestMapper;
     @Mock private IdentityVerificationResponseMapper mockResponseMapper;
@@ -81,8 +83,9 @@ class ThirdPartyPepGatewayTest {
                         mockObjectMapper,
                         mockHmacGenerator,
                         TEST_ENDPOINT_URL,
-                        mockCrosscoreV2Configuration,
+                        fraudCheckConfigurationService,
                         mockEventProbe);
+        when(fraudCheckConfigurationService.getTenantId()).thenReturn("54321");
     }
 
     @Test
@@ -94,7 +97,8 @@ class ThirdPartyPepGatewayTest {
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
         PEPResponse testPepResponse = new PEPResponse();
         PepCheckResult testPepCheckResult = new PepCheckResult();
-        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity, "54321"))
+                .thenReturn(testApiRequest);
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
         when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(HMAC_OF_REQUEST_BODY);
@@ -133,7 +137,7 @@ class ThirdPartyPepGatewayTest {
                 .counterMetric(PEP_RESPONSE_TYPE_VALID.withEndpointPrefix());
         verifyNoMoreInteractions(mockEventProbe);
 
-        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity, "54321");
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHmacGenerator).generateHmac(testRequestBody);
         verify(mockHttpRetryer)
@@ -158,7 +162,8 @@ class ThirdPartyPepGatewayTest {
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
 
-        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity, "54321"))
+                .thenReturn(testApiRequest);
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
         when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(HMAC_OF_REQUEST_BODY);
@@ -209,7 +214,7 @@ class ThirdPartyPepGatewayTest {
                 .counterMetric(PEP_RESPONSE_TYPE_INVALID.withEndpointPrefix());
         verifyNoMoreInteractions(mockEventProbe);
 
-        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity, "54321");
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHmacGenerator).generateHmac(testRequestBody);
         verify(mockHttpRetryer)
@@ -234,7 +239,8 @@ class ThirdPartyPepGatewayTest {
 
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
-        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity, "54321"))
+                .thenReturn(testApiRequest);
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
 
@@ -269,7 +275,7 @@ class ThirdPartyPepGatewayTest {
         final String EXPECTED_ERROR =
                 ERROR_PEP_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE.getMessage();
 
-        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity, "54321");
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHmacGenerator).generateHmac(testRequestBody);
 
@@ -296,7 +302,11 @@ class ThirdPartyPepGatewayTest {
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
         PEPResponse testPepResponse = new PEPResponse();
         PepCheckResult testPepCheckResult = new PepCheckResult();
-        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+        when(fraudCheckConfigurationService.getCrosscoreV2Configuration())
+                .thenReturn(mockCrosscoreV2Configuration);
+        when(mockCrosscoreV2Configuration.getTenantId()).thenReturn("12345");
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity, "12345"))
+                .thenReturn(testApiRequest);
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
 
@@ -335,7 +345,7 @@ class ThirdPartyPepGatewayTest {
                 .counterMetric(PEP_RESPONSE_TYPE_VALID.withEndpointPrefix());
         verifyNoMoreInteractions(mockEventProbe);
 
-        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity, "12345");
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHttpRetryer)
                 .sendHTTPRequestRetryIfAllowed(
@@ -357,8 +367,11 @@ class ThirdPartyPepGatewayTest {
 
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
-
-        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+        when(fraudCheckConfigurationService.getCrosscoreV2Configuration())
+                .thenReturn(mockCrosscoreV2Configuration);
+        when(mockCrosscoreV2Configuration.getTenantId()).thenReturn("12345");
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity, "12345"))
+                .thenReturn(testApiRequest);
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
         ArgumentCaptor<HttpEntityEnclosingRequestBase> httpRequestCaptor =
@@ -410,7 +423,7 @@ class ThirdPartyPepGatewayTest {
                 .counterMetric(PEP_RESPONSE_TYPE_INVALID.withEndpointPrefix());
         verifyNoMoreInteractions(mockEventProbe);
 
-        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity, "12345");
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHttpRetryer)
                 .sendHTTPRequestRetryIfAllowed(
@@ -433,7 +446,11 @@ class ThirdPartyPepGatewayTest {
 
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
-        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+        when(fraudCheckConfigurationService.getCrosscoreV2Configuration())
+                .thenReturn(mockCrosscoreV2Configuration);
+        when(mockCrosscoreV2Configuration.getTenantId()).thenReturn("12345");
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity, "12345"))
+                .thenReturn(testApiRequest);
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
 
@@ -467,7 +484,7 @@ class ThirdPartyPepGatewayTest {
         final String EXPECTED_ERROR =
                 ERROR_PEP_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE.getMessage();
 
-        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity, "12345");
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
 
         verify(mockHttpRetryer, times(1))

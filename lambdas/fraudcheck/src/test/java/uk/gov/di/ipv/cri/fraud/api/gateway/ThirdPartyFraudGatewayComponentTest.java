@@ -11,6 +11,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
@@ -18,6 +20,7 @@ import uk.gov.di.ipv.cri.fraud.api.domain.check.PepCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PEPRequest;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.PEPResponse;
 import uk.gov.di.ipv.cri.fraud.api.service.CrosscoreV2Configuration;
+import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryer;
 import uk.gov.di.ipv.cri.fraud.api.service.PepCheckHttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.api.util.HTTPReply;
@@ -46,11 +49,13 @@ import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetri
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_RESPONSE_TYPE_VALID;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ThirdPartyFraudGatewayComponentTest {
 
     private static final String TEST_ENDPOINT_URL = "https://test-endpoint.co.uk";
     private ThirdPartyPepGateway thirdPartyPepGateway;
-    @Mock private CrosscoreV2Configuration mockCrosscoreV2Configuration;
+    @Mock private FraudCheckConfigurationService mockFraudCheckConfigurationService;
+    @Mock private CrosscoreV2Configuration mockCrosscoreV2ConfigurationService;
     @Mock private HttpRetryer mockHttpRetryer;
     @Mock private IdentityVerificationRequestMapper mockRequestMapper;
     @Mock private IdentityVerificationResponseMapper mockResponseMapper;
@@ -67,8 +72,9 @@ class ThirdPartyFraudGatewayComponentTest {
                         new ObjectMapper(),
                         mockHmacGenerator,
                         TEST_ENDPOINT_URL,
-                        mockCrosscoreV2Configuration,
+                        mockFraudCheckConfigurationService,
                         mockEventProbe);
+        when(mockFraudCheckConfigurationService.getTenantId()).thenReturn("54321");
     }
 
     @Test
@@ -79,7 +85,8 @@ class ThirdPartyFraudGatewayComponentTest {
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
         PepCheckResult testPepCheckResult = new PepCheckResult();
-        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity, "54321"))
+                .thenReturn(testApiRequest);
 
         when(mockHmacGenerator.generateHmac(anyString())).thenReturn(hmacOfRequestBody);
 
@@ -186,7 +193,7 @@ class ThirdPartyFraudGatewayComponentTest {
                 .counterMetric(PEP_RESPONSE_TYPE_VALID.withEndpointPrefix());
         verifyNoMoreInteractions(mockEventProbe);
 
-        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity, "54321");
         verify(mockHmacGenerator).generateHmac(anyString());
         verify(mockHttpRetryer)
                 .sendHTTPRequestRetryIfAllowed(
@@ -219,7 +226,11 @@ class ThirdPartyFraudGatewayComponentTest {
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
         PepCheckResult testPepCheckResult = new PepCheckResult();
-        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+        when(mockFraudCheckConfigurationService.getCrosscoreV2Configuration())
+                .thenReturn(mockCrosscoreV2ConfigurationService);
+        when(mockCrosscoreV2ConfigurationService.getTenantId()).thenReturn("123456");
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity, "123456"))
+                .thenReturn(testApiRequest);
 
         ArgumentCaptor<HttpEntityEnclosingRequestBase> httpRequestCaptor =
                 ArgumentCaptor.forClass(HttpPost.class);
@@ -325,7 +336,7 @@ class ThirdPartyFraudGatewayComponentTest {
                 .counterMetric(PEP_RESPONSE_TYPE_VALID.withEndpointPrefix());
         verifyNoMoreInteractions(mockEventProbe);
 
-        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity);
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity, "123456");
         verify(mockHttpRetryer)
                 .sendHTTPRequestRetryIfAllowed(
                         httpRequestCaptor.capture(),

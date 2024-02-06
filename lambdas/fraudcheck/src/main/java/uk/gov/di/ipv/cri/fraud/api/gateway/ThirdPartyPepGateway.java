@@ -15,7 +15,7 @@ import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.check.PepCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PEPRequest;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.PEPResponse;
-import uk.gov.di.ipv.cri.fraud.api.service.CrosscoreV2Configuration;
+import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryer;
 import uk.gov.di.ipv.cri.fraud.api.service.PepCheckHttpRetryStatusConfig;
@@ -49,7 +49,7 @@ public class ThirdPartyPepGateway {
 
     private static final String APPLICATION_JSON_HEADER = "application/json";
 
-    private final CrosscoreV2Configuration crosscoreV2Configuration;
+    private final FraudCheckConfigurationService fraudCheckConfigurationService;
     private final IdentityVerificationRequestMapper requestMapper;
     private final IdentityVerificationResponseMapper responseMapper;
     private final ObjectMapper objectMapper;
@@ -77,7 +77,7 @@ public class ThirdPartyPepGateway {
             ObjectMapper objectMapper,
             HmacGenerator hmacGenerator,
             String endpointUrl,
-            CrosscoreV2Configuration crosscoreV2Configuration,
+            FraudCheckConfigurationService fraudCheckConfigurationService,
             EventProbe eventProbe) {
         Objects.requireNonNull(httpRetryer, "httpClient must not be null");
         Objects.requireNonNull(requestMapper, "requestMapper must not be null");
@@ -94,7 +94,7 @@ public class ThirdPartyPepGateway {
         this.objectMapper = objectMapper;
         this.hmacGenerator = hmacGenerator;
         this.endpointUri = URI.create(endpointUrl);
-        this.crosscoreV2Configuration = crosscoreV2Configuration;
+        this.fraudCheckConfigurationService = fraudCheckConfigurationService;
         this.eventProbe = eventProbe;
         this.clock = Clock.systemUTC();
 
@@ -111,7 +111,13 @@ public class ThirdPartyPepGateway {
             PersonIdentity personIdentity, boolean crosscoreV2Enabled, String token)
             throws OAuthErrorResponseException {
         LOGGER.info("Mapping person to {} request", REQUEST_NAME);
-        PEPRequest apiRequest = requestMapper.mapPEPPersonIdentity(personIdentity);
+
+        String tenantId = fraudCheckConfigurationService.getTenantId();
+        if (crosscoreV2Enabled) {
+            tenantId = fraudCheckConfigurationService.getCrosscoreV2Configuration().getTenantId();
+        }
+
+        PEPRequest apiRequest = requestMapper.mapPEPPersonIdentity(personIdentity, tenantId);
 
         String requestBody = null;
         try {
@@ -166,7 +172,11 @@ public class ThirdPartyPepGateway {
             String requestBody, boolean crosscoreV2Enabled, String token) {
         HttpPost request;
         if (crosscoreV2Enabled) {
-            request = new HttpPost(crosscoreV2Configuration.getEndpointUri());
+            request =
+                    new HttpPost(
+                            fraudCheckConfigurationService
+                                    .getCrosscoreV2Configuration()
+                                    .getEndpointUri());
             request.addHeader("Content-Type", APPLICATION_JSON_HEADER);
             request.addHeader("Accept", APPLICATION_JSON_HEADER);
             request.addHeader("Authorization", "Bearer " + token);

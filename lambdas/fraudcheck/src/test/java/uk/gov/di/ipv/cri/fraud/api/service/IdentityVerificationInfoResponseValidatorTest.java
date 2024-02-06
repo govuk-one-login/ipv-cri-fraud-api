@@ -470,7 +470,7 @@ public class IdentityVerificationInfoResponseValidatorTest {
 
     @Test
     void headerOverallResponseDecisionTextCannotBeTooLong() {
-        final String TEST_STRING = len10String.repeat(3) + "1";
+        final String TEST_STRING = len10String.repeat(4) + "1";
 
         testIVResponse.getResponseHeader().getOverallResponse().setDecisionText(TEST_STRING);
 
@@ -1263,7 +1263,7 @@ public class IdentityVerificationInfoResponseValidatorTest {
 
     @Test
     void clientPayloadOrchestrationDecisionsOrchestrationDecisionDecisionCannotBeTooLong() {
-        final String TEST_STRING = len10String.repeat(1) + "1";
+        final String TEST_STRING = len10String.repeat(2) + "1";
         testIVResponse
                 .getClientResponsePayload()
                 .getOrchestrationDecisions()
@@ -1618,7 +1618,7 @@ public class IdentityVerificationInfoResponseValidatorTest {
 
     @Test
     void clientPayloadOrchestrationDecisionsOrchestrationDecisionTextCannotBeTooLong() {
-        final String TEST_STRING = len10String.repeat(3) + "1";
+        final String TEST_STRING = len10String.repeat(4) + "1";
         testIVResponse
                 .getClientResponsePayload()
                 .getOrchestrationDecisions()
@@ -2309,7 +2309,7 @@ public class IdentityVerificationInfoResponseValidatorTest {
 
     @Test
     void clientPayloadDecisionElementsDecisionElementDecisionTextCannotBeTooLong() {
-        final String TEST_STRING = len10String.repeat(2) + "1";
+        final String TEST_STRING = len10String.repeat(4) + "1";
         testIVResponse
                 .getClientResponsePayload()
                 .getDecisionElements()

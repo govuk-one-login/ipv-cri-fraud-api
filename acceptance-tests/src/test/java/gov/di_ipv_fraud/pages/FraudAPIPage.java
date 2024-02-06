@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import static gov.di_ipv_fraud.utilities.TestUtils.getProperty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -131,14 +132,19 @@ public class FraudAPIPage {
 
     public void postRequestToFraudEndpoint() throws IOException, InterruptedException {
         String privateApiGatewayUrl = configurationService.getPrivateAPIEndpoint();
-        HttpRequest request =
+        HttpRequest.Builder baseHttpRequest =
                 HttpRequest.newBuilder()
                         .uri(URI.create(privateApiGatewayUrl + "/identity-check"))
                         .setHeader("Accept", "application/json")
                         .setHeader("Content-Type", "application/json")
                         .setHeader("session_id", SESSION_ID)
-                        .POST(HttpRequest.BodyPublishers.ofString(""))
-                        .build();
+                        .POST(HttpRequest.BodyPublishers.ofString(""));
+
+        if (getProperty("cucumber.tags").equals("@V2")) {
+            baseHttpRequest.setHeader("crosscore-version", "2");
+        }
+
+        HttpRequest request = baseHttpRequest.build();
         String fraudCheckResponse = sendHttpRequest(request).body();
         LOGGER.info("fraudCheckResponse = " + fraudCheckResponse);
     }

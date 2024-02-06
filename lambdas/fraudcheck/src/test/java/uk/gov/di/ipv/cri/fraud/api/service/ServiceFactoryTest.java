@@ -53,7 +53,6 @@ class ServiceFactoryTest {
     void shouldCreateIdentityVerificationService()
             throws NoSuchAlgorithmException, InvalidKeyException, HttpException, KeyStoreException,
                     CertificateException, IOException {
-        when(mockFraudCheckConfigurationService.crosscoreV2Enabled()).thenReturn(Boolean.FALSE);
         when(mockFraudCheckConfigurationService.getHmacKey()).thenReturn("hmac key");
         when(mockFraudCheckConfigurationService.getEndpointUrl())
                 .thenReturn("https://test-endpoint");
@@ -90,7 +89,6 @@ class ServiceFactoryTest {
                 serviceFactory.getIdentityVerificationService();
 
         assertNotNull(identityVerificationService);
-        verify(mockFraudCheckConfigurationService, times(1)).getTenantId();
         verify(mockFraudCheckConfigurationService, times(2)).getHmacKey();
         verify(mockFraudCheckConfigurationService, times(2)).getEndpointUrl();
     }
@@ -99,7 +97,6 @@ class ServiceFactoryTest {
     void shouldCreateIdentityVerificationServiceWhenCrosscoreV2Enabled()
             throws NoSuchAlgorithmException, InvalidKeyException, HttpException, KeyStoreException,
                     CertificateException, IOException {
-        when(mockFraudCheckConfigurationService.crosscoreV2Enabled()).thenReturn(Boolean.TRUE);
         when(mockFraudCheckConfigurationService.getHmacKey()).thenReturn("hmac key");
         when(mockFraudCheckConfigurationService.getEndpointUrl())
                 .thenReturn("https://test-endpoint");
@@ -136,8 +133,7 @@ class ServiceFactoryTest {
                 serviceFactory.getIdentityVerificationService();
 
         assertNotNull(identityVerificationService);
-        verify(mockFraudCheckConfigurationService.getCrosscoreV2Configuration(), times(1))
-                .getTenantId();
+
         verify(mockFraudCheckConfigurationService, times(2)).getHmacKey();
         verify(mockFraudCheckConfigurationService, times(2)).getEndpointUrl();
     }

@@ -1,5 +1,7 @@
 package gov.di_ipv_fraud.utilities;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
@@ -20,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class BrowserUtils {
+
+    private static final Logger LOGGER = LogManager.getLogger();
 
     /**
      * Switches to new window by the exact title. Returns to original window if target title not
@@ -405,6 +409,27 @@ public class BrowserUtils {
         HttpClient client = HttpClient.newBuilder().build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         return response;
+    }
+
+    public static void setFeatureSet(final String featureSet) {
+        LOGGER.info("Setting feature set : {}", featureSet);
+
+        String currentURL = Driver.get().getCurrentUrl();
+
+        String featureKeyValuePair = "featureSet=" + featureSet;
+        int li = currentURL.lastIndexOf('?');
+        String newURL;
+
+        if (li == -1) {
+            // First parameter
+            newURL = currentURL + "?" + featureKeyValuePair;
+        } else {
+            // Additional parameter
+            newURL = currentURL + "&" + featureKeyValuePair;
+        }
+
+        LOGGER.debug("newURL with feature set : {}", newURL);
+        Driver.get().get(newURL);
     }
 
     public static void changeLanguageTo(final String language) {

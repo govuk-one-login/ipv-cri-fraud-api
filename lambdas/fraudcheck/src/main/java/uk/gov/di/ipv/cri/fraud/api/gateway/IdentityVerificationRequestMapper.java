@@ -18,16 +18,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class IdentityVerificationRequestMapper {
 
     private static final Logger LOGGER = LogManager.getLogger();
-    private final String tenantId;
 
-    public IdentityVerificationRequestMapper(String tenantId) {
-        this.tenantId = tenantId;
+    public IdentityVerificationRequestMapper() {
+        // No Args constructor
     }
 
-    public IdentityVerificationRequest mapPersonIdentity(PersonIdentity personIdentity) {
+    public IdentityVerificationRequest mapPersonIdentity(
+            PersonIdentity personIdentity, String tenantId) {
         Objects.requireNonNull(personIdentity, "The personIdentity must not be null");
 
-        Header apiRequestHeader = createApiRequestHeader();
+        Header apiRequestHeader = createApiRequestHeader(tenantId);
 
         Payload apiRequestPayload = new Payload();
         Contact contact = new Contact();
@@ -65,10 +65,10 @@ public class IdentityVerificationRequestMapper {
         return apiRequest;
     }
 
-    public PEPRequest mapPEPPersonIdentity(PersonIdentity personIdentity) {
+    public PEPRequest mapPEPPersonIdentity(PersonIdentity personIdentity, String tentantId) {
         Objects.requireNonNull(personIdentity, "The personIdentity must not be null");
 
-        Header apiRequestHeader = createPEPApiRequestHeader();
+        Header apiRequestHeader = createPEPApiRequestHeader(tentantId);
 
         Payload apiRequestPayload = new Payload();
         Contact contact = new Contact();
@@ -114,9 +114,9 @@ public class IdentityVerificationRequestMapper {
         return apiRequest;
     }
 
-    private Header createPEPApiRequestHeader() {
+    private Header createPEPApiRequestHeader(String tenantId) {
         Header apiRequestHeader = new Header();
-        apiRequestHeader.setTenantId(this.tenantId);
+        apiRequestHeader.setTenantId(tenantId);
         apiRequestHeader.setRequestType("PepSanctions01");
         apiRequestHeader.setClientReferenceId(UUID.randomUUID().toString());
         apiRequestHeader.setMessageTime(Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
@@ -124,9 +124,9 @@ public class IdentityVerificationRequestMapper {
         return apiRequestHeader;
     }
 
-    private Header createApiRequestHeader() {
+    private Header createApiRequestHeader(String tenantId) {
         Header apiRequestHeader = new Header();
-        apiRequestHeader.setTenantId(this.tenantId);
+        apiRequestHeader.setTenantId(tenantId);
         apiRequestHeader.setRequestType("Authenticateplus-Standalone");
         apiRequestHeader.setClientReferenceId(UUID.randomUUID().toString());
         apiRequestHeader.setMessageTime(Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
