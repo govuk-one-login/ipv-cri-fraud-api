@@ -210,7 +210,7 @@ Mappings:
       build: "true"
       staging: "true"
       integration: "false"
-      production: "false"
+      production: "true"
 
   FraudCriPepEnabledMapping:
     Environment:
