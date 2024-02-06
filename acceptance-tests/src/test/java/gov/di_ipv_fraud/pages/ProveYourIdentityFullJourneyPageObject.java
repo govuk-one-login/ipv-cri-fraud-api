@@ -72,6 +72,9 @@ public class ProveYourIdentityFullJourneyPageObject extends UniversalSteps {
     @FindBy(id = "addressResults")
     public WebElement ChooseYourAddressFromTheList;
 
+    @FindBy(id = "targetEnvironment")
+    public WebElement ChooseYourEnvironmentFromTheList;
+
     @FindBy(id = "addressYearFrom")
     public WebElement EnterTheYearYouStartedLivingAtThisAddress;
 
@@ -165,6 +168,9 @@ public class ProveYourIdentityFullJourneyPageObject extends UniversalSteps {
     @FindBy(id = "journey")
     public WebElement proveYourIdRadioBtn;
 
+    @FindBy(id = "journey-2")
+    public WebElement ukPassportRadioBtn;
+
     public ProveYourIdentityFullJourneyPageObject() {
         this.configurationService = new ConfigurationService(System.getenv("ENVIRONMENT"));
         PageFactory.initElements(Driver.get(), this);
@@ -219,6 +225,11 @@ public class ProveYourIdentityFullJourneyPageObject extends UniversalSteps {
         select.selectByValue(address);
         continueButton.click();
         BrowserUtils.waitForPageToLoad(100);
+    }
+
+    public void selectTargetEnvironmentFromDropdown( String environment) {
+        Select select = new Select(ChooseYourEnvironmentFromTheList);
+        select.selectByValue(environment);
     }
 
     public void enterAddressExpiry(String expiryDate) {
@@ -486,5 +497,10 @@ public class ProveYourIdentityFullJourneyPageObject extends UniversalSteps {
             vcMap.put(key, vc);
         }
         return vcMap;
+    }
+
+    public void clickOnUKPassportAndContinue() {
+        ukPassportRadioBtn.click();
+        continueSubmitButton.click();
     }
 }
