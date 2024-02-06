@@ -16,6 +16,7 @@ import uk.gov.di.ipv.cri.fraud.api.service.logger.IdentityVerificationWarningsEr
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -301,8 +302,10 @@ public class IdentityVerificationResponseMapper {
                     "Logging activity history score related value in response {} {}",
                     fieldName,
                     approxDateInYears);
+        } catch (DateTimeParseException e) {
+            LOGGER.warn("Activity history field {} had non-date value {}", fieldName, fieldDate);
         } catch (Exception e) {
-            LOGGER.warn("Invalid value in reponse for {}", fieldName);
+            LOGGER.warn("Invalid value in response for {}", fieldName);
         }
     }
 
@@ -316,19 +319,19 @@ public class IdentityVerificationResponseMapper {
                     YearMonth.parse(LocalDate.now().format(formatter), formatter).toString();
             dataCounts =
                     Arrays.stream(recordDateValues)
+                            .filter(e -> (e != 0)) // Filter out zeroed dates (CC2)
                             .map(x -> YearMonth.parse(x.toString(), formatter).toString())
                             .map(
                                     x ->
                                             ChronoUnit.MONTHS.between(
                                                     YearMonth.parse(x), YearMonth.parse(dateToday)))
                             .map(Math::toIntExact)
-                            .collect(Collectors.toList());
-
+                            .toList();
         } catch (Exception e) {
             LOGGER.warn("Invalid value in response for activity history score date");
         }
         int oldestDate = 0; // Set to 0, if all dates are null then this will make the score 0
-        if (dataCounts.size() > 0) {
+        if (!dataCounts.isEmpty()) {
             oldestDate = Collections.max(dataCounts);
         }
         return oldestDate;
