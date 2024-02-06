@@ -15,7 +15,7 @@ import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.check.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.IdentityVerificationResponse;
-import uk.gov.di.ipv.cri.fraud.api.service.CrosscoreV2Configuration;
+import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckHttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryer;
@@ -50,7 +50,7 @@ public class ThirdPartyFraudGateway {
 
     private static final String APPLICATION_JSON_HEADER = "application/json";
 
-    private final CrosscoreV2Configuration crosscoreV2Configuration;
+    private final FraudCheckConfigurationService fraudConfigurationService;
     private final IdentityVerificationRequestMapper requestMapper;
     private final IdentityVerificationResponseMapper responseMapper;
     private final ObjectMapper objectMapper;
@@ -77,7 +77,7 @@ public class ThirdPartyFraudGateway {
             ObjectMapper objectMapper,
             HmacGenerator hmacGenerator,
             String endpointUrl,
-            CrosscoreV2Configuration crosscoreV2Configuration,
+            FraudCheckConfigurationService fraudConfigurationService,
             EventProbe eventProbe) {
         Objects.requireNonNull(httpRetryer, "httpClient must not be null");
         Objects.requireNonNull(requestMapper, "requestMapper must not be null");
@@ -94,7 +94,7 @@ public class ThirdPartyFraudGateway {
         this.objectMapper = objectMapper;
         this.hmacGenerator = hmacGenerator;
         this.endpointUri = URI.create(endpointUrl);
-        this.crosscoreV2Configuration = crosscoreV2Configuration;
+        this.fraudConfigurationService = fraudConfigurationService;
         this.eventProbe = eventProbe;
         this.clock = Clock.systemUTC();
 
@@ -111,7 +111,14 @@ public class ThirdPartyFraudGateway {
             PersonIdentity personIdentity, boolean crosscoreV2Enabled, String token)
             throws OAuthErrorResponseException {
         LOGGER.info("Mapping person to {} request", REQUEST_NAME);
-        IdentityVerificationRequest apiRequest = requestMapper.mapPersonIdentity(personIdentity);
+
+        String tenantId = fraudConfigurationService.getTenantId();
+        if (crosscoreV2Enabled) {
+            tenantId = fraudConfigurationService.getCrosscoreV2Configuration().getTenantId();
+        }
+
+        IdentityVerificationRequest apiRequest =
+                requestMapper.mapPersonIdentity(personIdentity, tenantId);
 
         String requestBody = null;
         try {
@@ -165,7 +172,11 @@ public class ThirdPartyFraudGateway {
             String requestBody, boolean crosscoreV2Enabled, String token) {
         HttpPost request;
         if (crosscoreV2Enabled) {
-            request = new HttpPost(crosscoreV2Configuration.getEndpointUri());
+            request =
+                    new HttpPost(
+                            fraudConfigurationService
+                                    .getCrosscoreV2Configuration()
+                                    .getEndpointUri());
             request.addHeader("Content-Type", APPLICATION_JSON_HEADER);
             request.addHeader("Accept", APPLICATION_JSON_HEADER);
             request.addHeader("Authorization", "Bearer " + token);

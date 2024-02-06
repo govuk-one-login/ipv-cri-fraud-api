@@ -15,7 +15,7 @@ public class IdentityVerificationInfoResponseValidator {
     public static final int OVERALL_RESPONSE_DECISION_MAX_LEN = 10;
     public static final int OVERALL_RESPONSE_DECISION_SCORE_MIN_VALUE = 0;
     public static final int OVERALL_RESPONSE_DECISION_SCORE_MAX_VALUE = 99999;
-    public static final int OVERALL_RESPONSE_DECISION_TEXT_MAX_LEN = 30;
+    public static final int OVERALL_RESPONSE_DECISION_TEXT_MAX_LEN = 40;
     public static final int OVERALL_RESPONSE_DECISION_REASONS_MAX_REASON_LEN = 90;
     public static final int OVERALL_RESPONSE_RECOMMENDED_NEXT_ACTIONS_NEXT_ACTION_MAX_LEN = 200;
     public static final int OVERALL_RESPONSE_RECOMMENDED_SPARE_OBJECTS_SPARE_OBJECT_MAX_LEN = 200;
@@ -23,11 +23,11 @@ public class IdentityVerificationInfoResponseValidator {
     public static final int HEADER_RESPONSE_MESSAGE_MAX_LEN = 300;
     public static final int ORCHESTRATION_DECISION_SEQUENCE_ID_MAX_LEN = 40;
     public static final int ORCHESTRATION_DECISION_SOURCE_MAX_LEN = 20;
-    public static final int ORCHESTRATION_DECISION_DECISION_MAX_LEN = 10;
+    public static final int ORCHESTRATION_DECISION_DECISION_MAX_LEN = 20;
     public static final int ORCHESTRATION_DECISION_DECISION_REASONS_REASON_MAX_LEN = 90;
     public static final int ORCHESTRATION_DECISION_SCORE_MIN_VALUE = 0;
     public static final int ORCHESTRATION_DECISION_SCORE_MAX_VALUE = 99999;
-    public static final int ORCHESTRATION_DECISION_DECISION_TEXT_MAX_LEN = 30;
+    public static final int ORCHESTRATION_DECISION_DECISION_TEXT_MAX_LEN = 40;
     public static final int ORCHESTRATION_DECISION_NEXT_ACTION_MAX_LEN = 20;
     public static final int ORCHESTRATION_DECISION_APP_REFERENCE_MAX_LEN = 20;
     public static final int DECISION_ELEMENTS_APP_ID_MAX_LEN = 40;
@@ -35,7 +35,7 @@ public class IdentityVerificationInfoResponseValidator {
     public static final int DECISION_ELEMENTS_DECISION_MAX_LEN = 20;
     public static final int DECISION_ELEMENTS_SCORE_MIN_VALUE = 0;
     public static final int DECISION_ELEMENTS_SCORE_MAX_VALUE = 99999;
-    public static final int DECISION_ELEMENTS_DECISION_TEXT_MAX_LEN = 20;
+    public static final int DECISION_ELEMENTS_DECISION_TEXT_MAX_LEN = 40;
     public static final int DECISION_ELEMENTS_DECISION_REASON_MAX_LEN = 100;
     public static final int DECISION_ELEMENTS_APP_REF_MAX_LEN = 100;
     public static final int DECISION_ELEMENTS_RULE_NAME_SERVICE_LEVEL_SCORE_MIN = 0;

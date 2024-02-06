@@ -32,7 +32,7 @@ class IdentityVerificationRequestMapperTest {
 
     @BeforeEach
     void setup() {
-        requestMapper = new IdentityVerificationRequestMapper(TENANT_ID);
+        requestMapper = new IdentityVerificationRequestMapper();
     }
 
     @Test
@@ -42,7 +42,8 @@ class IdentityVerificationRequestMapperTest {
         personIdentity.getAddresses().get(0).setBuildingName("House Name");
         personIdentity.getAddresses().get(0).setBuildingNumber("44");
 
-        IdentityVerificationRequest result = requestMapper.mapPersonIdentity(personIdentity);
+        IdentityVerificationRequest result =
+                requestMapper.mapPersonIdentity(personIdentity, TENANT_ID);
 
         assertNotNull(result);
 
@@ -70,7 +71,8 @@ class IdentityVerificationRequestMapperTest {
     void shouldConvertPersonIdentityToCrossCoreApiRequestForPreviousAddress() {
         personIdentity = TestDataCreator.createTestPersonIdentity(PREVIOUS);
 
-        IdentityVerificationRequest result = requestMapper.mapPersonIdentity(personIdentity);
+        IdentityVerificationRequest result =
+                requestMapper.mapPersonIdentity(personIdentity, TENANT_ID);
 
         assertNotNull(result);
 
@@ -99,7 +101,8 @@ class IdentityVerificationRequestMapperTest {
                 TestDataCreator.createTestPersonIdentityMultipleAddresses(
                         addressCount, 0, 0, false);
 
-        IdentityVerificationRequest result = requestMapper.mapPersonIdentity(personIdentity);
+        IdentityVerificationRequest result =
+                requestMapper.mapPersonIdentity(personIdentity, TENANT_ID);
 
         assertNotNull(result);
 
@@ -133,7 +136,7 @@ class IdentityVerificationRequestMapperTest {
         NullPointerException exception =
                 assertThrows(
                         NullPointerException.class,
-                        () -> requestMapper.mapPersonIdentity(personIdentity));
+                        () -> requestMapper.mapPersonIdentity(personIdentity, TENANT_ID));
         assertEquals("The personIdentity must not be null", exception.getMessage());
     }
 
@@ -144,7 +147,7 @@ class IdentityVerificationRequestMapperTest {
         personIdentity.getAddresses().get(0).setBuildingName("House Name");
         personIdentity.getAddresses().get(0).setBuildingNumber("44");
 
-        PEPRequest result = requestMapper.mapPEPPersonIdentity(personIdentity);
+        PEPRequest result = requestMapper.mapPEPPersonIdentity(personIdentity, TENANT_ID);
 
         assertNotNull(result);
 
@@ -182,7 +185,7 @@ class IdentityVerificationRequestMapperTest {
                 TestDataCreator.createTestPersonIdentityMultipleAddresses(
                         addressCount, 0, 0, false);
 
-        PEPRequest result = requestMapper.mapPEPPersonIdentity(personIdentity);
+        PEPRequest result = requestMapper.mapPEPPersonIdentity(personIdentity, TENANT_ID);
 
         assertNotNull(result);
 
@@ -226,7 +229,7 @@ class IdentityVerificationRequestMapperTest {
         NullPointerException exception =
                 assertThrows(
                         NullPointerException.class,
-                        () -> requestMapper.mapPersonIdentity(personIdentity));
+                        () -> requestMapper.mapPersonIdentity(personIdentity, TENANT_ID));
         assertEquals("The personIdentity must not be null", exception.getMessage());
     }
 

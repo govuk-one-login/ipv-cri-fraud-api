@@ -10,7 +10,7 @@ import java.util.List;
 public class OverallResponse {
 
     @JsonProperty("decision")
-    private String decision; // ACCEPT, REJECT or REFER
+    private String decision; // ACCEPT or CONTINUE, REJECT or NODECISION or STOP or REFER
 
     @JsonProperty("decisionText")
     private String decisionText;

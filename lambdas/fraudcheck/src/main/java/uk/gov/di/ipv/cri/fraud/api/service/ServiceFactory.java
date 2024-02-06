@@ -109,34 +109,26 @@ public class ServiceFactory {
                         objectMapper,
                         eventProbe);
 
-        // EMTODO: Remove below conditional in post CrosscoreV2 cleanup
-        final String tenantId;
-        if (this.fraudCheckConfigurationService.crosscoreV2Enabled()) {
-            tenantId = fraudConfigurationService.getCrosscoreV2Configuration().getTenantId();
-        } else {
-            tenantId = fraudConfigurationService.getTenantId();
-        }
-
         final ThirdPartyFraudGateway thirdPartyFraudGateway =
                 new ThirdPartyFraudGateway(
                         httpRetryer,
-                        new IdentityVerificationRequestMapper(tenantId),
+                        new IdentityVerificationRequestMapper(),
                         new IdentityVerificationResponseMapper(eventProbe),
                         this.objectMapper,
                         new HmacGenerator(fraudConfigurationService.getHmacKey()),
                         fraudCheckConfigurationService.getEndpointUrl(),
-                        fraudConfigurationService.getCrosscoreV2Configuration(),
+                        fraudConfigurationService,
                         eventProbe);
 
         final ThirdPartyPepGateway thirdPartyPepGateway =
                 new ThirdPartyPepGateway(
                         httpRetryer,
-                        new IdentityVerificationRequestMapper(tenantId),
+                        new IdentityVerificationRequestMapper(),
                         new IdentityVerificationResponseMapper(eventProbe),
                         this.objectMapper,
                         new HmacGenerator(fraudConfigurationService.getHmacKey()),
                         fraudConfigurationService.getEndpointUrl(),
-                        fraudConfigurationService.getCrosscoreV2Configuration(),
+                        fraudConfigurationService,
                         eventProbe);
 
         final IdentityScoreCalculator identityScoreCalculator =

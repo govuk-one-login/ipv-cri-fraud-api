@@ -117,6 +117,9 @@ task cucumber() {
 
 	doLast {
 		javaexec {
+			systemProperties = [
+				'cucumber.tags': "${tags}"
+			]
 			main = "io.cucumber.core.cli.Main"
 			classpath = configurations.cucumberRuntime + sourceSets.main.output + sourceSets.test.output
 			args = [

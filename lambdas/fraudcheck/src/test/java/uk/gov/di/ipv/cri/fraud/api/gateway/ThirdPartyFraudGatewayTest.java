@@ -15,6 +15,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
@@ -22,6 +24,7 @@ import uk.gov.di.ipv.cri.fraud.api.domain.check.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.IdentityVerificationResponse;
 import uk.gov.di.ipv.cri.fraud.api.service.CrosscoreV2Configuration;
+import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckHttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryer;
 import uk.gov.di.ipv.cri.fraud.api.util.HTTPReply;
@@ -51,6 +54,7 @@ import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetri
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_RESPONSE_TYPE_VALID;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ThirdPartyFraudGatewayTest {
 
     private static final String TEST_API_RESPONSE_BODY = "test-api-response-content";
@@ -61,6 +65,7 @@ class ThirdPartyFraudGatewayTest {
     private ThirdPartyFraudGateway thirdPartyFraudGateway;
 
     @Mock private HttpRetryer mockHttpRetryer;
+    @Mock private FraudCheckConfigurationService fraudCheckConfigurationService;
     @Mock private CrosscoreV2Configuration mockCrosscoreV2Configuration;
     @Mock private IdentityVerificationRequestMapper mockRequestMapper;
     @Mock private IdentityVerificationResponseMapper mockResponseMapper;
@@ -78,8 +83,12 @@ class ThirdPartyFraudGatewayTest {
                         mockObjectMapper,
                         mockHmacGenerator,
                         TEST_ENDPOINT_URL,
-                        mockCrosscoreV2Configuration,
+                        fraudCheckConfigurationService,
                         mockEventProbe);
+        when(fraudCheckConfigurationService.getCrosscoreV2Configuration())
+                .thenReturn(mockCrosscoreV2Configuration);
+        when(fraudCheckConfigurationService.getTenantId()).thenReturn("54321");
+        when(mockCrosscoreV2Configuration.getTenantId()).thenReturn("12345");
     }
 
     @Test
@@ -91,7 +100,8 @@ class ThirdPartyFraudGatewayTest {
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
         IdentityVerificationResponse testResponse = new IdentityVerificationResponse();
         FraudCheckResult testFraudCheckResult = new FraudCheckResult();
-        when(mockRequestMapper.mapPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+        when(mockRequestMapper.mapPersonIdentity(personIdentity, "54321"))
+                .thenReturn(testApiRequest);
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
         when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(HMAC_OF_REQUEST_BODY);
@@ -131,7 +141,7 @@ class ThirdPartyFraudGatewayTest {
                 .counterMetric(FRAUD_RESPONSE_TYPE_VALID.withEndpointPrefix());
         verifyNoMoreInteractions(mockEventProbe);
 
-        verify(mockRequestMapper).mapPersonIdentity(personIdentity);
+        verify(mockRequestMapper).mapPersonIdentity(personIdentity, "54321");
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHmacGenerator).generateHmac(testRequestBody);
         verify(mockHttpRetryer)
@@ -155,7 +165,8 @@ class ThirdPartyFraudGatewayTest {
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
 
-        when(mockRequestMapper.mapPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+        when(mockRequestMapper.mapPersonIdentity(personIdentity, "54321"))
+                .thenReturn(testApiRequest);
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
         when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(HMAC_OF_REQUEST_BODY);
@@ -206,7 +217,7 @@ class ThirdPartyFraudGatewayTest {
                 .counterMetric(FRAUD_RESPONSE_TYPE_INVALID.withEndpointPrefix());
         verifyNoMoreInteractions(mockEventProbe);
 
-        verify(mockRequestMapper).mapPersonIdentity(personIdentity);
+        verify(mockRequestMapper).mapPersonIdentity(personIdentity, "54321");
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHmacGenerator).generateHmac(testRequestBody);
         verify(mockHttpRetryer)
@@ -231,7 +242,8 @@ class ThirdPartyFraudGatewayTest {
 
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
-        when(mockRequestMapper.mapPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+        when(mockRequestMapper.mapPersonIdentity(personIdentity, "54321"))
+                .thenReturn(testApiRequest);
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
 
@@ -266,7 +278,7 @@ class ThirdPartyFraudGatewayTest {
         final String EXPECTED_ERROR =
                 ERROR_FRAUD_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE.getMessage();
 
-        verify(mockRequestMapper).mapPersonIdentity(personIdentity);
+        verify(mockRequestMapper).mapPersonIdentity(personIdentity, "54321");
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHmacGenerator).generateHmac(testRequestBody);
 
@@ -294,7 +306,8 @@ class ThirdPartyFraudGatewayTest {
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
         IdentityVerificationResponse testResponse = new IdentityVerificationResponse();
         FraudCheckResult testFraudCheckResult = new FraudCheckResult();
-        when(mockRequestMapper.mapPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+        when(mockRequestMapper.mapPersonIdentity(personIdentity, "12345"))
+                .thenReturn(testApiRequest);
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
         ArgumentCaptor<HttpEntityEnclosingRequestBase> httpRequestCaptor =
@@ -333,7 +346,7 @@ class ThirdPartyFraudGatewayTest {
                 .counterMetric(FRAUD_RESPONSE_TYPE_VALID.withEndpointPrefix());
         verifyNoMoreInteractions(mockEventProbe);
 
-        verify(mockRequestMapper).mapPersonIdentity(personIdentity);
+        verify(mockRequestMapper).mapPersonIdentity(personIdentity, "12345");
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHttpRetryer)
                 .sendHTTPRequestRetryIfAllowed(
@@ -355,7 +368,8 @@ class ThirdPartyFraudGatewayTest {
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
 
-        when(mockRequestMapper.mapPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+        when(mockRequestMapper.mapPersonIdentity(personIdentity, "12345"))
+                .thenReturn(testApiRequest);
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
         ArgumentCaptor<HttpEntityEnclosingRequestBase> httpRequestCaptor =
@@ -407,7 +421,7 @@ class ThirdPartyFraudGatewayTest {
                 .counterMetric(FRAUD_RESPONSE_TYPE_INVALID.withEndpointPrefix());
         verifyNoMoreInteractions(mockEventProbe);
 
-        verify(mockRequestMapper).mapPersonIdentity(personIdentity);
+        verify(mockRequestMapper).mapPersonIdentity(personIdentity, "12345");
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
         verify(mockHttpRetryer)
                 .sendHTTPRequestRetryIfAllowed(
@@ -430,7 +444,8 @@ class ThirdPartyFraudGatewayTest {
 
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
-        when(mockRequestMapper.mapPersonIdentity(personIdentity)).thenReturn(testApiRequest);
+        when(mockRequestMapper.mapPersonIdentity(personIdentity, "12345"))
+                .thenReturn(testApiRequest);
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
 
@@ -464,7 +479,7 @@ class ThirdPartyFraudGatewayTest {
         final String EXPECTED_ERROR =
                 ERROR_FRAUD_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE.getMessage();
 
-        verify(mockRequestMapper).mapPersonIdentity(personIdentity);
+        verify(mockRequestMapper).mapPersonIdentity(personIdentity, "12345");
         verify(mockObjectMapper).writeValueAsString(testApiRequest);
 
         verify(mockHttpRetryer, times(1))
