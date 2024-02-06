@@ -1,5 +1,6 @@
 package uk.gov.di.ipv.cri.fraud.api.gateway;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.oauth2.sdk.util.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -9,7 +10,8 @@ import uk.gov.di.ipv.cri.fraud.api.domain.check.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.check.PepCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.*;
 import uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationInfoResponseValidator;
-import uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationWarningsErrorsLogger;
+import uk.gov.di.ipv.cri.fraud.api.service.logger.IdentityVerificationResponseLogger;
+import uk.gov.di.ipv.cri.fraud.api.service.logger.IdentityVerificationWarningsErrorsLogger;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -41,10 +43,12 @@ public class IdentityVerificationResponseMapper {
 
     private final EventProbe eventProbe;
 
+    private final IdentityVerificationResponseLogger identityVerificationResponseLogger;
     private final IdentityVerificationWarningsErrorsLogger identityVerificationWarningsErrorsLogger;
 
-    public IdentityVerificationResponseMapper(EventProbe eventProbe) {
+    public IdentityVerificationResponseMapper(EventProbe eventProbe, ObjectMapper objectMapper) {
         this.eventProbe = eventProbe;
+        identityVerificationResponseLogger = new IdentityVerificationResponseLogger(objectMapper);
         identityVerificationWarningsErrorsLogger = new IdentityVerificationWarningsErrorsLogger();
     }
 
@@ -60,6 +64,7 @@ public class IdentityVerificationResponseMapper {
                             mapFraudInfoResponse(
                                     response, new IdentityVerificationInfoResponseValidator());
 
+                    identityVerificationResponseLogger.logResponseFields(response);
                     identityVerificationWarningsErrorsLogger.logAnyWarningsErrors(response);
 
                     return fraudCheckResult;
@@ -80,6 +85,7 @@ public class IdentityVerificationResponseMapper {
                                     replaceWithDefaultErrorValueIfBlank(
                                             responseHeader.getResponseMessage())));
 
+                    identityVerificationResponseLogger.logResponseFields(response);
                     identityVerificationWarningsErrorsLogger.logAnyWarningsErrors(response);
 
                     return fraudCheckResult;
@@ -103,6 +109,7 @@ public class IdentityVerificationResponseMapper {
                             mapPEPInfoResponse(
                                     response, new IdentityVerificationInfoResponseValidator());
 
+                    identityVerificationResponseLogger.logResponseFields(response);
                     identityVerificationWarningsErrorsLogger.logAnyWarningsErrors(response);
 
                     return pepCheckResult;
@@ -123,6 +130,7 @@ public class IdentityVerificationResponseMapper {
                                     replaceWithDefaultErrorValueIfBlank(
                                             responseHeader.getResponseMessage())));
 
+                    identityVerificationResponseLogger.logResponseFields(response);
                     identityVerificationWarningsErrorsLogger.logAnyWarningsErrors(response);
 
                     return pepCheckResult;

@@ -44,7 +44,8 @@ dependencies {
 			"uk.org.webcompere:system-stubs-jupiter:${dependencyVersions.webcompere_version}",
 			"com.amazonaws:aws-lambda-java-core:${dependencyVersions.aws_lambda_core_version}"
 
-	testFixturesImplementation "com.fasterxml.jackson.core:jackson-core:${dependencyVersions.jackson_version}",
+	testFixturesImplementation "uk.gov.account:cri-common-lib:${dependencyVersions.cri_common_lib_version}",
+			"com.fasterxml.jackson.core:jackson-core:${dependencyVersions.jackson_version}",
 			"com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${dependencyVersions.jackson_version}",
 			"com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${dependencyVersions.jackson_version}",
 			"com.fasterxml.jackson.core:jackson-databind:${dependencyVersions.jackson_version}",

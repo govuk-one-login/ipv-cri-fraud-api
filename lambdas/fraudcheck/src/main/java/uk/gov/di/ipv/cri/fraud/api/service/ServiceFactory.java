@@ -113,7 +113,7 @@ public class ServiceFactory {
                 new ThirdPartyFraudGateway(
                         httpRetryer,
                         new IdentityVerificationRequestMapper(),
-                        new IdentityVerificationResponseMapper(eventProbe),
+                        new IdentityVerificationResponseMapper(eventProbe, this.objectMapper),
                         this.objectMapper,
                         new HmacGenerator(fraudConfigurationService.getHmacKey()),
                         fraudCheckConfigurationService.getEndpointUrl(),
@@ -124,7 +124,7 @@ public class ServiceFactory {
                 new ThirdPartyPepGateway(
                         httpRetryer,
                         new IdentityVerificationRequestMapper(),
-                        new IdentityVerificationResponseMapper(eventProbe),
+                        new IdentityVerificationResponseMapper(eventProbe, this.objectMapper),
                         this.objectMapper,
                         new HmacGenerator(fraudConfigurationService.getHmacKey()),
                         fraudConfigurationService.getEndpointUrl(),

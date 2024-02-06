@@ -1,4 +1,4 @@
-package uk.gov.di.ipv.cri.fraud.api.service;
+package uk.gov.di.ipv.cri.fraud.api.service.logger;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,7 +23,10 @@ public class IdentityVerificationWarningsErrorsLogger {
     private static final String WARNINGS_ERRORS_LOG_FORMAT =
             "%s - DecisionElement:ResponseType:%s listed in WarningsErrors, ResponseCode:%s, ResponseMessage:%s";
 
-    /** This class is intended log only with no impact on control flow. */
+    /**
+     * This class is intended log only with no impact on control flow. It take a best effort to try
+     * to safely retrieve any WarningsErrors that could be useful in deciphering errors.
+     */
     public IdentityVerificationWarningsErrorsLogger() {
         /* No Args */
     }
