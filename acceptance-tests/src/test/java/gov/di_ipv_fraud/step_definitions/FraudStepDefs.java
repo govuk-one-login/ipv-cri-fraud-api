@@ -224,4 +224,9 @@ public class FraudStepDefs extends FraudPageObject {
     public void nbfAndExpiryInJsonResponse(String exp) throws JsonProcessingException {
         expiryAbsentFromVC(exp);
     }
+
+    @And("^JSON payload should contain JTI field$")
+    public void jsonPayloadShouldContainJtiField() throws IOException {
+        assertJtiIsPresentAndNotNull();
+    }
 }

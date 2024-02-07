@@ -8,6 +8,7 @@ Feature: Fraud CRI
     Then I search for user number 12 in the ThirdParty table
     And I set the crosscore version
     And I navigate to the verifiable issuer to check for a Valid response from thirdParty
+    And JSON payload should contain JTI field
     And The test is complete and I close the driver
 
 #  To be removed after the test is moved to the front repo

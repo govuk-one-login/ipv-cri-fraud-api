@@ -26,6 +26,7 @@ import java.util.logging.Logger;
 
 import static gov.di_ipv_fraud.utilities.TestUtils.getProperty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FraudAPIPage {
@@ -237,6 +238,7 @@ public class FraudAPIPage {
                 firstItemInEvidenceArray.get("identityFraudScore").asInt();
         LOGGER.info("actualIdentityFraudScore = " + actualIdentityFraudScore);
         Assert.assertEquals(identityFraudScore, actualIdentityFraudScore);
+        assertNotNull(jsonNode.get("jti").asText());
     }
 
     public void activityHistoryScoreInVC(Integer activityHistoryScore)

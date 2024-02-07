@@ -24,6 +24,7 @@ import java.util.logging.Logger;
 import static gov.di_ipv_fraud.pages.Headers.CHECK_PAGE_TITLE;
 import static gov.di_ipv_fraud.pages.Headers.IPV_CORE_STUB;
 import static gov.di_ipv_fraud.utilities.BrowserUtils.checkOkHttpResponseOnLink;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -501,6 +502,17 @@ public class FraudPageObject extends UniversalSteps {
                 checkDetailsNode.findValues("fraudCheck").stream()
                         .anyMatch(x -> x.asText().equals(checkType));
         assertTrue(checkTypeInVC);
+    }
+
+    public void assertJtiIsPresentAndNotNull() throws JsonProcessingException {
+        String result = JSONPayload.getText();
+        LOGGER.info("result = " + result);
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode jsonNode = objectMapper.readTree(result);
+        JsonNode jtiNode = jsonNode.get("jti");
+        LOGGER.info("jti = " + jtiNode.asText());
+
+        assertNotNull(jtiNode.asText());
     }
 
     private JsonNode getVCFromJson(String vc) throws JsonProcessingException {
