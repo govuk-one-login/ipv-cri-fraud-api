@@ -53,6 +53,11 @@ public class ProveYourIdentityFullJourneyStepDefs extends ProveYourIdentityFullJ
         selectAddressFromDropdown(address);
     }
 
+    @And("The user chooses the environment (.*) from dropdown$")
+    public void chooseTargetEnvironment(String environment) {
+        selectTargetEnvironmentFromDropdown(environment);
+    }
+
     @When("the user enters the current year as the date they moved into their current address$")
     public void
             the_user_enters_the_current_year_as_the_date_they_moved_into_their_current_address() {
@@ -106,5 +111,10 @@ public class ProveYourIdentityFullJourneyStepDefs extends ProveYourIdentityFullJ
     @And("^I click on `Continue to prove your identity this way` radio button$")
     public void clickContinueToProveYourIdentityRadioButton() {
         clickContinueToProveYourIdRadioBtn();
+    }
+
+    @And("^I select the radio option UK Passport and click on Continue$")
+    public void clickOnUKPassportRadioButton() {
+        clickOnUKPassportAndContinue();
     }
 }
