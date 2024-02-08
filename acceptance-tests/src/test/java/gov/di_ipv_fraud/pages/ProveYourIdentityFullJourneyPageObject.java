@@ -238,7 +238,7 @@ public class ProveYourIdentityFullJourneyPageObject extends UniversalSteps {
         BrowserUtils.waitForPageToLoad(100);
     }
 
-    public void selectTargetEnvironmentFromDropdown( String environment) {
+    public void selectTargetEnvironmentFromDropdown(String environment) {
         Select select = new Select(ChooseYourEnvironmentFromTheList);
         select.selectByValue(environment);
     }
