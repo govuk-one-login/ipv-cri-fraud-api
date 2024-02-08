@@ -1,7 +1,5 @@
 package uk.gov.di.ipv.cri.fraud.api.util;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.Address;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
@@ -13,11 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import static uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType.CURRENT;
-
 public class TestDataCreator {
-
-    private static final Logger LOGGER = LogManager.getLogger();
 
     public static PersonIdentity createTestPersonIdentity(AddressType addressType) {
         PersonIdentity personIdentity = new PersonIdentity();
@@ -44,7 +38,7 @@ public class TestDataCreator {
     }
 
     public static PersonIdentity createTestPersonIdentity() {
-        return createTestPersonIdentity(CURRENT);
+        return createTestPersonIdentity(AddressType.CURRENT);
     }
 
     public static PersonIdentity createTestPersonIdentityMultipleAddresses(
@@ -140,16 +134,6 @@ public class TestDataCreator {
         address.setPostalCode("Postcode" + id);
         address.setStreetName("Street Name" + id);
         address.setAddressLocality("PostTown" + id);
-
-        LOGGER.info(
-                "createAddress "
-                        + id
-                        + " "
-                        + address.getAddressType()
-                        + " from "
-                        + address.getValidFrom()
-                        + " until "
-                        + address.getValidUntil());
 
         return address;
     }
@@ -298,7 +282,6 @@ public class TestDataCreator {
             ResponseType type) {
         if (type == ResponseType.INFO) {
             String errorMessage = "Info is not an Error response Type.";
-            LOGGER.error(errorMessage);
             throw new IllegalArgumentException(errorMessage);
         }
 
@@ -322,7 +305,6 @@ public class TestDataCreator {
     private static PEPResponse createTestPEPErrorResponse(ResponseType type) {
         if (type == ResponseType.INFO) {
             String errorMessage = "Info is not an Error response Type.";
-            LOGGER.error(errorMessage);
             throw new IllegalArgumentException(errorMessage);
         }
 
@@ -341,5 +323,149 @@ public class TestDataCreator {
         testErrorResponse.setResponseHeader(header);
 
         return testErrorResponse;
+    }
+
+    public static IdentityVerificationResponse getResponseScenario(String scenario)
+            throws Exception {
+
+        IdentityVerificationResponse identityVerificationResponse =
+                TestDataCreator.createTestVerificationResponse(ResponseType.INFO);
+
+        switch (scenario) {
+            case "HappyPathInfo" -> {
+                return identityVerificationResponse;
+            }
+            case "HappyPathError" -> {
+                identityVerificationResponse =
+                        TestDataCreator.createTestVerificationResponse(ResponseType.ERROR);
+
+                return identityVerificationResponse;
+            }
+            case "Null Response" -> {
+                return null;
+            }
+            case "Null ClientResponsePayload" -> identityVerificationResponse
+                    .setClientResponsePayload(null);
+            case "ClientResponsePayload null OrchestrationDecisions" -> identityVerificationResponse
+                    .getClientResponsePayload()
+                    .setOrchestrationDecisions(null);
+            case "ClientResponsePayload null OrchestrationDecisions Element" -> identityVerificationResponse
+                    .getClientResponsePayload()
+                    .getOrchestrationDecisions()
+                    .set(0, null);
+            case "Null DecisionElements" -> identityVerificationResponse
+                    .getClientResponsePayload()
+                    .setDecisionElements(null);
+            case "DecisionElements Null Element" -> identityVerificationResponse
+                    .getClientResponsePayload()
+                    .getDecisionElements()
+                    .set(0, null);
+            case "DecisionElements DecisionElement null decision" -> identityVerificationResponse
+                    .getClientResponsePayload()
+                    .getDecisionElements()
+                    .get(0)
+                    .setDecision(null);
+            case "DecisionElements DecisionElement null score" -> identityVerificationResponse
+                    .getClientResponsePayload()
+                    .getDecisionElements()
+                    .get(0)
+                    .setScore(null);
+            case "DecisionElements DecisionElement null decisionReason" -> identityVerificationResponse
+                    .getClientResponsePayload()
+                    .getDecisionElements()
+                    .get(0)
+                    .setDecisionReason(null);
+            case "Null Response Header" -> identityVerificationResponse.setResponseHeader(null);
+            case "Null Response Header ResponseType" -> identityVerificationResponse
+                    .getResponseHeader()
+                    .setResponseType(null);
+            case "Null Response Header RequestType" -> identityVerificationResponse
+                    .getResponseHeader()
+                    .setRequestType(null);
+            case "Null warningsErrors" -> identityVerificationResponse
+                    .getClientResponsePayload()
+                    .getDecisionElements()
+                    .get(0)
+                    .setWarningsErrors(null);
+            case "Empty warningsErrors" -> identityVerificationResponse
+                    .getClientResponsePayload()
+                    .getDecisionElements()
+                    .get(0)
+                    .setWarningsErrors(new ArrayList<>());
+            case "WarningsErrors null warning" -> {
+                identityVerificationResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .setWarningsErrors(new ArrayList<>());
+
+                identityVerificationResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .getWarningsErrors()
+                        .add(0, null);
+            }
+            case "Warning null responseType" -> {
+                identityVerificationResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .setWarningsErrors(new ArrayList<>());
+
+                WarningsErrors warningsErrors = new WarningsErrors();
+                warningsErrors.setResponseType(null);
+                warningsErrors.setResponseCode("ResponseCode");
+                warningsErrors.setResponseMessage("ResponseMessage");
+
+                identityVerificationResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .getWarningsErrors()
+                        .add(0, warningsErrors);
+            }
+            case "Warning null responseCode" -> {
+                identityVerificationResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .setWarningsErrors(new ArrayList<>());
+
+                WarningsErrors warningsErrors = new WarningsErrors();
+                warningsErrors.setResponseType("ResponseType");
+                warningsErrors.setResponseCode(null);
+                warningsErrors.setResponseMessage("ResponseMessage");
+
+                identityVerificationResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .getWarningsErrors()
+                        .add(0, warningsErrors);
+            }
+            case "Warning null responseMessage" -> {
+                identityVerificationResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .setWarningsErrors(new ArrayList<>());
+
+                WarningsErrors warningsErrors = new WarningsErrors();
+                warningsErrors.setResponseType("ResponseType");
+                warningsErrors.setResponseCode("ResponseCode");
+                warningsErrors.setResponseMessage(null);
+
+                identityVerificationResponse
+                        .getClientResponsePayload()
+                        .getDecisionElements()
+                        .get(0)
+                        .getWarningsErrors()
+                        .add(0, warningsErrors);
+            }
+            default -> throw new Exception("Invalid Test Scenario - " + scenario);
+        }
+
+        return identityVerificationResponse;
     }
 }

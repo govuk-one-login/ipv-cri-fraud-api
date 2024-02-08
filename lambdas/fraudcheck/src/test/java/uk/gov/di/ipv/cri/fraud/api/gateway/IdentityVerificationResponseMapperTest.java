@@ -1,5 +1,6 @@
 package uk.gov.di.ipv.cri.fraud.api.gateway;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,12 +34,14 @@ import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_PE
 
 @ExtendWith(MockitoExtension.class)
 class IdentityVerificationResponseMapperTest {
+
     @Mock private EventProbe mockEventProbe;
     private IdentityVerificationResponseMapper responseMapper;
 
     @BeforeEach
     void setup() {
-        this.responseMapper = new IdentityVerificationResponseMapper(mockEventProbe);
+        this.responseMapper =
+                new IdentityVerificationResponseMapper(mockEventProbe, new ObjectMapper());
     }
 
     @Test

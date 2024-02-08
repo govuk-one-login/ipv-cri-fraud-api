@@ -1,5 +1,6 @@
 package uk.gov.di.ipv.cri.fraud.api.util;
 
+import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.fraud.api.domain.Evidence;
 import uk.gov.di.ipv.cri.fraud.api.domain.EvidenceType;
 import uk.gov.di.ipv.cri.fraud.api.domain.checkdetails.Check;
@@ -12,6 +13,7 @@ import static uk.gov.di.ipv.cri.fraud.library.domain.CheckType.IMPERSONATION_RIS
 
 public class EvidenceHelper {
 
+    @ExcludeFromGeneratedCoverageReport
     private EvidenceHelper() {
         throw new IllegalStateException("Instantiation is not valid for this class.");
     }

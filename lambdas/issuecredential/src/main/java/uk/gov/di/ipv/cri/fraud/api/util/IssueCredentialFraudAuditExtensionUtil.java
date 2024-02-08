@@ -1,5 +1,6 @@
 package uk.gov.di.ipv.cri.fraud.api.util;
 
+import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.fraud.api.domain.Evidence;
 import uk.gov.di.ipv.cri.fraud.api.domain.audit.VCISSFraudAuditExtension;
 import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
@@ -9,6 +10,7 @@ import java.util.List;
 
 public class IssueCredentialFraudAuditExtensionUtil {
 
+    @ExcludeFromGeneratedCoverageReport
     private IssueCredentialFraudAuditExtensionUtil() {
         throw new IllegalStateException("Instantiation is not valid for this class.");
     }
