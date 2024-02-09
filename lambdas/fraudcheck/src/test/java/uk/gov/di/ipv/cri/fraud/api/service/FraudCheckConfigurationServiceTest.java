@@ -101,6 +101,9 @@ class FraudCheckConfigurationServiceTest {
         String crosscoreV2TenantIdKey = "CrosscoreV2/tenantId";
         String crosscoreV2TenantIdValue = "crosscoreV2TenantId";
 
+        String crosscoreV2TokenIssuerKey = "CrosscoreV2/tokenIssuer";
+        String crosscoreV2TokenIssuerValue = "crosscoreV2TokenIssuer";
+
         String crosscoreV2Enabled = "CrosscoreV2/enabled";
         boolean crosscoreV2EnabledValue = false;
 
@@ -182,6 +185,11 @@ class FraudCheckConfigurationServiceTest {
                 .thenReturn(crosscoreV2TenantIdValue);
 
         when(mockParamProvider.get(
+                        String.format(
+                                STACK_PARAMETER_FORMAT, AWS_STACK_NAME, crosscoreV2TokenIssuerKey)))
+                .thenReturn(crosscoreV2TokenIssuerValue);
+
+        when(mockParamProvider.get(
                         String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, crosscoreV2Enabled)))
                 .thenReturn(String.valueOf(crosscoreV2EnabledValue));
 
@@ -240,6 +248,12 @@ class FraudCheckConfigurationServiceTest {
         verify(mockParamProvider)
                 .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenUserDomainKey));
         verify(mockParamProvider)
+                .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, crosscoreV2TenantIdKey));
+        verify(mockParamProvider)
+                .get(
+                        String.format(
+                                STACK_PARAMETER_FORMAT, AWS_STACK_NAME, crosscoreV2TokenIssuerKey));
+        verify(mockParamProvider)
                 .get(
                         String.format(
                                 STACK_PARAMETER_FORMAT, AWS_STACK_NAME, experianTokenTableNameKey));
@@ -295,11 +309,11 @@ class FraudCheckConfigurationServiceTest {
                 tokenUserDomainValue,
                 fraudCheckConfigurationService.getCrosscoreV2Configuration().getUserDomain());
         assertEquals(
-                experianTokenTableValue,
-                fraudCheckConfigurationService.getCrosscoreV2Configuration().getTokenTableName());
+                crosscoreV2TenantIdValue,
+                fraudCheckConfigurationService.getCrosscoreV2Configuration().getTenantId());
         assertEquals(
-                experianTokenTableValue,
-                fraudCheckConfigurationService.getCrosscoreV2Configuration().getTokenTableName());
+                crosscoreV2TokenIssuerValue,
+                fraudCheckConfigurationService.getCrosscoreV2Configuration().getTokenIssuer());
         assertEquals(
                 experianTokenTableValue,
                 fraudCheckConfigurationService.getCrosscoreV2Configuration().getTokenTableName());

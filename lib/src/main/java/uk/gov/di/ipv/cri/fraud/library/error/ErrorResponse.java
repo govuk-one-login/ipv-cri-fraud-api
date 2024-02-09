@@ -35,6 +35,8 @@ public enum ErrorResponse {
     FAILED_TO_MAP_TOKEN_ENDPOINT_RESPONSE_BODY(4003, "Failed to map token endpoint response body"),
     ERROR_TOKEN_ENDPOINT_RETURNED_UNEXPECTED_HTTP_STATUS_CODE(
             4004, "token endpoint returned unexpected http status code"),
+    TOKEN_ENDPOINT_RETURNED_JWT_WITH_UNEXPECTED_VALUES_IN_RESPONSE(
+            4005, "token endpoint returned unexpected values in JWT"),
 
     FINAL_ERROR(-1, "Final Error");
 

@@ -941,6 +941,44 @@ Resources:
             Period: 60
             Stat: Sum
 
+  ExperianAuthenticateTokenRequestDeniedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-${Environment} - Fraud - Experian Authenticate Token Request Denied Alarm"
+      AlarmDescription: !Sub Driving Licence ${Environment} Fraud Token endpoint returned an invalid response to a token request (failure to authenticate)
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref AlarmTopicFraud
+      OKActions:
+        - !Ref AlarmTopicFraud
+      InsufficientDataActions: [ ]
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      Metrics:
+        - Id: e1
+          Label: CombinedTokenFailure
+          ReturnData: true
+          Expression: m1 + m2
+        - Id: m1
+          ReturnData: false
+          MetricStat:
+            Metric:
+              Namespace: di-ipv-cri-fraud-api
+              MetricName: token_api_response_type_invalid
+            Period: 60
+            Stat: Sum
+        - Id: m2
+          ReturnData: false
+          MetricStat:
+            Metric:
+              Namespace: di-ipv-cri-fraud-api
+              MetricName: token_failed_to_generate_new_token
+            Period: 60
+            Stat: Sum
+
   ####################################################################
   #                                                                  #
   # Alarm setup                                                      #

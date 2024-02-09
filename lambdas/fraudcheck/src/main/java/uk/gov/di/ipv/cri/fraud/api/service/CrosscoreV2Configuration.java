@@ -19,6 +19,7 @@ public class CrosscoreV2Configuration {
     private final String userDomain;
     private final URI endpointUri;
     private final String tenantId;
+    private final String tokenIssuer;
 
     public CrosscoreV2Configuration(
             ParamProvider paramProvider, String parameterPrefix, String stackParameterPrefix) {
@@ -37,6 +38,7 @@ public class CrosscoreV2Configuration {
         this.endpointUri =
                 URI.create(paramProvider.get(getParameterName("CrosscoreV2/endpointUrl")));
         this.tenantId = paramProvider.get(getParameterName("CrosscoreV2/tenantId"));
+        this.tokenIssuer = paramProvider.get(getParameterName("CrosscoreV2/tokenIssuer"));
     }
 
     public String getTokenEndpoint() {
@@ -73,6 +75,10 @@ public class CrosscoreV2Configuration {
 
     public String getTenantId() {
         return tenantId;
+    }
+
+    public String getTokenIssuer() {
+        return tokenIssuer;
     }
 
     private String getParameterName(String parameterName) {

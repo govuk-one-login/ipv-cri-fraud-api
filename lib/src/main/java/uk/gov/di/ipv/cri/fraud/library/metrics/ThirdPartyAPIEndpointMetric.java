@@ -40,6 +40,7 @@ public enum ThirdPartyAPIEndpointMetric {
     TOKEN_HTTP_RETRYER_REQUEST_SEND_RETRY(TOKEN, HTTP_RETRYER_REQUEST_SEND_RETRY),
     TOKEN_HTTP_RETRYER_SEND_MAX_RETRIES(TOKEN, HTTP_RETRYER_SEND_MAX_RETRIES),
     TOKEN_HTTP_RETRYER_SEND_ERROR(TOKEN, HTTP_RETRYER_SEND_ERROR),
+    TOKEN_RESPONSE_FAILED_TO_GENERATE_NEW_TOKEN_METRIC(TOKEN, "failed_to_generate_new_token"),
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // FRAUD End Point Metrics                                                                   //

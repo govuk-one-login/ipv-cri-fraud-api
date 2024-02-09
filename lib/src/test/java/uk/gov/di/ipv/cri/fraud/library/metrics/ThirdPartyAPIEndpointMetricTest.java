@@ -74,6 +74,10 @@ class ThirdPartyAPIEndpointMetricTest {
         expectedMetricsCaptureList.add(
                 String.format(expectedFormat, TOKEN, "status_code_alert_metric").toLowerCase());
 
+        // Add special case token status code alert metric
+        expectedMetricsCaptureList.add(
+                String.format(expectedFormat, TOKEN, "failed_to_generate_new_token").toLowerCase());
+
         // Sort the two lists so the orders are the same
         Collections.sort(expectedMetricsCaptureList);
         Collections.sort(enumGeneratedMetricsStrings);

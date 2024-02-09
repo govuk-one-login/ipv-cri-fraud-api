@@ -49,7 +49,7 @@ import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetri
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.TOKEN_REQUEST_REUSING_CACHED_TOKEN;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.TOKEN_REQUEST_SEND_ERROR;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.TOKEN_REQUEST_SEND_OK;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.TOKEN_RESPONSE_STATUS_CODE_ALERT_METRIC;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.TOKEN_RESPONSE_FAILED_TO_GENERATE_NEW_TOKEN_METRIC;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.TOKEN_RESPONSE_TYPE_EXPECTED_HTTP_STATUS;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.TOKEN_RESPONSE_TYPE_INVALID;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.TOKEN_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS;
@@ -61,7 +61,18 @@ class TokenRequestServiceTest {
     private static final String TEST_END_POINT = "http://127.0.0.1";
     private static final String TEST_TOKEN_TABLE_NAME = "test_token_table_name";
 
-    private static final String TEST_TOKEN_VALUE = "unit-test-token-value";
+    // needs to be legitimate JWT to pass validation
+    private static final String TEST_TOKEN_ISSUER = "test-token-issuer";
+    private static final String TEST_TOKEN_VALID_VALUE =
+            "eyJraWQiOiJJSmpTMXJQQjdJODBHWjgybmNsSlZPQkF3V3B3ZTVYblNKZUdSZHdpcEY5IiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.ewogICJzdWIiOiAiVEVTVCIsCiAgIkVtYWlsIjogbnVsbCwKICAiRmlyc3ROYW1lIjogbnVsbCwKICAiaXNzIjogInRlc3QtdG9rZW4taXNzdWVyIiwKICAiTGFzdE5hbWUiOiBudWxsLAogICJleHAiOiAxNzA2MjgwOTIyLAogICJpYXQiOiAxNzA2Mjc5MTIyLAogICJqdGkiOiAiNzM5MjQzODktYWI5Yy00Y2MxLWJkZGMtZTA4NzJjMmExMmZkIgp9.u1k1phRJNm9Sg9P5SF83NDk0XpcQaLXqVrfxFR9MtctzFzgTFyLwphx94OL7mVtPOzKiHm-Id4wwaFX56kGEO3zMoZ6nH8YTlAiUD_Cg8V_XqNNONuEm1iGEKl_GbRQHmCE3QiFaTc64eSzJ81zrotRsSjDatbDRULXajDl7VmRhYq7TODxqKpVWxXdEgyuNPLOECW3sfVg7hLj5CPGpW-G6yvR6gvEJERGRukCtaHdp4Zj4uZt-3VgLSrkFcRimek4sqQkq0uLv6wfYrnTxjrAv3c982ElsVKjyhR65qToZSzMDXI2o8-4GMcKX5EdpC9TUKvwrBVbwgZeHVNYvgQ";
+    private static final String TEST_TOKEN_INVALID_ALG =
+            "ewogICJraWQiOiAiSUpqUzFyUEI3STgwR1o4Mm5jbEpWT0JBd1dwd2U1WG5TSmVHUmR3aXBGOSIsCiAgInR5cCI6ICJKV1QiLAogICJhbGciOiAibm9uZSIKfQ==.ewogICJzdWIiOiAiVEVTVCIsCiAgIkVtYWlsIjogbnVsbCwKICAiRmlyc3ROYW1lIjogbnVsbCwKICAiaXNzIjogInRlc3QtdG9rZW4taXNzdWVyIiwKICAiTGFzdE5hbWUiOiBudWxsLAogICJleHAiOiAxNzA2MjgwOTIyLAogICJpYXQiOiAxNzA2Mjc5MTIyLAogICJqdGkiOiAiNzM5MjQzODktYWI5Yy00Y2MxLWJkZGMtZTA4NzJjMmExMmZkIgp9.u1k1phRJNm9Sg9P5SF83NDk0XpcQaLXqVrfxFR9MtctzFzgTFyLwphx94OL7mVtPOzKiHm-Id4wwaFX56kGEO3zMoZ6nH8YTlAiUD_Cg8V_XqNNONuEm1iGEKl_GbRQHmCE3QiFaTc64eSzJ81zrotRsSjDatbDRULXajDl7VmRhYq7TODxqKpVWxXdEgyuNPLOECW3sfVg7hLj5CPGpW-G6yvR6gvEJERGRukCtaHdp4Zj4uZt-3VgLSrkFcRimek4sqQkq0uLv6wfYrnTxjrAv3c982ElsVKjyhR65qToZSzMDXI2o8-4GMcKX5EdpC9TUKvwrBVbwgZeHVNYvgQ";
+    private static final String TEST_TOKEN_INVALID_ISS =
+            "eyJraWQiOiJJSmpTMXJQQjdJODBHWjgybmNsSlZPQkF3V3B3ZTVYblNKZUdSZHdpcEY5IiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.ewogICJzdWIiOiAiVEVTVCIsCiAgIkVtYWlsIjogbnVsbCwKICAiRmlyc3ROYW1lIjogbnVsbCwKICAiaXNzIjogIkpCIiwKICAiTGFzdE5hbWUiOiBudWxsLAogICJleHAiOiAxNzA2MjgwOTIyLAogICJpYXQiOiAxNzA2Mjc5MTIyLAogICJqdGkiOiAiNzM5MjQzODktYWI5Yy00Y2MxLWJkZGMtZTA4NzJjMmExMmZkIgp9.u1k1phRJNm9Sg9P5SF83NDk0XpcQaLXqVrfxFR9MtctzFzgTFyLwphx94OL7mVtPOzKiHm-Id4wwaFX56kGEO3zMoZ6nH8YTlAiUD_Cg8V_XqNNONuEm1iGEKl_GbRQHmCE3QiFaTc64eSzJ81zrotRsSjDatbDRULXajDl7VmRhYq7TODxqKpVWxXdEgyuNPLOECW3sfVg7hLj5CPGpW-G6yvR6gvEJERGRukCtaHdp4Zj4uZt-3VgLSrkFcRimek4sqQkq0uLv6wfYrnTxjrAv3c982ElsVKjyhR65qToZSzMDXI2o8-4GMcKX5EdpC9TUKvwrBVbwgZeHVNYvgQ";
+    private static final String TEST_TOKEN_INVALID_SUB =
+            "eyJraWQiOiJJSmpTMXJQQjdJODBHWjgybmNsSlZPQkF3V3B3ZTVYblNKZUdSZHdpcEY5IiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.ewogICJzdWIiOiAid3JvbmdVc2VybmFtZSIsCiAgIkVtYWlsIjogbnVsbCwKICAiRmlyc3ROYW1lIjogbnVsbCwKICAiaXNzIjogInRlc3QtdG9rZW4taXNzdWVyIiwKICAiTGFzdE5hbWUiOiBudWxsLAogICJleHAiOiAxNzA2MjgwOTIyLAogICJpYXQiOiAxNzA2Mjc5MTIyLAogICJqdGkiOiAiNzM5MjQzODktYWI5Yy00Y2MxLWJkZGMtZTA4NzJjMmExMmZkIgp9.u1k1phRJNm9Sg9P5SF83NDk0XpcQaLXqVrfxFR9MtctzFzgTFyLwphx94OL7mVtPOzKiHm-Id4wwaFX56kGEO3zMoZ6nH8YTlAiUD_Cg8V_XqNNONuEm1iGEKl_GbRQHmCE3QiFaTc64eSzJ81zrotRsSjDatbDRULXajDl7VmRhYq7TODxqKpVWxXdEgyuNPLOECW3sfVg7hLj5CPGpW-G6yvR6gvEJERGRukCtaHdp4Zj4uZt-3VgLSrkFcRimek4sqQkq0uLv6wfYrnTxjrAv3c982ElsVKjyhR65qToZSzMDXI2o8-4GMcKX5EdpC9TUKvwrBVbwgZeHVNYvgQ";
+    private static final String TEST_TOKEN_INVALID_ALG_ISS_SUB =
+            "ewogICJraWQiOiAiSUpqUzFyUEI3STgwR1o4Mm5jbEpWT0JBd1dwd2U1WG5TSmVHUmR3aXBGOSIsCiAgInR5cCI6ICJKV1QiLAogICJhbGciOiAibm9uZSIKfQ==.ewogICJzdWIiOiAid3JvbmdVc2VybmFtZSIsCiAgIkVtYWlsIjogbnVsbCwKICAiRmlyc3ROYW1lIjogbnVsbCwKICAiaXNzIjogIkpCIiwKICAiTGFzdE5hbWUiOiBudWxsLAogICJleHAiOiAxNzA2MjgwOTIyLAogICJpYXQiOiAxNzA2Mjc5MTIyLAogICJqdGkiOiAiNzM5MjQzODktYWI5Yy00Y2MxLWJkZGMtZTA4NzJjMmExMmZkIgp9.u1k1phRJNm9Sg9P5SF83NDk0XpcQaLXqVrfxFR9MtctzFzgTFyLwphx94OL7mVtPOzKiHm-Id4wwaFX56kGEO3zMoZ6nH8YTlAiUD_Cg8V_XqNNONuEm1iGEKl_GbRQHmCE3QiFaTc64eSzJ81zrotRsSjDatbDRULXajDl7VmRhYq7TODxqKpVWxXdEgyuNPLOECW3sfVg7hLj5CPGpW-G6yvR6gvEJERGRukCtaHdp4Zj4uZt-3VgLSrkFcRimek4sqQkq0uLv6wfYrnTxjrAv3c982ElsVKjyhR65qToZSzMDXI2o8-4GMcKX5EdpC9TUKvwrBVbwgZeHVNYvgQ";
     private static final String TEST_USER_DOMAIN = "domain_test_value";
     private static final String TEST_USER_NAME = "TEST";
     private static final String TEST_PASSWORD = "PASSWORD";
@@ -116,12 +127,13 @@ class TokenRequestServiceTest {
     @Test
     void shouldReturnTokenValueWhenTokenEndpointRespondsWithToken()
             throws OAuthErrorResponseException, IOException {
+        when(mockCrosscoreV2Configuration.getTokenIssuer()).thenReturn(TEST_TOKEN_ISSUER);
 
         ArgumentCaptor<HttpEntityEnclosingRequestBase> httpRequestCaptor =
                 ArgumentCaptor.forClass(HttpPost.class);
 
         TokenResponse testTokenResponse =
-                TokenResponse.builder().accessToken(TEST_TOKEN_VALUE).build();
+                TokenResponse.builder().accessToken(TEST_TOKEN_VALID_VALUE).build();
         String testTokenResponseString = realObjectMapper.writeValueAsString(testTokenResponse);
 
         // HttpClient response
@@ -157,7 +169,7 @@ class TokenRequestServiceTest {
         verifyNoMoreInteractions(mockEventProbe);
 
         assertNotNull(tokenValue);
-        assertEquals(TEST_TOKEN_VALUE, tokenValue);
+        assertEquals(TEST_TOKEN_VALID_VALUE, tokenValue);
         // Check Headers
         assertTokenHeaders(httpRequestCaptor);
     }
@@ -201,6 +213,10 @@ class TokenRequestServiceTest {
                 .counterMetric(
                         TOKEN_REQUEST_SEND_ERROR.withEndpointPrefixAndExceptionName(
                                 exceptionCaught));
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(
+                        TOKEN_RESPONSE_FAILED_TO_GENERATE_NEW_TOKEN_METRIC.withEndpointPrefix());
         verifyNoMoreInteractions(mockEventProbe);
 
         assertEquals(expectedReturnedException.getStatusCode(), thrownException.getStatusCode());
@@ -211,7 +227,6 @@ class TokenRequestServiceTest {
     void shouldReturnOAuthErrorResponseExceptionWhenTokenEndpointResponseStatusCodeNot200()
             throws IOException, OAuthErrorResponseException {
         ArgumentCaptor<HttpPost> httpRequestCaptor = ArgumentCaptor.forClass(HttpPost.class);
-
         // HttpClient response
         when(mockHttpRetryer.sendHTTPRequestRetryIfAllowed(
                         httpRequestCaptor.capture(),
@@ -248,6 +263,10 @@ class TokenRequestServiceTest {
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
                 .counterMetric(TOKEN_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(
+                        TOKEN_RESPONSE_FAILED_TO_GENERATE_NEW_TOKEN_METRIC.withEndpointPrefix());
         verifyNoMoreInteractions(mockEventProbe);
 
         assertEquals(expectedReturnedException.getStatusCode(), thrownException.getStatusCode());
@@ -256,7 +275,7 @@ class TokenRequestServiceTest {
 
     @ParameterizedTest
     @CsvSource({
-        "400", "401", // Status Codes where the alert metric is expected to be captured
+        "400", "401",
     })
     void shouldCaptureTokenResponseStatusCodeAlertMetricWhenStatusCodeIs(
             int tokenResponseStatusCode) throws IOException, OAuthErrorResponseException {
@@ -298,10 +317,10 @@ class TokenRequestServiceTest {
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
                 .counterMetric(TOKEN_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS.withEndpointPrefix());
-        // Token Status Code Alert
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
-                .counterMetric(TOKEN_RESPONSE_STATUS_CODE_ALERT_METRIC.withEndpointPrefix());
+                .counterMetric(
+                        TOKEN_RESPONSE_FAILED_TO_GENERATE_NEW_TOKEN_METRIC.withEndpointPrefix());
         verifyNoMoreInteractions(mockEventProbe);
 
         assertEquals(expectedReturnedException.getStatusCode(), thrownException.getStatusCode());
@@ -312,7 +331,6 @@ class TokenRequestServiceTest {
     void shouldReturnOAuthErrorResponseExceptionWhenFailingToMapTokenEndpointResponse()
             throws IOException, OAuthErrorResponseException {
         ArgumentCaptor<HttpPost> httpRequestCaptor = ArgumentCaptor.forClass(HttpPost.class);
-
         // HttpClient response
         when(mockHttpRetryer.sendHTTPRequestRetryIfAllowed(
                         httpRequestCaptor.capture(),
@@ -352,6 +370,10 @@ class TokenRequestServiceTest {
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
                 .counterMetric(TOKEN_RESPONSE_TYPE_INVALID.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(
+                        TOKEN_RESPONSE_FAILED_TO_GENERATE_NEW_TOKEN_METRIC.withEndpointPrefix());
         verifyNoMoreInteractions(mockEventProbe);
 
         assertEquals(expectedReturnedException.getStatusCode(), thrownException.getStatusCode());
@@ -362,6 +384,8 @@ class TokenRequestServiceTest {
     void shouldReturnCachedAccessTokenIfTokenNotExpired()
             throws IOException, OAuthErrorResponseException {
 
+        when(mockCrosscoreV2Configuration.getTokenIssuer()).thenReturn(TEST_TOKEN_ISSUER);
+
         ArgumentCaptor<HttpPost> httpRequestCaptor = ArgumentCaptor.forClass(HttpPost.class);
 
         // Captor used as TTL is set and expiry enforced by the CRI
@@ -370,7 +394,7 @@ class TokenRequestServiceTest {
 
         // Bearer access token
         TokenResponse testTokenResponse =
-                TokenResponse.builder().accessToken(TEST_TOKEN_VALUE).build();
+                TokenResponse.builder().accessToken(TEST_TOKEN_VALID_VALUE).build();
         String testTokenResponseString = realObjectMapper.writeValueAsString(testTokenResponse);
         // Request one
         when(mockTokenTable.getItem(TOKEN_ITEM_KEY)).thenReturn(null);
@@ -382,7 +406,7 @@ class TokenRequestServiceTest {
         // Token put capture
         doNothing().when(mockTokenTable).putItem(dynamoPutItemTokenItemCaptor.capture());
         String tokenResponseOne = tokenRequestService.requestToken(false);
-        assertEquals(TEST_TOKEN_VALUE, tokenResponseOne);
+        assertEquals(TEST_TOKEN_VALID_VALUE, tokenResponseOne);
 
         // Request two
         TokenItem testTokenFromDynamo = dynamoPutItemTokenItemCaptor.getValue();
@@ -424,6 +448,7 @@ class TokenRequestServiceTest {
     void shouldRequestNewAccessTokenIfCachedTokenIsExpired()
             throws IOException, OAuthErrorResponseException {
 
+        when(mockCrosscoreV2Configuration.getTokenIssuer()).thenReturn(TEST_TOKEN_ISSUER);
         ArgumentCaptor<HttpPost> httpRequestCaptor = ArgumentCaptor.forClass(HttpPost.class);
 
         // Captor used as TTL is set and expiry enforced by the CRI
@@ -432,7 +457,7 @@ class TokenRequestServiceTest {
 
         // Bearer access token
         TokenResponse testTokenResponse =
-                TokenResponse.builder().accessToken(TEST_TOKEN_VALUE).build();
+                TokenResponse.builder().accessToken(TEST_TOKEN_VALID_VALUE).build();
         String testTokenResponseString = realObjectMapper.writeValueAsString(testTokenResponse);
 
         // Request one
@@ -445,7 +470,7 @@ class TokenRequestServiceTest {
         // Token put capture
         doNothing().when(mockTokenTable).putItem(dynamoPutItemTokenItemCaptor.capture());
         String tokenResponseOne = tokenRequestService.requestToken(false);
-        assertEquals(TEST_TOKEN_VALUE, tokenResponseOne);
+        assertEquals(TEST_TOKEN_VALID_VALUE, tokenResponseOne);
 
         // Request two
         TokenItem testTokenFromDynamo = dynamoPutItemTokenItemCaptor.getValue();
@@ -496,6 +521,196 @@ class TokenRequestServiceTest {
                 .verify(mockEventProbe, times(1))
                 .counterMetric(TOKEN_RESPONSE_TYPE_VALID.withEndpointPrefix());
         verifyNoMoreInteractions(mockEventProbe);
+    }
+
+    @Test
+    void shouldOAuthErrorResponseExceptionWhenTokenJWTContainsNoAlg()
+            throws OAuthErrorResponseException, IOException {
+
+        ArgumentCaptor<HttpEntityEnclosingRequestBase> httpRequestCaptor =
+                ArgumentCaptor.forClass(HttpPost.class);
+
+        TokenResponse testTokenResponse =
+                TokenResponse.builder().accessToken(TEST_TOKEN_INVALID_ALG).build();
+        String testTokenResponseString = realObjectMapper.writeValueAsString(testTokenResponse);
+
+        // HttpClient response
+        when(mockHttpRetryer.sendHTTPRequestRetryIfAllowed(
+                        httpRequestCaptor.capture(),
+                        any(TokenHttpRetryStatusConfig.class),
+                        eq("Token")))
+                .thenReturn(new HTTPReply(200, null, testTokenResponseString));
+
+        OAuthErrorResponseException expectedReturnedException =
+                new OAuthErrorResponseException(
+                        HttpStatus.SC_FORBIDDEN,
+                        ErrorResponse
+                                .TOKEN_ENDPOINT_RETURNED_JWT_WITH_UNEXPECTED_VALUES_IN_RESPONSE);
+
+        OAuthErrorResponseException thrownException =
+                assertThrows(
+                        OAuthErrorResponseException.class,
+                        () -> tokenRequestService.requestToken(true),
+                        "Expected OAuthErrorResponseException");
+
+        // (POST) Token
+        InOrder inOrderMockHttpRetryerSequence = inOrder(mockHttpRetryer);
+        inOrderMockHttpRetryerSequence
+                .verify(mockHttpRetryer, times(1))
+                .sendHTTPRequestRetryIfAllowed(
+                        any(HttpPost.class), any(TokenHttpRetryStatusConfig.class), anyString());
+        verifyNoMoreInteractions(mockHttpRetryer);
+
+        InOrder inOrderMockEventProbeSequence = inOrder(mockEventProbe);
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(TOKEN_REQUEST_CREATED.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(TOKEN_REQUEST_SEND_OK.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(TOKEN_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(TOKEN_RESPONSE_TYPE_INVALID.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(
+                        TOKEN_RESPONSE_FAILED_TO_GENERATE_NEW_TOKEN_METRIC.withEndpointPrefix());
+        verifyNoMoreInteractions(mockEventProbe);
+        // Check Headers
+        assertTokenHeaders(httpRequestCaptor);
+
+        assertEquals(expectedReturnedException.getStatusCode(), thrownException.getStatusCode());
+        assertEquals(expectedReturnedException.getErrorReason(), thrownException.getErrorReason());
+    }
+
+    @Test
+    void shouldOAuthErrorResponseExceptionWhenTokenJWTContainsInvalidIssuer()
+            throws OAuthErrorResponseException, IOException {
+        when(mockCrosscoreV2Configuration.getTokenIssuer()).thenReturn(TEST_TOKEN_ISSUER);
+
+        ArgumentCaptor<HttpEntityEnclosingRequestBase> httpRequestCaptor =
+                ArgumentCaptor.forClass(HttpPost.class);
+
+        TokenResponse testTokenResponse =
+                TokenResponse.builder().accessToken(TEST_TOKEN_INVALID_ISS).build();
+        String testTokenResponseString = realObjectMapper.writeValueAsString(testTokenResponse);
+
+        // HttpClient response
+        when(mockHttpRetryer.sendHTTPRequestRetryIfAllowed(
+                        httpRequestCaptor.capture(),
+                        any(TokenHttpRetryStatusConfig.class),
+                        eq("Token")))
+                .thenReturn(new HTTPReply(200, null, testTokenResponseString));
+
+        OAuthErrorResponseException expectedReturnedException =
+                new OAuthErrorResponseException(
+                        HttpStatus.SC_FORBIDDEN,
+                        ErrorResponse
+                                .TOKEN_ENDPOINT_RETURNED_JWT_WITH_UNEXPECTED_VALUES_IN_RESPONSE);
+
+        OAuthErrorResponseException thrownException =
+                assertThrows(
+                        OAuthErrorResponseException.class,
+                        () -> tokenRequestService.requestToken(true),
+                        "Expected OAuthErrorResponseException");
+
+        // (POST) Token
+        InOrder inOrderMockHttpRetryerSequence = inOrder(mockHttpRetryer);
+        inOrderMockHttpRetryerSequence
+                .verify(mockHttpRetryer, times(1))
+                .sendHTTPRequestRetryIfAllowed(
+                        any(HttpPost.class), any(TokenHttpRetryStatusConfig.class), anyString());
+        verifyNoMoreInteractions(mockHttpRetryer);
+
+        InOrder inOrderMockEventProbeSequence = inOrder(mockEventProbe);
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(TOKEN_REQUEST_CREATED.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(TOKEN_REQUEST_SEND_OK.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(TOKEN_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(TOKEN_RESPONSE_TYPE_INVALID.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(
+                        TOKEN_RESPONSE_FAILED_TO_GENERATE_NEW_TOKEN_METRIC.withEndpointPrefix());
+        verifyNoMoreInteractions(mockEventProbe);
+        // Check Headers
+        assertTokenHeaders(httpRequestCaptor);
+
+        assertEquals(expectedReturnedException.getStatusCode(), thrownException.getStatusCode());
+        assertEquals(expectedReturnedException.getErrorReason(), thrownException.getErrorReason());
+    }
+
+    @Test
+    void shouldOAuthErrorResponseExceptionWhenTokenJWTContainsInvalidSub()
+            throws OAuthErrorResponseException, IOException {
+
+        ArgumentCaptor<HttpEntityEnclosingRequestBase> httpRequestCaptor =
+                ArgumentCaptor.forClass(HttpPost.class);
+
+        TokenResponse testTokenResponse =
+                TokenResponse.builder().accessToken(TEST_TOKEN_INVALID_SUB).build();
+        String testTokenResponseString = realObjectMapper.writeValueAsString(testTokenResponse);
+
+        // HttpClient response
+        when(mockHttpRetryer.sendHTTPRequestRetryIfAllowed(
+                        httpRequestCaptor.capture(),
+                        any(TokenHttpRetryStatusConfig.class),
+                        eq("Token")))
+                .thenReturn(new HTTPReply(200, null, testTokenResponseString));
+
+        OAuthErrorResponseException expectedReturnedException =
+                new OAuthErrorResponseException(
+                        HttpStatus.SC_FORBIDDEN,
+                        ErrorResponse
+                                .TOKEN_ENDPOINT_RETURNED_JWT_WITH_UNEXPECTED_VALUES_IN_RESPONSE);
+
+        OAuthErrorResponseException thrownException =
+                assertThrows(
+                        OAuthErrorResponseException.class,
+                        () -> tokenRequestService.requestToken(true),
+                        "Expected OAuthErrorResponseException");
+
+        // (POST) Token
+        InOrder inOrderMockHttpRetryerSequence = inOrder(mockHttpRetryer);
+        inOrderMockHttpRetryerSequence
+                .verify(mockHttpRetryer, times(1))
+                .sendHTTPRequestRetryIfAllowed(
+                        any(HttpPost.class), any(TokenHttpRetryStatusConfig.class), anyString());
+        verifyNoMoreInteractions(mockHttpRetryer);
+
+        InOrder inOrderMockEventProbeSequence = inOrder(mockEventProbe);
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(TOKEN_REQUEST_CREATED.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(TOKEN_REQUEST_SEND_OK.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(TOKEN_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(TOKEN_RESPONSE_TYPE_INVALID.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(
+                        TOKEN_RESPONSE_FAILED_TO_GENERATE_NEW_TOKEN_METRIC.withEndpointPrefix());
+        verifyNoMoreInteractions(mockEventProbe);
+        // Check Headers
+        assertTokenHeaders(httpRequestCaptor);
+
+        assertEquals(expectedReturnedException.getStatusCode(), thrownException.getStatusCode());
+        assertEquals(expectedReturnedException.getErrorReason(), thrownException.getErrorReason());
     }
 
     private void assertTokenHeaders(
