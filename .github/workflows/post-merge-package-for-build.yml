@@ -18,45 +18,40 @@ jobs:
       contents: read
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           submodules: true
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: zulu
 
-      - uses: gradle/gradle-build-action@v2
+      - uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: wrapper
 
       - name: Setup SAM CLI
-        uses: aws-actions/setup-sam@v1
+        uses: aws-actions/setup-sam@v2
 
       - name: Assume temporary AWS role
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.BUILD_CRI_V1_GH_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-
-      - name: Generate code signing config
-        id: signing
-        uses: rusty-actions/sam-code-signing-config@39f63740a9f8622eb9b6755413a31a6013a62a86
-        with:
-          template: ./infrastructure/lambda/template.yaml
-          profile: ${{ secrets.BUILD_SIGNING_PROFILE_NAME }}
 
       - name: SAM Validate
         run: sam validate --region ${{ env.AWS_REGION }} -t infrastructure/lambda/template.yaml
 
       - name: SAM build
-        run: sam build -t infrastructure/lambda/template.yaml
+        run: |
+          mkdir build
+          sam build -t infrastructure/lambda/template.yaml -b out
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@main
@@ -78,17 +73,10 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_STAGING:$IMAGE_TAG
           cosign sign --key awskms:///${CONTAINER_SIGN_KMS_KEY} $ECR_REGISTRY/$ECR_REPOSITORY_STAGING:$IMAGE_TAG
 
-      - name: Package SAM application
-        run: |
-          sam package \
-            ${{ steps.signing.outputs.signing_config }} \
-            --s3-bucket ${{ secrets.BUILD_CRI_V1_ARTIFACT_SOURCE_BUCKET_NAME }} \
-            --region ${{ env.AWS_REGION }} --output-template-file=cf-template.yaml
 
-      - name: Zip the CloudFormation template
-        run: zip template.zip cf-template.yaml
-
-      - name: Upload zipped CloudFormation artifact to S3
-        env:
-          ARTIFACT_SOURCE_BUCKET_NAME: ${{ secrets.BUILD_CRI_V1_ARTIFACT_SOURCE_BUCKET_NAME }}
-        run: aws s3 cp template.zip "s3://$ARTIFACT_SOURCE_BUCKET_NAME/template.zip"
+      - name: Deploy SAM app
+        uses: govuk-one-login/devplatform-upload-action@v3.5
+        with:
+          artifact-bucket-name: "${{ secrets.ARTIFACT_SOURCE_BUCKET_NAME }}"
+          signing-profile-name: "${{ secrets.SIGNING_PROFILE_NAME }}"
+          working-directory: ./out
