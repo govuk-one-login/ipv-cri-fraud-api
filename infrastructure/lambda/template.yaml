@@ -968,6 +968,9 @@ Resources:
             Metric:
               Namespace: di-ipv-cri-fraud-api
               MetricName: token_api_response_type_invalid
+              Dimensions:
+                - Name: Service
+                  Value: di-ipv-cri-fraud-api-identitycheck
             Period: 60
             Stat: Sum
         - Id: m2
@@ -976,6 +979,9 @@ Resources:
             Metric:
               Namespace: di-ipv-cri-fraud-api
               MetricName: token_failed_to_generate_new_token
+              Dimensions:
+                - Name: Service
+                  Value: di-ipv-cri-fraud-api-identitycheck
             Period: 60
             Stat: Sum
 
