@@ -44,7 +44,6 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationService.CROSSCORE_VERSION_HEADER;
 import static uk.gov.di.ipv.cri.fraud.library.domain.CheckType.IDENTITY_THEFT_CHECK;
 import static uk.gov.di.ipv.cri.fraud.library.domain.CheckType.IMPERSONATION_RISK_CHECK;
 import static uk.gov.di.ipv.cri.fraud.library.domain.CheckType.MORTALITY_CHECK;
@@ -552,7 +551,6 @@ class IdentityVerificationServiceTest {
                     throws IOException, SqsException, OAuthErrorResponseException {
         // ensures CrosscoreV2 is enabled
         when(mockFraudCheckConfigurationService.crosscoreV2Enabled()).thenReturn(Boolean.TRUE);
-        when(requestHeaders.get(CROSSCORE_VERSION_HEADER)).thenReturn("2");
 
         when(mockTokenRequestService.requestToken(false)).thenReturn("testTokenValue");
 
@@ -609,7 +607,6 @@ class IdentityVerificationServiceTest {
             throws IOException, SqsException, OAuthErrorResponseException {
         // ensures CrosscoreV2 is enabled
         when(mockFraudCheckConfigurationService.crosscoreV2Enabled()).thenReturn(Boolean.TRUE);
-        when(requestHeaders.get(CROSSCORE_VERSION_HEADER)).thenReturn("2");
 
         when(mockTokenRequestService.requestToken(false)).thenReturn("testTokenValue");
 
@@ -685,7 +682,6 @@ class IdentityVerificationServiceTest {
             throws IOException, SqsException, OAuthErrorResponseException {
         // ensures CrosscoreV2 is enabled
         when(mockFraudCheckConfigurationService.crosscoreV2Enabled()).thenReturn(Boolean.TRUE);
-        when(requestHeaders.get(CROSSCORE_VERSION_HEADER)).thenReturn("2");
 
         when(mockTokenRequestService.requestToken(false)).thenReturn("testTokenValue");
 
@@ -730,7 +726,6 @@ class IdentityVerificationServiceTest {
             throws IOException, SqsException, OAuthErrorResponseException {
         // ensures CrosscoreV2 is enabled
         when(mockFraudCheckConfigurationService.crosscoreV2Enabled()).thenReturn(Boolean.TRUE);
-        when(requestHeaders.get(CROSSCORE_VERSION_HEADER)).thenReturn("2");
 
         when(mockTokenRequestService.requestToken(false)).thenReturn("testTokenValue");
 
@@ -921,7 +916,6 @@ class IdentityVerificationServiceTest {
 
         // ensures CrosscoreV2 is enabled
         when(mockFraudCheckConfigurationService.crosscoreV2Enabled()).thenReturn(Boolean.TRUE);
-        when(requestHeaders.get(CROSSCORE_VERSION_HEADER)).thenReturn("2");
 
         when(mockTokenRequestService.requestToken(false)).thenReturn(TEST_ACCESS_TOKEN);
 
