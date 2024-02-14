@@ -23,7 +23,7 @@ ext {
 		// cri_common_lib dependencies should match the ipv-cri-lib version
 		// Workaround until dependency resolution is fixed.
 		// ---------------------------------------------------------
-		cri_common_lib_version             : "1.5.3",
+		cri_common_lib_version             : "1.5.6",
 
 		// CRI_LIB aws
 		aws_sdk_version                    : "2.20.162",
