@@ -154,7 +154,7 @@ task fraudCriSmokeBuild() {
 				'html:target/cucumber-report/index.html',
 				'--glue',
 				'gov/di_ipv_fraud/step_definitions',
-				'src/test/resources/features/FraudCRI.feature',
+				'src/test/resources/features/english/FraudCRI.feature',
 				'--tags',
 				'@build-fraud'
 			]
