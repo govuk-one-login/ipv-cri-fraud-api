@@ -57,7 +57,7 @@ Feature: Fraud CRI
     And I check for a Valid response from thirdParty
     And The test is complete and I close the driver
 
-  @userSearch_by_invalid_userName @staging-fraud @V2 
+  @userSearch_by_invalid_userName @staging-fraud @V2
   Scenario: User Search By Invalid UserName(STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -133,7 +133,7 @@ Feature: Fraud CRI
       | ANTHONY CI4           | 17/02/1963     | T03  |    0  |
       | ANTHONY NO_FILE_35    | 17/02/1963     |      |    1  |
 
-  @pep_test_all_users @staging-fraud @V2 
+  @pep_test_all_users @staging-fraud @V2
   Scenario Outline: Edit User Happy Path with pep CI (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -181,7 +181,7 @@ Feature: Fraud CRI
       | DIPTI STUPPART          | 26/01/1989     | P02 |   2   |
       | JAMALA BROWER           | 27/10/1963     | P02 |   2   |
 
-  @test_PEP_user_with_multiple_addresses @staging-fraud @V2 
+  @test_PEP_user_with_multiple_addresses @staging-fraud @V2
   Scenario Outline: Edit PEP User with multiple addresses (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
