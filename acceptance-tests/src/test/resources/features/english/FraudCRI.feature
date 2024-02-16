@@ -133,7 +133,7 @@ Feature: Fraud CRI
       | ANTHONY CI4           | 17/02/1963     | T03  |    0  |
       | ANTHONY NO_FILE_35    | 17/02/1963     |      |    1  |
 
-  @pep_test_all_users @staging-fraud
+  @pep_test_all_users @staging-fraud @V2
   Scenario Outline: Edit User Happy Path with pep CI (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
