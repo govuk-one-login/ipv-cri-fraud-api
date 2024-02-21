@@ -176,7 +176,7 @@ public class FraudPageObject extends UniversalSteps {
 
     public void navigateToIPVCoreStub() {
         Driver.get().get(configurationService.getCoreStubUrl(true));
-        waitForTextToAppear(IPV_CORE_STUB);
+        assertPageTitle(IPV_CORE_STUB, true);
     }
 
     public void navigateToFraudCRIOnTestEnv() {
@@ -229,7 +229,7 @@ public class FraudPageObject extends UniversalSteps {
     }
 
     public void navigateToResponse(String validOrInvalid) {
-        waitForTextToAppear(CHECK_PAGE_TITLE);
+        assertPageTitle(CHECK_PAGE_TITLE, false);
         checkYourDetailsContinue.click();
         assertURLContains("callback");
         if ("Invalid".equalsIgnoreCase(validOrInvalid)) {
@@ -240,7 +240,7 @@ public class FraudPageObject extends UniversalSteps {
     }
 
     public void whoWeCheckDetailsWith(String page) {
-        waitForTextToAppear(CHECK_PAGE_TITLE);
+        assertPageTitle(CHECK_PAGE_TITLE, false);
         whoWeCheckLink.click();
 
         if ("ThirdParty".equalsIgnoreCase(page)) {
@@ -528,7 +528,7 @@ public class FraudPageObject extends UniversalSteps {
     }
 
     public void assertCurrentPageIsFraudCheckPage() {
-        waitForTextToAppear(CHECK_PAGE_TITLE);
+        assertPageTitle(CHECK_PAGE_TITLE, false);
     }
 
     private void assertNbfIsRecentAndExpiryIsNull() throws JsonProcessingException {
