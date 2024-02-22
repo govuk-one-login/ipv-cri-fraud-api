@@ -39,7 +39,7 @@ jobs:
           coreStubUsername: ${{ secrets.CORE_STUB_USERNAME }}
           coreStubPassword: ${{ secrets.CORE_STUB_PASSWORD }}
           orchestratorStubUrl: ${{ secrets.ORCHESTRATOR_STUB_URL }}
-        run: cd acceptance-tests && gradle fraudCriSmokeBuild
+        run: cd acceptance-tests && ./gradlew fraudCriSmokeBuild
 
       - name: Get test results history
         uses: actions/checkout@v4

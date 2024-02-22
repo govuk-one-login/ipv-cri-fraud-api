@@ -191,7 +191,7 @@ public class FraudStepDefs extends FraudPageObject {
 
     @Then("Validate User navigation back to core for invalid users")
     public void validate_user_navigation_back_to_core_for_invalid_users() {
-        waitForTextToAppear(IPV_CORE_STUB);
+        assertPageTitle(IPV_CORE_STUB, true);
     }
 
     @When("^I click on Second address$")

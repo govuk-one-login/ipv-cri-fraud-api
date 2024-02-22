@@ -181,7 +181,7 @@ public class ProveYourIdentityFullJourneyPageObject extends UniversalSteps {
 
         String orchestratorStubUrl = configurationService.getOrchestratorStubUrl();
         Driver.get().get(orchestratorStubUrl);
-        waitForTextToAppear(ORCHESTRATOR_STUB);
+        assertPageTitle(ORCHESTRATOR_STUB, true);
     }
 
     public void clickOnFullJourneyRouteButton() {
