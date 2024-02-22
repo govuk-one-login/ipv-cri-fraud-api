@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import gov.di_ipv_fraud.service.ConfigurationService;
+import gov.di_ipv_fraud.utilities.BrowserUtils;
 import gov.di_ipv_fraud.utilities.Driver;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
@@ -232,9 +233,12 @@ public class FraudPageObject extends UniversalSteps {
         assertPageTitle(CHECK_PAGE_TITLE, false);
         checkYourDetailsContinue.click();
         assertURLContains("callback");
+
         if ("Invalid".equalsIgnoreCase(validOrInvalid)) {
+            BrowserUtils.waitForVisibility(errorResponse, 5);
             errorResponse.click();
         } else {
+            BrowserUtils.waitForVisibility(viewResponse, 5);
             viewResponse.click();
         }
     }
