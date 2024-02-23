@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import static gov.di_ipv_fraud.pages.Headers.ORCHESTRATOR_STUB;
-import static gov.di_ipv_fraud.utilities.TestUtils.getProperty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -204,14 +203,12 @@ public class ProveYourIdentityFullJourneyPageObject extends UniversalSteps {
     }
 
     public void addDateOfBirth(String day, String month, String year) {
-        if (getProperty("cucumber.tags").equals("@V2")) {
-            LOGGER.info(day + month + year);
-            if (day.equals("13") && month.equals("06") && year.equals("1987")) {
-                LocalDate kabirDynamicBirth = LocalDate.now().minusDays(13023);
-                day = String.valueOf(kabirDynamicBirth.getDayOfMonth());
-                month = String.valueOf(kabirDynamicBirth.getMonth().getValue());
-                year = String.valueOf(kabirDynamicBirth.getYear());
-            }
+        LOGGER.info(day + month + year);
+        if (day.equals("13") && month.equals("06") && year.equals("1987")) {
+            LocalDate kabirDynamicBirth = LocalDate.now().minusDays(13023);
+            day = String.valueOf(kabirDynamicBirth.getDayOfMonth());
+            month = String.valueOf(kabirDynamicBirth.getMonth().getValue());
+            year = String.valueOf(kabirDynamicBirth.getYear());
         }
 
         dayOfBirthField.sendKeys(day);
