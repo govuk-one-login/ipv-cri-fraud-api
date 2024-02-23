@@ -203,14 +203,6 @@ public class ProveYourIdentityFullJourneyPageObject extends UniversalSteps {
     }
 
     public void addDateOfBirth(String day, String month, String year) {
-        LOGGER.info(day + month + year);
-        if (day.equals("13") && month.equals("06") && year.equals("1987")) {
-            LocalDate kabirDynamicBirth = LocalDate.now().minusDays(13023);
-            day = String.valueOf(kabirDynamicBirth.getDayOfMonth());
-            month = String.valueOf(kabirDynamicBirth.getMonth().getValue());
-            year = String.valueOf(kabirDynamicBirth.getYear());
-        }
-
         dayOfBirthField.sendKeys(day);
         monthOfBirthField.sendKeys(month);
         yearOfBirthField.sendKeys(year);
