@@ -217,7 +217,7 @@ Mappings:
       dev: "true"
       build: "true"
       staging: "true"
-      integration: "false"
+      integration: "true"
       production: "true"
 
   FraudCriPepEnabledMapping:
