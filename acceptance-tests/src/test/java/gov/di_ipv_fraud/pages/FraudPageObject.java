@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import gov.di_ipv_fraud.service.ConfigurationService;
+import gov.di_ipv_fraud.utilities.BrowserUtils;
 import gov.di_ipv_fraud.utilities.Driver;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
@@ -24,6 +25,7 @@ import java.util.logging.Logger;
 import static gov.di_ipv_fraud.pages.Headers.CHECK_PAGE_TITLE;
 import static gov.di_ipv_fraud.pages.Headers.IPV_CORE_STUB;
 import static gov.di_ipv_fraud.utilities.BrowserUtils.checkOkHttpResponseOnLink;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -175,7 +177,7 @@ public class FraudPageObject extends UniversalSteps {
 
     public void navigateToIPVCoreStub() {
         Driver.get().get(configurationService.getCoreStubUrl(true));
-        waitForTextToAppear(IPV_CORE_STUB);
+        assertPageTitle(IPV_CORE_STUB, true);
     }
 
     public void navigateToFraudCRIOnTestEnv() {
@@ -228,18 +230,21 @@ public class FraudPageObject extends UniversalSteps {
     }
 
     public void navigateToResponse(String validOrInvalid) {
-        waitForTextToAppear(CHECK_PAGE_TITLE);
+        assertPageTitle(CHECK_PAGE_TITLE, false);
         checkYourDetailsContinue.click();
         assertURLContains("callback");
+
         if ("Invalid".equalsIgnoreCase(validOrInvalid)) {
+            BrowserUtils.waitForVisibility(errorResponse, 5);
             errorResponse.click();
         } else {
+            BrowserUtils.waitForVisibility(viewResponse, 5);
             viewResponse.click();
         }
     }
 
     public void whoWeCheckDetailsWith(String page) {
-        waitForTextToAppear(CHECK_PAGE_TITLE);
+        assertPageTitle(CHECK_PAGE_TITLE, false);
         whoWeCheckLink.click();
 
         if ("ThirdParty".equalsIgnoreCase(page)) {
@@ -503,6 +508,17 @@ public class FraudPageObject extends UniversalSteps {
         assertTrue(checkTypeInVC);
     }
 
+    public void assertJtiIsPresentAndNotNull() throws JsonProcessingException {
+        String result = JSONPayload.getText();
+        LOGGER.info("result = " + result);
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode jsonNode = objectMapper.readTree(result);
+        JsonNode jtiNode = jsonNode.get("jti");
+        LOGGER.info("jti = " + jtiNode.asText());
+
+        assertNotNull(jtiNode.asText());
+    }
+
     private JsonNode getVCFromJson(String vc) throws JsonProcessingException {
         String result = JSONPayload.getText();
         LOGGER.info("result = " + result);
@@ -516,7 +532,7 @@ public class FraudPageObject extends UniversalSteps {
     }
 
     public void assertCurrentPageIsFraudCheckPage() {
-        waitForTextToAppear(CHECK_PAGE_TITLE);
+        assertPageTitle(CHECK_PAGE_TITLE, false);
     }
 
     private void assertNbfIsRecentAndExpiryIsNull() throws JsonProcessingException {

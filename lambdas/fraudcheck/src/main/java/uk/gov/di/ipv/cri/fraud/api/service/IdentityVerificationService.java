@@ -52,7 +52,6 @@ public class IdentityVerificationService {
             "FraudCheckResult had no error message.";
     private static final String ERROR_PEP_CHECK_RESULT_NO_ERR_MSG =
             "PepCheckResult had no error message.";
-    public static final String CROSSCORE_VERSION_HEADER = "crosscore-version";
     private final ThirdPartyFraudGateway thirdPartyGateway;
     private final ThirdPartyPepGateway thirdPartyPepGateway;
 
@@ -102,10 +101,8 @@ public class IdentityVerificationService {
 
         String token = ""; // only used in V2
         boolean crosscoreV2Enabled = false;
-        final String crosscoreV2EnabledHeader = requestHeaders.get(CROSSCORE_VERSION_HEADER);
 
-        if (fraudCheckConfigurationService.crosscoreV2Enabled()
-                && "2".equalsIgnoreCase(crosscoreV2EnabledHeader)) {
+        if (fraudCheckConfigurationService.crosscoreV2Enabled()) {
             LOGGER.info("Using Crosscore V2 for Fraud and PEP checks");
             crosscoreV2Enabled = true;
         } else {

@@ -1,33 +1,32 @@
 package gov.di_ipv_fraud.pages;
 
-import gov.di_ipv_fraud.utilities.BrowserUtils;
 import gov.di_ipv_fraud.utilities.Driver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.support.PageFactory;
 
-import java.util.concurrent.TimeUnit;
-
+import static gov.di_ipv_fraud.utilities.BrowserUtils.waitForPageToLoad;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class UniversalSteps {
+
+    private static final Logger LOGGER = LogManager.getLogger();
+
+    private static final int MAX_WAIT_SEC = 10;
 
     public UniversalSteps() {
         PageFactory.initElements(Driver.get(), this);
     }
 
-    public void waitForFiveSeconds() {
-        BrowserUtils.waitForPageToLoad(5);
-    }
+    public void assertPageTitle(String expTitle, boolean fuzzy) {
+        waitForPageToLoad(MAX_WAIT_SEC);
 
-    public void waitForTextToAppear(String text) {
-        String header = Driver.get().getTitle();
-        Driver.get().manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+        String title = Driver.get().getTitle();
 
-        if (header.contains(text)) {
-            assertTrue(Driver.get().getTitle().contains(text));
-        } else {
-            fail("Page Title Does Not Match " + text + "But was " + Driver.get().getTitle());
-        }
+        boolean match = fuzzy ? title.contains(expTitle) : title.equals(expTitle);
+
+        LOGGER.info("Page title: " + title);
+        assertTrue(match);
     }
 
     public void driverClose() {
@@ -35,7 +34,11 @@ public class UniversalSteps {
     }
 
     public void assertURLContains(String expected) {
+        waitForPageToLoad(MAX_WAIT_SEC);
+
         String url = Driver.get().getCurrentUrl();
+
+        LOGGER.info("Page url: " + url);
         assertTrue(url.contains(expected));
     }
 }

@@ -33,7 +33,7 @@ class IssueCredentialAuditGeneratorTest {
 
         AuditEventType evt1 = AuditEventType.VC_ISSUED;
         AuditEvent<VCISSFraudAuditExtension> ev1 =
-                new AuditEvent<>(000001L, "PREFIX" + "_" + evt1.toString(), "TEST");
+                new AuditEvent<>(000001L, 00000001L, "PREFIX" + "_" + evt1.toString(), "TEST");
 
         // -Restricted +ext
         ev1.setExtensions(ext);
