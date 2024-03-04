@@ -49,6 +49,7 @@ import static org.mockito.Mockito.when;
 import static uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse.ERROR_PEP_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_REQUEST_CREATED;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_REQUEST_SEND_ERROR;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_REQUEST_SEND_OK;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_RESPONSE_TYPE_EXPECTED_HTTP_STATUS;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_RESPONSE_TYPE_INVALID;
@@ -212,6 +213,69 @@ class ThirdPartyPepGatewayTest {
         inOrderMockEventProbe
                 .verify(mockEventProbe)
                 .counterMetric(PEP_RESPONSE_TYPE_INVALID.withEndpointPrefix());
+        verifyNoMoreInteractions(mockEventProbe);
+
+        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity, "54321");
+        verify(mockObjectMapper).writeValueAsString(testApiRequest);
+        verify(mockHmacGenerator).generateHmac(testRequestBody);
+        verify(mockHttpRetryer)
+                .sendHTTPRequestRetryIfAllowed(
+                        httpRequestCaptor.capture(),
+                        any(PepCheckHttpRetryStatusConfig.class),
+                        eq("Pep Check"));
+
+        assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().getURI().toString());
+        assertEquals(HttpPost.class, httpRequestCaptor.getValue().getClass());
+        assertHeaders(httpRequestCaptor, false);
+    }
+
+    @Test
+    void shouldReturnOAuthErrorResponseExceptionIfThirdPartyApiHasAnIOException()
+            throws IOException, OAuthErrorResponseException {
+        final String testRequestBody = "serialisedCrossCoreApiRequest";
+        final PEPRequest testApiRequest = new PEPRequest();
+
+        PersonIdentity personIdentity =
+                TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
+
+        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity, "54321"))
+                .thenReturn(testApiRequest);
+
+        when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
+        when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(HMAC_OF_REQUEST_BODY);
+        ArgumentCaptor<HttpEntityEnclosingRequestBase> httpRequestCaptor =
+                ArgumentCaptor.forClass(HttpPost.class);
+
+        when(mockHttpRetryer.sendHTTPRequestRetryIfAllowed(
+                        httpRequestCaptor.capture(),
+                        any(PepCheckHttpRetryStatusConfig.class),
+                        eq("Pep Check")))
+                .thenThrow(new IOException("IOException"));
+
+        OAuthErrorResponseException expectedReturnedException =
+                new OAuthErrorResponseException(
+                        HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                        ErrorResponse.ERROR_SENDING_PEP_CHECK_REQUEST);
+
+        OAuthErrorResponseException thrownException =
+                assertThrows(
+                        OAuthErrorResponseException.class,
+                        () -> thirdPartyPepGateway.performPepCheck(personIdentity, false, null),
+                        "Expected OAuthErrorResponseException");
+
+        assertEquals(expectedReturnedException.getStatusCode(), thrownException.getStatusCode());
+        assertEquals(expectedReturnedException.getErrorReason(), thrownException.getErrorReason());
+
+        InOrder inOrderMockEventProbe = inOrder(mockEventProbe);
+        inOrderMockEventProbe
+                .verify(mockEventProbe)
+                .counterMetric(PEP_REQUEST_CREATED.withEndpointPrefix());
+        inOrderMockEventProbe
+                .verify(mockEventProbe)
+                .counterMetric(PEP_REQUEST_SEND_ERROR.withEndpointPrefix());
+        inOrderMockEventProbe
+                .verify(mockEventProbe)
+                .counterMetric(eq(THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS), anyDouble());
         verifyNoMoreInteractions(mockEventProbe);
 
         verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity, "54321");

@@ -45,6 +45,7 @@ import static org.mockito.Mockito.verify;
 import static uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse.ERROR_FRAUD_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_FRAUD_RESPONSE_LATENCY_MILLIS;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_REQUEST_CREATED;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_REQUEST_SEND_ERROR;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_REQUEST_SEND_OK;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_RESPONSE_TYPE_EXPECTED_HTTP_STATUS;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_RESPONSE_TYPE_INVALID;
@@ -209,6 +210,69 @@ class ThirdPartyFraudGatewayTest {
         inOrderMockEventProbe
                 .verify(mockEventProbe)
                 .counterMetric(FRAUD_RESPONSE_TYPE_INVALID.withEndpointPrefix());
+        verifyNoMoreInteractions(mockEventProbe);
+
+        verify(mockRequestMapper).mapPersonIdentity(personIdentity, "54321");
+        verify(mockObjectMapper).writeValueAsString(testApiRequest);
+        verify(mockHmacGenerator).generateHmac(testRequestBody);
+        verify(mockHttpRetryer)
+                .sendHTTPRequestRetryIfAllowed(
+                        httpRequestCaptor.capture(),
+                        any(FraudCheckHttpRetryStatusConfig.class),
+                        eq("Fraud Check"));
+
+        assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().getURI().toString());
+        assertEquals(HttpPost.class, httpRequestCaptor.getValue().getClass());
+        assertHeaders(httpRequestCaptor, false);
+    }
+
+    @Test
+    void shouldReturnOAuthErrorResponseExceptionIfThirdPartyApiHasAnIOException()
+            throws IOException, OAuthErrorResponseException {
+        final String testRequestBody = "serialisedCrossCoreApiRequest";
+        final IdentityVerificationRequest testApiRequest = new IdentityVerificationRequest();
+
+        PersonIdentity personIdentity =
+                TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
+
+        when(mockRequestMapper.mapPersonIdentity(personIdentity, "54321"))
+                .thenReturn(testApiRequest);
+
+        when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
+        when(this.mockHmacGenerator.generateHmac(testRequestBody)).thenReturn(HMAC_OF_REQUEST_BODY);
+        ArgumentCaptor<HttpEntityEnclosingRequestBase> httpRequestCaptor =
+                ArgumentCaptor.forClass(HttpPost.class);
+
+        when(mockHttpRetryer.sendHTTPRequestRetryIfAllowed(
+                        httpRequestCaptor.capture(),
+                        any(FraudCheckHttpRetryStatusConfig.class),
+                        eq("Fraud Check")))
+                .thenThrow(new IOException("IOException"));
+
+        OAuthErrorResponseException expectedReturnedException =
+                new OAuthErrorResponseException(
+                        HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                        ErrorResponse.ERROR_SENDING_FRAUD_CHECK_REQUEST);
+
+        OAuthErrorResponseException thrownException =
+                assertThrows(
+                        OAuthErrorResponseException.class,
+                        () -> thirdPartyFraudGateway.performFraudCheck(personIdentity, false, null),
+                        "Expected OAuthErrorResponseException");
+
+        assertEquals(expectedReturnedException.getStatusCode(), thrownException.getStatusCode());
+        assertEquals(expectedReturnedException.getErrorReason(), thrownException.getErrorReason());
+
+        InOrder inOrderMockEventProbe = inOrder(mockEventProbe);
+        inOrderMockEventProbe
+                .verify(mockEventProbe)
+                .counterMetric(FRAUD_REQUEST_CREATED.withEndpointPrefix());
+        inOrderMockEventProbe
+                .verify(mockEventProbe)
+                .counterMetric(FRAUD_REQUEST_SEND_ERROR.withEndpointPrefix());
+        inOrderMockEventProbe
+                .verify(mockEventProbe)
+                .counterMetric(eq(THIRD_PARTY_FRAUD_RESPONSE_LATENCY_MILLIS), anyDouble());
         verifyNoMoreInteractions(mockEventProbe);
 
         verify(mockRequestMapper).mapPersonIdentity(personIdentity, "54321");
