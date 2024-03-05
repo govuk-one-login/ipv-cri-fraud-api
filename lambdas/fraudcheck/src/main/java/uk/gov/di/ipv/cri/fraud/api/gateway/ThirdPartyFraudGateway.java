@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Objects;
 
 import static uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse.ERROR_FRAUD_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE;
@@ -144,7 +145,7 @@ public class ThirdPartyFraudGateway {
 
         eventProbe.counterMetric(FRAUD_REQUEST_CREATED.withEndpointPrefix());
 
-        var startCheck = clock.instant();
+        Instant startCheck = clock.instant();
 
         final HTTPReply httpReply;
         LOGGER.info("Submitting {} request", REQUEST_NAME);
@@ -157,15 +158,22 @@ public class ThirdPartyFraudGateway {
         } catch (IOException e) {
             LOGGER.error("IOException executing {} http request {}", REQUEST_NAME, e.getMessage());
             eventProbe.counterMetric(FRAUD_REQUEST_SEND_ERROR.withEndpointPrefix());
+
+            captureAndLogRequestLatency(startCheck);
+
             throw new OAuthErrorResponseException(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, ERROR_SENDING_FRAUD_CHECK_REQUEST);
         }
 
+        captureAndLogRequestLatency(startCheck);
+
+        return fraudCheckResponseHandler(httpReply);
+    }
+
+    private void captureAndLogRequestLatency(Instant startCheck) {
         long latency = Duration.between(startCheck, clock.instant()).toMillis();
         eventProbe.counterMetric(THIRD_PARTY_FRAUD_RESPONSE_LATENCY_MILLIS, latency);
         LOGGER.info("{} latency {}", REQUEST_NAME, latency);
-
-        return fraudCheckResponseHandler(httpReply);
     }
 
     private HttpPost httpRequestBuilder(
