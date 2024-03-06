@@ -14,7 +14,7 @@ public class FraudRetrievalService {
     private final DataStore<FraudResultItem> dataStore;
     private final IssueCredentialConfigurationService issueCredentialConfigurationService;
 
-    FraudRetrievalService(
+    public FraudRetrievalService(
             DataStore<FraudResultItem> dataStore,
             IssueCredentialConfigurationService issueCredentialConfigurationService) {
         this.issueCredentialConfigurationService = issueCredentialConfigurationService;

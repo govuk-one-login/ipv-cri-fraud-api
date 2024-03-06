@@ -11,6 +11,7 @@ plugins {
 
 dependencies {
 	implementation "uk.gov.account:cri-common-lib:${dependencyVersions.cri_common_lib_version}",
+			"com.nimbusds:oauth2-oidc-sdk:${dependencyVersions.nimbusds_oauth_version}",
 			"software.amazon.awssdk:dynamodb:${dependencyVersions.aws_sdk_version}",
 			"software.amazon.awssdk:dynamodb-enhanced:${dependencyVersions.aws_sdk_version}",
 			"software.amazon.awssdk:apache-client:${dependencyVersions.aws_sdk_version}",
