@@ -151,6 +151,7 @@ class ThirdPartyPepGatewayTest {
         assertNotNull(actualPepCheckResult);
         assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().getURI().toString());
         assertEquals(HttpPost.class, httpRequestCaptor.getValue().getClass());
+        assertEquals(20000, httpRequestCaptor.getValue().getConfig().getSocketTimeout());
         assertHeaders(httpRequestCaptor, false);
     }
 

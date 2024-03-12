@@ -68,7 +68,7 @@ public class ThirdPartyFraudGateway {
     // POOL_REQ + CONN_EST + HTTP_RESP = overall max timeout
     private static final int POOL_REQUEST_TIMEOUT_MS = 5000;
     private static final int CONNECTION_ESTABLISHMENT_TIMEOUT_MS = 5000;
-    public static final int FRAUD_HTTP_RESPONSE_TIMEOUT_MS = 10000;
+    public static final int FRAUD_HTTP_RESPONSE_TIMEOUT_MS = 5000;
     private final RequestConfig fraudCheckRequestConfig;
 
     public ThirdPartyFraudGateway(

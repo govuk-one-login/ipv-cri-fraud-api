@@ -68,7 +68,7 @@ public class ThirdPartyPepGateway {
     // POOL_REQ + CONN_EST + HTTP_RESP = overall max timeout
     private static final int POOL_REQUEST_TIMEOUT_MS = 5000;
     private static final int CONNECTION_ESTABLISHMENT_TIMEOUT_MS = 5000;
-    public static final int PEP_HTTP_RESPONSE_TIMEOUT_MS = 10000;
+    public static final int PEP_HTTP_RESPONSE_TIMEOUT_MS = 20000;
     private final RequestConfig pepCheckRequestConfig;
 
     public ThirdPartyPepGateway(
