@@ -974,6 +974,121 @@ Resources:
             Period: 60
             Stat: Sum
 
+  IdentityCheckLambdaConcurrencyThresholdReached:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub Fraud ${Environment} - IdentityCheck Lambda concurrency threshold reached
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref AlarmTopicFraud
+      OKActions:
+        - !Ref AlarmTopicFraud
+      InsufficientDataActions: []
+      MetricName: ConcurrentExecutions
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref IdentityCheckingFunction
+      Period: 60
+      EvaluationPeriods: 15
+      DatapointsToAlarm: 12
+      Threshold: 9
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  IssueCredentialLambdaConcurrencyThresholdReached:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub Fraud ${Environment} - IssueCredential Lambda concurrency threshold reached
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref AlarmTopicFraud
+      OKActions:
+        - !Ref AlarmTopicFraud
+      InsufficientDataActions: []
+      MetricName: ConcurrentExecutions
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref IssueCredentialFunction
+      Period: 60
+      EvaluationPeriods: 15
+      DatapointsToAlarm: 12
+      Threshold: 6
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  CommonAPISessionLambdaConcurrencyThresholdReached:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub Fraud ${Environment} - Common API Session Lambda concurrency threshold reached
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref AlarmTopicFraud
+      OKActions:
+        - !Ref AlarmTopicFraud
+      InsufficientDataActions: []
+      MetricName: ConcurrentExecutions
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Dimensions:
+        - Name: FunctionName
+          Value: !Sub "${CommonStackName}-SessionFunction"
+      Period: 60
+      EvaluationPeriods: 15
+      DatapointsToAlarm: 12
+      Threshold: 6
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  CommonAPIAuthorizationLambdaConcurrencyThresholdReached:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub Fraud ${Environment} - Common API Authorization Lambda concurrency threshold reached
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref AlarmTopicFraud
+      OKActions:
+        - !Ref AlarmTopicFraud
+      InsufficientDataActions: []
+      MetricName: ConcurrentExecutions
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Dimensions:
+        - Name: FunctionName
+          Value: !Sub "${CommonStackName}-AuthorizationFunction"
+      Period: 60
+      EvaluationPeriods: 15
+      DatapointsToAlarm: 12
+      Threshold: 6
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  CommonAPIAccessTokenLambdaConcurrencyThresholdReached:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub Fraud ${Environment} - Common API AccessToken Lambda concurrency threshold reached
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref AlarmTopicFraud
+      OKActions:
+        - !Ref AlarmTopicFraud
+      InsufficientDataActions: []
+      MetricName: ConcurrentExecutions
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Dimensions:
+        - Name: FunctionName
+          Value: !Sub "${CommonStackName}-AccessTokenFunction"
+      Period: 60
+      EvaluationPeriods: 15
+      DatapointsToAlarm: 12
+      Threshold: 6
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
   ####################################################################
   #                                                                  #
   # Alarm setup                                                      #
