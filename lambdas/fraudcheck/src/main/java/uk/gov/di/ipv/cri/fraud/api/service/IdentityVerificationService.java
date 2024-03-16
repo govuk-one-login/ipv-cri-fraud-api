@@ -99,15 +99,7 @@ public class IdentityVerificationService {
             throws JsonProcessingException, SqsException, OAuthErrorResponseException {
         IdentityVerificationResult identityVerificationResult = new IdentityVerificationResult();
 
-        String token = ""; // only used in V2
-        boolean crosscoreV2Enabled = false;
-
-        if (fraudCheckConfigurationService.crosscoreV2Enabled()) {
-            LOGGER.info("Using Crosscore V2 for Fraud and PEP checks");
-            crosscoreV2Enabled = true;
-        } else {
-            LOGGER.info("Using Crosscore V1 for Fraud and PEP checks");
-        }
+        LOGGER.info("Using Crosscore V2 for Fraud and PEP checks");
 
         LOGGER.info("Validating PersonIdentity...");
         ValidationResult<List<String>> validationResult =
@@ -122,16 +114,10 @@ public class IdentityVerificationService {
         LOGGER.info("PersonIdentity validated");
         eventProbe.counterMetric(PERSON_DETAILS_VALIDATION_PASS);
 
-        if (crosscoreV2Enabled) {
-            token =
-                    tokenRequestService.requestToken(
-                            false); // EMTODO: Refactor to allow recovery from remote token expiry
-            // (do
-            // while logic in DL)
-        }
+        String token = tokenRequestService.requestToken(false);
 
         IdentityVerificationResult fraudIdentityVerificationResult =
-                fraudCheckStep(personIdentity, crosscoreV2Enabled, token);
+                fraudCheckStep(personIdentity, token);
         IdentityVerificationResult pepIdentityVerificationResult = new IdentityVerificationResult();
 
         boolean pepValidToPerform =
@@ -143,7 +129,6 @@ public class IdentityVerificationService {
                     pepCheckStep(
                             personIdentity,
                             fraudIdentityVerificationResult.getIdentityCheckScore(),
-                            crosscoreV2Enabled,
                             token);
         }
 
@@ -208,15 +193,13 @@ public class IdentityVerificationService {
         return identityVerificationResult;
     }
 
-    public IdentityVerificationResult fraudCheckStep(
-            PersonIdentity personIdentity, boolean crosscoreV2Enabled, String token)
+    public IdentityVerificationResult fraudCheckStep(PersonIdentity personIdentity, String token)
             throws JsonProcessingException {
         IdentityVerificationResult identityVerificationResult = new IdentityVerificationResult();
         // Requests split into two try blocks to differentiate tech failures in fraud from pep
         FraudCheckResult fraudCheckResult;
         try {
-            fraudCheckResult =
-                    thirdPartyGateway.performFraudCheck(personIdentity, crosscoreV2Enabled, token);
+            fraudCheckResult = thirdPartyGateway.performFraudCheck(personIdentity, token);
         } catch (Exception e) {
             LOGGER.error(ERROR_MSG_CONTEXT, e);
             eventProbe.counterMetric(FRAUD_CHECK_REQUEST_FAILED);
@@ -363,10 +346,7 @@ public class IdentityVerificationService {
     }
 
     public IdentityVerificationResult pepCheckStep(
-            PersonIdentity personIdentity,
-            int currentScore,
-            boolean crosscoreV2Enabled,
-            String token)
+            PersonIdentity personIdentity, int currentScore, String token)
             throws JsonProcessingException {
 
         IdentityVerificationResult identityVerificationResult = new IdentityVerificationResult();
@@ -376,8 +356,7 @@ public class IdentityVerificationService {
         PepCheckResult pepCheckResult = null;
 
         try {
-            pepCheckResult =
-                    thirdPartyPepGateway.performPepCheck(personIdentity, crosscoreV2Enabled, token);
+            pepCheckResult = thirdPartyPepGateway.performPepCheck(personIdentity, token);
         } catch (Exception e) {
             // Pep check can completely fail and result returned based on fraud check alone
             LOGGER.error(ERROR_MSG_CONTEXT, e);

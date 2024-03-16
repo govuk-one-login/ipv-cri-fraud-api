@@ -51,7 +51,6 @@ public class FraudCheckConfigurationService {
     private final String stackParameterPrefix;
     private final String commonParameterPrefix;
 
-    private final boolean crosscoreV2Enabled;
     private final boolean pepEnabled;
 
     private List<String> zeroScoreUcodes;
@@ -104,9 +103,6 @@ public class FraudCheckConfigurationService {
 
         // *****************************Feature Toggles*******************************
 
-        this.crosscoreV2Enabled =
-                Boolean.valueOf(paramProvider.get(getStackParameterName("CrosscoreV2/enabled")));
-
         this.pepEnabled = Boolean.valueOf(paramProvider.get(getStackParameterName("pepEnabled")));
 
         // *********************************Secrets***********************************
@@ -156,10 +152,6 @@ public class FraudCheckConfigurationService {
 
     public CrosscoreV2Configuration getCrosscoreV2Configuration() {
         return crosscoreV2Configuration;
-    }
-
-    public boolean crosscoreV2Enabled() {
-        return crosscoreV2Enabled;
     }
 
     public boolean getPepEnabled() {

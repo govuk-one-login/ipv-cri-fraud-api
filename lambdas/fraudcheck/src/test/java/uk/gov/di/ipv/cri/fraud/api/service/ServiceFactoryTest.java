@@ -11,7 +11,6 @@ import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.http.HttpClient;
 import java.security.InvalidKeyException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -21,8 +20,6 @@ import java.util.Base64;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,15 +32,12 @@ class ServiceFactoryTest {
     private static final String TEST_TOKEN_PASSWORD = "testTokenPasswordValue";
     private static final String TEST_TOKEN_USER_DOMAIN = "testTokenUserDomainValue";
     private static final String TEST_TOKEN_TABLE_NAME = "testTokenTokenTableNameValue";
-    private static final String TEST_CROSSCOREV2_ENDPOINTURL = "testCrosscoreV2EndpointUrlValue";
-    private static final String TEST_CROSSCOREV2_TENANTID = "testCrosscoreV2TenantIdValue";
 
     @Mock private ObjectMapper mockObjectMapper;
     @Mock private FraudCheckConfigurationService mockFraudCheckConfigurationService;
     @Mock private CrosscoreV2Configuration mockCrosscoreV2Configuration;
     @Mock private ContraindicationMapper mockContraindicationMapper;
     @Mock private PersonIdentityValidator mockPersonIdentityValidator;
-    @Mock private HttpClient mockHttpClient;
 
     @Mock private AuditService mockAuditService;
 
@@ -53,9 +47,6 @@ class ServiceFactoryTest {
     void shouldCreateIdentityVerificationService()
             throws NoSuchAlgorithmException, InvalidKeyException, HttpException, KeyStoreException,
                     CertificateException, IOException {
-        when(mockFraudCheckConfigurationService.getHmacKey()).thenReturn("hmac key");
-        when(mockFraudCheckConfigurationService.getEndpointUrl())
-                .thenReturn("https://test-endpoint");
 
         // Test needs a real keystore as it is auto mapped from strings
         final char[] unitTestKeyStorePassword = UUID.randomUUID().toString().toCharArray();
@@ -89,17 +80,12 @@ class ServiceFactoryTest {
                 serviceFactory.getIdentityVerificationService();
 
         assertNotNull(identityVerificationService);
-        verify(mockFraudCheckConfigurationService, times(2)).getHmacKey();
-        verify(mockFraudCheckConfigurationService, times(2)).getEndpointUrl();
     }
 
     @Test
     void shouldCreateIdentityVerificationServiceWhenCrosscoreV2Enabled()
             throws NoSuchAlgorithmException, InvalidKeyException, HttpException, KeyStoreException,
                     CertificateException, IOException {
-        when(mockFraudCheckConfigurationService.getHmacKey()).thenReturn("hmac key");
-        when(mockFraudCheckConfigurationService.getEndpointUrl())
-                .thenReturn("https://test-endpoint");
 
         // Test needs a real keystore as it is auto mapped from strings
         final char[] unitTestKeyStorePassword = UUID.randomUUID().toString().toCharArray();
@@ -133,9 +119,6 @@ class ServiceFactoryTest {
                 serviceFactory.getIdentityVerificationService();
 
         assertNotNull(identityVerificationService);
-
-        verify(mockFraudCheckConfigurationService, times(2)).getHmacKey();
-        verify(mockFraudCheckConfigurationService, times(2)).getEndpointUrl();
     }
 
     private String generateUnitTestKeyStore(char[] unitTestKeyStorePassword)

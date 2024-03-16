@@ -21,7 +21,6 @@ import javax.net.ssl.SSLContext;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.security.InvalidKeyException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -43,8 +42,7 @@ public class ServiceFactory {
 
     private static final int MAX_HTTP_RETRIES = 0;
 
-    public ServiceFactory(ObjectMapper objectMapper)
-            throws NoSuchAlgorithmException, InvalidKeyException, HttpException {
+    public ServiceFactory(ObjectMapper objectMapper) throws HttpException {
         this.objectMapper = objectMapper;
         this.eventProbe = new EventProbe();
         this.personIdentityValidator = new PersonIdentityValidator();
@@ -64,7 +62,7 @@ public class ServiceFactory {
             ContraindicationMapper contraindicationMapper,
             PersonIdentityValidator personIdentityValidator,
             AuditService auditService)
-            throws NoSuchAlgorithmException, InvalidKeyException, HttpException {
+            throws HttpException {
         this.objectMapper = objectMapper;
         this.eventProbe = eventProbe;
         this.fraudCheckConfigurationService = fraudCheckConfigurationService;
@@ -91,8 +89,7 @@ public class ServiceFactory {
     }
 
     private IdentityVerificationService createIdentityVerificationService(
-            FraudCheckConfigurationService fraudConfigurationService)
-            throws NoSuchAlgorithmException, InvalidKeyException, HttpException {
+            FraudCheckConfigurationService fraudConfigurationService) throws HttpException {
 
         final CloseableHttpClient closeableHttpClient =
                 generateHttpClient(fraudCheckConfigurationService);
@@ -115,8 +112,6 @@ public class ServiceFactory {
                         new IdentityVerificationRequestMapper(),
                         new IdentityVerificationResponseMapper(eventProbe, this.objectMapper),
                         this.objectMapper,
-                        new HmacGenerator(fraudConfigurationService.getHmacKey()),
-                        fraudCheckConfigurationService.getEndpointUrl(),
                         fraudConfigurationService,
                         eventProbe);
 
@@ -126,8 +121,6 @@ public class ServiceFactory {
                         new IdentityVerificationRequestMapper(),
                         new IdentityVerificationResponseMapper(eventProbe, this.objectMapper),
                         this.objectMapper,
-                        new HmacGenerator(fraudConfigurationService.getHmacKey()),
-                        fraudConfigurationService.getEndpointUrl(),
                         fraudConfigurationService,
                         eventProbe);
 

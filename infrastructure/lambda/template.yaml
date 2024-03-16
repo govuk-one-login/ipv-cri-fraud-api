@@ -212,14 +212,6 @@ Mappings:
       integration: "https://review-f.integration.account.gov.uk"
       production: "https://review-f.account.gov.uk"
 
-  FraudCriCrosscoreV2EnabledMapping:
-    Environment:
-      dev: "true"
-      build: "true"
-      staging: "true"
-      integration: "true"
-      production: "true"
-
   FraudCriPepEnabledMapping:
     Environment:
       dev: "true"
@@ -494,7 +486,6 @@ Resources:
                   - "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${PREFIX}/noFileFoundThreshold"
                   - PREFIX: !If [UseParameterPrefix, !Ref ParameterPrefix , !Ref AWS::StackName]
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/FraudTableName"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/CrosscoreV2/enabled"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/pepEnabled"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/CrosscoreV2/tokenTableName"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/SessionTableName"
@@ -761,14 +752,6 @@ Resources:
       Type: String
       Value: !FindInMap [FraudCriAudienceMapping, Environment, !Ref 'Environment']
       Description: The fraud credential issuer (audience) identifier
-
-  FraudCriUseCrosscoreV2EnabledParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/CrosscoreV2/enabled"
-      Type: String
-      Value: !FindInMap [ FraudCriCrosscoreV2EnabledMapping, Environment, !Ref 'Environment' ]
-      Description: CrosscoreV2 enabled feature toggle
 
   FraudCriPepEnabledParameter:
     Type: AWS::SSM::Parameter

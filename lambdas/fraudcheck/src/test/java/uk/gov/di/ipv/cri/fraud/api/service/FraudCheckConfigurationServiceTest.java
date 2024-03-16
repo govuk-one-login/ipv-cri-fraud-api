@@ -104,9 +104,6 @@ class FraudCheckConfigurationServiceTest {
         String crosscoreV2TokenIssuerKey = "CrosscoreV2/tokenIssuer";
         String crosscoreV2TokenIssuerValue = "crosscoreV2TokenIssuer";
 
-        String crosscoreV2Enabled = "CrosscoreV2/enabled";
-        boolean crosscoreV2EnabledValue = false;
-
         FraudCheckConfigurationService.KeyStoreParams testKeyStoreParams =
                 new FraudCheckConfigurationService.KeyStoreParams();
         testKeyStoreParams.setKeyStore("keystore");
@@ -189,10 +186,6 @@ class FraudCheckConfigurationServiceTest {
                                 STACK_PARAMETER_FORMAT, AWS_STACK_NAME, crosscoreV2TokenIssuerKey)))
                 .thenReturn(crosscoreV2TokenIssuerValue);
 
-        when(mockParamProvider.get(
-                        String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, crosscoreV2Enabled)))
-                .thenReturn(String.valueOf(crosscoreV2EnabledValue));
-
         // ***************************************************************************************************
         when(mockSecretsProvider.get(String.format(KEY_FORMAT, ENVIRONMENT, hmacKey)))
                 .thenReturn(testHmacKeyValue);
@@ -257,8 +250,6 @@ class FraudCheckConfigurationServiceTest {
                 .get(
                         String.format(
                                 STACK_PARAMETER_FORMAT, AWS_STACK_NAME, experianTokenTableNameKey));
-        verify(mockParamProvider)
-                .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, crosscoreV2Enabled));
 
         // ***************************************************************************************************
 
@@ -317,7 +308,6 @@ class FraudCheckConfigurationServiceTest {
         assertEquals(
                 experianTokenTableValue,
                 fraudCheckConfigurationService.getCrosscoreV2Configuration().getTokenTableName());
-        assertEquals(crosscoreV2EnabledValue, fraudCheckConfigurationService.crosscoreV2Enabled());
         // ***************************************************************************************************
 
     }

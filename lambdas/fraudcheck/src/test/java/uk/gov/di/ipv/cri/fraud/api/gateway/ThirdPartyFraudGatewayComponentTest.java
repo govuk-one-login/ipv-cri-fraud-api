@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.anyDouble;
 import static org.mockito.Mockito.inOrder;
@@ -70,152 +69,8 @@ class ThirdPartyFraudGatewayComponentTest {
                         mockRequestMapper,
                         mockResponseMapper,
                         new ObjectMapper(),
-                        mockHmacGenerator,
-                        TEST_ENDPOINT_URL,
                         mockFraudCheckConfigurationService,
                         mockEventProbe);
-        when(mockFraudCheckConfigurationService.getTenantId()).thenReturn("54321");
-    }
-
-    @Test
-    void testPepsResponseBodyCanBeDeserialized() throws IOException, OAuthErrorResponseException {
-        final PEPRequest testApiRequest = new PEPRequest();
-
-        final String hmacOfRequestBody = "hmac-of-request-body";
-        PersonIdentity personIdentity =
-                TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
-        PepCheckResult testPepCheckResult = new PepCheckResult();
-        when(mockRequestMapper.mapPEPPersonIdentity(personIdentity, "54321"))
-                .thenReturn(testApiRequest);
-
-        when(mockHmacGenerator.generateHmac(anyString())).thenReturn(hmacOfRequestBody);
-
-        ArgumentCaptor<HttpEntityEnclosingRequestBase> httpRequestCaptor =
-                ArgumentCaptor.forClass(HttpPost.class);
-
-        String responseBody =
-                "{\n"
-                        + "\t\"responseHeader\": {\n"
-                        + "\t\t\"requestType\": \"PepSanctions01\",\n"
-                        + "\t\t\"clientReferenceId\": \"2b58b407-60bc-4356-849c-e6b0ac9dc32a\",\n"
-                        + "\t\t\"expRequestId\": \"123456789\",\n"
-                        + "\t\t\"messageTime\": \"2023-02-22T18:42:59Z\",\n"
-                        + "\t\t\"overallResponse\": {\n"
-                        + "\t\t\t\"decision\": \"CONTINUE\",\n"
-                        + "\t\t\t\"decisionText\": \"Continue\",\n"
-                        + "\t\t\t\"decisionReasons\": [\"No matches present\"],\n"
-                        + "\t\t\t\"recommendedNextActions\": [],\n"
-                        + "\t\t\t\"spareObjects\": []\n"
-                        + "\t\t},\n"
-                        + "\t\t\"responseCode\": \"R0201\",\n"
-                        + "\t\t\"responseType\": \"INFO\",\n"
-                        + "\t\t\"responseMessage\": \"Workflow Complete.\",\n"
-                        + "\t\t\"tenantID\": \"123456\"\n"
-                        + "\t},\n"
-                        + "\t\"clientResponsePayload\": {\n"
-                        + "\t\t\"orchestrationDecisions\": [{\n"
-                        + "\t\t\t\"sequenceId\": \"1\",\n"
-                        + "\t\t\t\"decisionSource\": \"Hunter\",\n"
-                        + "\t\t\t\"decision\": \"NO\",\n"
-                        + "\t\t\t\"decisionReasons\": [\"No relevant Hunter matches present\"],\n"
-                        + "\t\t\t\"score\": 0,\n"
-                        + "\t\t\t\"decisionText\": \"No relevant Matches\",\n"
-                        + "\t\t\t\"nextAction\": \"Continue\",\n"
-                        + "\t\t\t\"decisionTime\": \"2023-02-22T18:43:00Z\"\n"
-                        + "\t\t}],\n"
-                        + "\t\t\"decisionElements\": [{\n"
-                        + "\t\t\t\"serviceName\": \"Peps\",\n"
-                        + "\t\t\t\"score\": 0,\n"
-                        + "\t\t\t\"appReference\": \"2b58b407-60bc-4356-849c-e6b0ac9dc32a\",\n"
-                        + "\t\t\t\"otherData\": {\n"
-                        + "\t\t\t\t\"response\": {\n"
-                        + "\t\t\t\t\t\"matchSummary\": {\n"
-                        + "\t\t\t\t\t\t\"totalMatchScore\": \"0\",\n"
-                        + "\t\t\t\t\t\t\"submissionScores\": {\n"
-                        + "\t\t\t\t\t\t\t\"scoreType\": [{\n"
-                        + "\t\t\t\t\t\t\t\t\"scoreValue\": [{\n"
-                        + "\t\t\t\t\t\t\t\t\t\"value\": 50,\n"
-                        + "\t\t\t\t\t\t\t\t\t\"currentVersion\": \"TRUE\"\n"
-                        + "\t\t\t\t\t\t\t\t}],\n"
-                        + "\t\t\t\t\t\t\t\t\"scoreCount\": 1\n"
-                        + "\t\t\t\t\t\t\t}],\n"
-                        + "\t\t\t\t\t\t\t\"matches\": 1\n"
-                        + "\t\t\t\t\t\t},\n"
-                        + "\t\t\t\t\t\t\"errorWarnings\": {\n"
-                        + "\t\t\t\t\t\t\t\"errors\": {\n"
-                        + "\t\t\t\t\t\t\t\t\"error\": [],\n"
-                        + "\t\t\t\t\t\t\t\t\"errorCount\": 0\n"
-                        + "\t\t\t\t\t\t\t},\n"
-                        + "\t\t\t\t\t\t\t\"warnings\": {\n"
-                        + "\t\t\t\t\t\t\t\t\"warning\": [],\n"
-                        + "\t\t\t\t\t\t\t\t\"warningCount\": 0\n"
-                        + "\t\t\t\t\t\t\t}\n"
-                        + "\t\t\t\t\t\t}\n"
-                        + "\t\t\t\t\t}\n"
-                        + "\t\t\t\t},\n"
-                        + "\t\t\t\t\"scores\": []\n"
-                        + "\n"
-                        + "\t\t\t},\n"
-                        + "\t\t\t\"originalRequestData\": {}\n"
-                        + "\t\t}]\n"
-                        + "\t}\n"
-                        + "}";
-
-        HTTPReply httpReply = new HTTPReply(200, null, responseBody);
-
-        when(mockHttpRetryer.sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(),
-                        any(PepCheckHttpRetryStatusConfig.class),
-                        eq("Pep Check")))
-                .thenReturn(httpReply);
-
-        when(this.mockResponseMapper.mapPEPResponse(any(PEPResponse.class)))
-                .thenReturn(testPepCheckResult);
-
-        PepCheckResult actualPepCheckResult =
-                thirdPartyPepGateway.performPepCheck(personIdentity, false, null);
-
-        InOrder inOrderMockEventProbe = inOrder(mockEventProbe);
-        inOrderMockEventProbe
-                .verify(mockEventProbe)
-                .counterMetric(PEP_REQUEST_CREATED.withEndpointPrefix());
-        inOrderMockEventProbe
-                .verify(mockEventProbe)
-                .counterMetric(PEP_REQUEST_SEND_OK.withEndpointPrefix());
-        inOrderMockEventProbe
-                .verify(mockEventProbe)
-                .counterMetric(eq(THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS), anyDouble());
-        inOrderMockEventProbe
-                .verify(mockEventProbe)
-                .counterMetric(PEP_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
-        inOrderMockEventProbe
-                .verify(mockEventProbe)
-                .counterMetric(PEP_RESPONSE_TYPE_VALID.withEndpointPrefix());
-        verifyNoMoreInteractions(mockEventProbe);
-
-        verify(mockRequestMapper).mapPEPPersonIdentity(personIdentity, "54321");
-        verify(mockHmacGenerator).generateHmac(anyString());
-        verify(mockHttpRetryer)
-                .sendHTTPRequestRetryIfAllowed(
-                        httpRequestCaptor.capture(),
-                        any(PepCheckHttpRetryStatusConfig.class),
-                        eq("Pep Check"));
-        verify(mockResponseMapper).mapPEPResponse(any(PEPResponse.class));
-
-        assertNotNull(actualPepCheckResult);
-        assertEquals(TEST_ENDPOINT_URL, httpRequestCaptor.getValue().getURI().toString());
-        assertEquals(HttpPost.class, httpRequestCaptor.getValue().getClass());
-
-        // Check Headers
-        Map<String, String> httpHeadersKV =
-                Arrays.stream(httpRequestCaptor.getValue().getAllHeaders())
-                        .collect(Collectors.toMap(Header::getName, Header::getValue));
-
-        assertNotNull(httpHeadersKV.get("Content-Type"));
-        assertEquals("application/json", httpHeadersKV.get("Content-Type"));
-
-        assertNotNull(httpHeadersKV.get("Content-Type"));
-        assertEquals(hmacOfRequestBody, httpHeadersKV.get("hmac-signature"));
     }
 
     @Test
@@ -316,7 +171,7 @@ class ThirdPartyFraudGatewayComponentTest {
                 .thenReturn(testPepCheckResult);
 
         PepCheckResult actualPepCheckResult =
-                thirdPartyPepGateway.performPepCheck(personIdentity, true, "testAccessTokenValue");
+                thirdPartyPepGateway.performPepCheck(personIdentity, "testAccessTokenValue");
 
         InOrder inOrderMockEventProbe = inOrder(mockEventProbe);
         inOrderMockEventProbe
