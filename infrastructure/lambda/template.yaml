@@ -228,6 +228,14 @@ Mappings:
       integration: "true"
       production: "true"
 
+  # Set as EnvVar on the IdentityCheck Lambda
+  UseTLSKeyStoreEnvVarFeatureToggle:
+    Environment:
+      dev: "false"
+      build: "false"
+      staging: "true"
+      integration: "true"
+      production: "true"
 
 Resources:
 
@@ -428,6 +436,7 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-identitycheck"
           ENVIRONMENT: !Ref Environment
+          USE_TLS_KEYSTORE: !FindInMap [ UseTLSKeyStoreEnvVarFeatureToggle, Environment, !Ref Environment ]
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -776,6 +785,8 @@ Resources:
       Type: String
       Value: !FindInMap [ JwtTtlUnitMapping, Environment, !Ref Environment ]
       Description: The unit for the time-to-live for an JWT e.g. (MONTHS)
+
+
 
   LoggingKmsKey:
     Type: AWS::KMS::Key
