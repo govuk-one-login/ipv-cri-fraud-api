@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
 import software.amazon.awssdk.awscore.defaultsmode.DefaultsMode;
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
@@ -17,11 +18,8 @@ import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.gateway.*;
 import uk.gov.di.ipv.cri.fraud.library.config.HttpRequestConfig;
 
-import javax.net.ssl.SSLContext;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.security.InvalidKeyException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -43,8 +41,7 @@ public class ServiceFactory {
 
     private static final int MAX_HTTP_RETRIES = 0;
 
-    public ServiceFactory(ObjectMapper objectMapper)
-            throws NoSuchAlgorithmException, InvalidKeyException, HttpException {
+    public ServiceFactory(ObjectMapper objectMapper) throws HttpException {
         this.objectMapper = objectMapper;
         this.eventProbe = new EventProbe();
         this.personIdentityValidator = new PersonIdentityValidator();
@@ -64,7 +61,7 @@ public class ServiceFactory {
             ContraindicationMapper contraindicationMapper,
             PersonIdentityValidator personIdentityValidator,
             AuditService auditService)
-            throws NoSuchAlgorithmException, InvalidKeyException, HttpException {
+            throws HttpException {
         this.objectMapper = objectMapper;
         this.eventProbe = eventProbe;
         this.fraudCheckConfigurationService = fraudCheckConfigurationService;
@@ -91,11 +88,12 @@ public class ServiceFactory {
     }
 
     private IdentityVerificationService createIdentityVerificationService(
-            FraudCheckConfigurationService fraudConfigurationService)
-            throws NoSuchAlgorithmException, InvalidKeyException, HttpException {
+            FraudCheckConfigurationService fraudConfigurationService) throws HttpException {
+
+        final boolean useTlsKeystore = Boolean.parseBoolean(System.getenv("USE_TLS_KEYSTORE"));
 
         final CloseableHttpClient closeableHttpClient =
-                generateHttpClient(fraudCheckConfigurationService);
+                generateHttpClient(fraudCheckConfigurationService, useTlsKeystore);
 
         final HttpRetryer httpRetryer =
                 new HttpRetryer(closeableHttpClient, eventProbe, MAX_HTTP_RETRIES);
@@ -115,8 +113,6 @@ public class ServiceFactory {
                         new IdentityVerificationRequestMapper(),
                         new IdentityVerificationResponseMapper(eventProbe, this.objectMapper),
                         this.objectMapper,
-                        new HmacGenerator(fraudConfigurationService.getHmacKey()),
-                        fraudCheckConfigurationService.getEndpointUrl(),
                         fraudConfigurationService,
                         eventProbe);
 
@@ -126,8 +122,6 @@ public class ServiceFactory {
                         new IdentityVerificationRequestMapper(),
                         new IdentityVerificationResponseMapper(eventProbe, this.objectMapper),
                         this.objectMapper,
-                        new HmacGenerator(fraudConfigurationService.getHmacKey()),
-                        fraudConfigurationService.getEndpointUrl(),
                         fraudConfigurationService,
                         eventProbe);
 
@@ -151,25 +145,31 @@ public class ServiceFactory {
     }
 
     private CloseableHttpClient generateHttpClient(
-            FraudCheckConfigurationService fraudCheckConfigurationService) throws HttpException {
+            FraudCheckConfigurationService fraudCheckConfigurationService, boolean useKeyStore)
+            throws HttpException {
         try {
-            byte[] decodedKeyStore =
-                    Base64.getDecoder().decode(fraudCheckConfigurationService.getEncodedKeyStore());
+            SSLContextBuilder sslContextBuilder = SSLContexts.custom();
 
-            ByteArrayInputStream decodedKeystoreAsBytes = new ByteArrayInputStream(decodedKeyStore);
-            char[] keystorePassword =
-                    fraudCheckConfigurationService.getKeyStorePassword().toCharArray();
+            if (useKeyStore) {
+                byte[] decodedKeyStore =
+                        Base64.getDecoder()
+                                .decode(fraudCheckConfigurationService.getEncodedKeyStore());
 
-            KeyStore keystore = KeyStore.getInstance("pkcs12");
-            keystore.load(decodedKeystoreAsBytes, keystorePassword);
+                ByteArrayInputStream decodedKeystoreAsBytes =
+                        new ByteArrayInputStream(decodedKeyStore);
+                char[] keystorePassword =
+                        fraudCheckConfigurationService.getKeyStorePassword().toCharArray();
 
-            SSLContext sslContext =
-                    SSLContexts.custom()
-                            .loadKeyMaterial(keystore, keystorePassword)
-                            .setProtocol("TLSv1.2")
-                            .build();
+                KeyStore keystore = KeyStore.getInstance("pkcs12");
+                keystore.load(decodedKeystoreAsBytes, keystorePassword);
 
-            return HttpClients.custom().setSSLContext(sslContext).build();
+                sslContextBuilder.loadKeyMaterial(keystore, keystorePassword);
+            }
+
+            // Require TLSv1.2
+            sslContextBuilder.setProtocol("TLSv1.2");
+
+            return HttpClients.custom().setSSLContext(sslContextBuilder.build()).build();
         } catch (NoSuchAlgorithmException
                 | KeyManagementException
                 | KeyStoreException

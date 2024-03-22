@@ -1,6 +1,5 @@
 package uk.gov.di.ipv.cri.fraud.api.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,7 +35,6 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -53,7 +51,6 @@ import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.FRAUD_CHECK_RE
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.IDENTITY_CHECK_SCORE_PREFIX;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.PEP_CHECK_REQUEST_FAILED;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.PEP_CHECK_REQUEST_SUCCEEDED;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.PERSON_DETAILS_VALIDATION_FAIL;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.PERSON_DETAILS_VALIDATION_PASS;
 
 @ExtendWith(MockitoExtension.class)
@@ -95,462 +92,9 @@ class IdentityVerificationServiceTest {
     }
 
     @Test
-    void verifyIdentityShouldReturnResultWhenValidInputProvidedDecisionScoreLessThanThreshold()
-            throws IOException, SqsException, OAuthErrorResponseException {
-        PersonIdentity testPersonIdentity = TestDataCreator.createTestPersonIdentity();
-
-        FraudCheckResult testFraudCheckResult = new FraudCheckResult();
-        testFraudCheckResult.setExecutedSuccessfully(true);
-        testFraudCheckResult.setDecisionScore("35");
-
-        String[] thirdPartyFraudCodes = new String[] {"sample-f-code"};
-        String[] mappedFraudCodes = new String[] {"mapped-f-code"};
-        testFraudCheckResult.setThirdPartyFraudCodes(thirdPartyFraudCodes);
-
-        when(personIdentityValidator.validate(testPersonIdentity))
-                .thenReturn(ValidationResult.createValidResult());
-
-        when(mockFraudCheckConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
-
-        when(mockThirdPartyFraudGateway.performFraudCheck(testPersonIdentity, false, ""))
-                .thenReturn(testFraudCheckResult);
-        when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyFraudCodes))
-                .thenReturn(mappedFraudCodes);
-
-        when(mockActivityHistoryScoreCalculator.calculateActivityHistoryScore(null)).thenReturn(0);
-
-        IdentityVerificationResult result =
-                this.identityVerificationService.verifyIdentity(
-                        testPersonIdentity, sessionItem, requestHeaders);
-
-        InOrder inOrder = inOrder(mockEventProbe);
-
-        inOrder.verify(mockEventProbe).counterMetric(PERSON_DETAILS_VALIDATION_PASS);
-        inOrder.verify(mockEventProbe).counterMetric(FRAUD_CHECK_REQUEST_SUCCEEDED);
-
-        assertNotNull(result);
-        assertTrue(result.isSuccess());
-        assertEquals(mappedFraudCodes[0], result.getContraIndicators().get(0));
-        assertEquals(0, result.getActivityHistoryScore());
-        assertEquals(
-                LocalDate.now().withDayOfMonth(1).format(DateTimeFormatter.ISO_DATE),
-                result.getActivityFrom());
-
-        verify(personIdentityValidator).validate(testPersonIdentity);
-        verify(mockThirdPartyFraudGateway).performFraudCheck(testPersonIdentity, false, "");
-        verify(mockThirdPartyPepGateway, never()).performPepCheck(testPersonIdentity, false, "");
-        verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyFraudCodes);
-    }
-
-    @Test
-    void verifyIdentityShouldReturnResultWhenValidInputProvided()
-            throws IOException, SqsException, OAuthErrorResponseException {
-        PersonIdentity testPersonIdentity = TestDataCreator.createTestPersonIdentity();
-
-        FraudCheckResult testFraudCheckResult = new FraudCheckResult();
-        testFraudCheckResult.setExecutedSuccessfully(true);
-        testFraudCheckResult.setDecisionScore("60");
-        testFraudCheckResult.setOldestRecordDateInMonths(366);
-
-        PepCheckResult testPEPCheckResult = new PepCheckResult();
-        testPEPCheckResult.setExecutedSuccessfully(true);
-
-        String[] thirdPartyFraudCodes = new String[] {"sample-f-code"};
-        String[] mappedFraudCodes = new String[] {"mapped-f-code"};
-        String[] thirdPartyPEPCodes = new String[] {"sample-p-code"};
-        String[] mappedPEPCodes = new String[] {"mapped-p-code"};
-        testFraudCheckResult.setThirdPartyFraudCodes(thirdPartyFraudCodes);
-        testPEPCheckResult.setThirdPartyFraudCodes(thirdPartyPEPCodes);
-
-        when(personIdentityValidator.validate(testPersonIdentity))
-                .thenReturn(ValidationResult.createValidResult());
-
-        when(mockFraudCheckConfigurationService.getPepEnabled()).thenReturn(Boolean.TRUE);
-
-        when(mockThirdPartyFraudGateway.performFraudCheck(testPersonIdentity, false, ""))
-                .thenReturn(testFraudCheckResult);
-        when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyFraudCodes))
-                .thenReturn(mappedFraudCodes);
-
-        when(mockThirdPartyPepGateway.performPepCheck(testPersonIdentity, false, ""))
-                .thenReturn(testPEPCheckResult);
-        when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyPEPCodes))
-                .thenReturn(mappedPEPCodes);
-
-        when(mockActivityHistoryScoreCalculator.calculateActivityHistoryScore(366)).thenReturn(1);
-
-        IdentityVerificationResult result =
-                this.identityVerificationService.verifyIdentity(
-                        testPersonIdentity, sessionItem, requestHeaders);
-
-        InOrder inOrder = inOrder(mockEventProbe);
-
-        inOrder.verify(mockEventProbe).counterMetric(PERSON_DETAILS_VALIDATION_PASS);
-        inOrder.verify(mockEventProbe).counterMetric(FRAUD_CHECK_REQUEST_SUCCEEDED);
-        inOrder.verify(mockEventProbe).counterMetric(PEP_CHECK_REQUEST_SUCCEEDED);
-        inOrder.verify(mockEventProbe).counterMetric(IDENTITY_CHECK_SCORE_PREFIX + 2);
-
-        assertNotNull(result);
-        assertTrue(result.isSuccess());
-        assertEquals(mappedFraudCodes[0], result.getContraIndicators().get(0));
-        assertEquals(mappedPEPCodes[0], result.getContraIndicators().get(1));
-        assertEquals(1, result.getActivityHistoryScore());
-        assertEquals(
-                LocalDate.now()
-                        .minusMonths(366)
-                        .withDayOfMonth(1)
-                        .format(DateTimeFormatter.ISO_DATE),
-                result.getActivityFrom());
-
-        verify(personIdentityValidator).validate(testPersonIdentity);
-        verify(mockThirdPartyFraudGateway).performFraudCheck(testPersonIdentity, false, "");
-        verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyFraudCodes);
-        verify(mockThirdPartyPepGateway).performPepCheck(testPersonIdentity, false, "");
-        verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyPEPCodes);
-    }
-
-    @Test
-    void verifyIdentityShouldReturnValidationErrorWhenInvalidInputProvided()
-            throws SqsException, JsonProcessingException, OAuthErrorResponseException {
-        PersonIdentity testPersonIdentity = TestDataCreator.createTestPersonIdentity();
-        List<String> validationErrors = List.of("validation error");
-        when(personIdentityValidator.validate(testPersonIdentity))
-                .thenReturn(new ValidationResult<>(false, validationErrors));
-
-        IdentityVerificationResult result =
-                this.identityVerificationService.verifyIdentity(
-                        testPersonIdentity, sessionItem, requestHeaders);
-
-        InOrder inOrder = inOrder(mockEventProbe);
-        inOrder.verify(mockEventProbe).counterMetric(PERSON_DETAILS_VALIDATION_FAIL);
-        inOrder.verify(mockEventProbe, never()).counterMetric(FRAUD_CHECK_REQUEST_SUCCEEDED);
-        inOrder.verify(mockEventProbe, never()).counterMetric(PEP_CHECK_REQUEST_SUCCEEDED);
-        inOrder.verify(mockEventProbe, never()).counterMetric(IDENTITY_CHECK_SCORE_PREFIX + 0);
-        inOrder.verify(mockEventProbe, never()).counterMetric(IDENTITY_CHECK_SCORE_PREFIX + 1);
-        inOrder.verify(mockEventProbe, never()).counterMetric(IDENTITY_CHECK_SCORE_PREFIX + 2);
-
-        assertNotNull(result);
-        assertEquals(0, result.getActivityHistoryScore());
-        assertNull(result.getActivityFrom());
-        assertTrue(result.getContraIndicators().isEmpty());
-        assertFalse(result.isSuccess());
-        assertEquals(validationErrors.get(0), result.getValidationErrors().get(0));
-    }
-
-    @Test
-    void verifyIdentityShouldReturnErrorWhenThirdPartyCallFails()
-            throws IOException, SqsException, OAuthErrorResponseException {
-        PersonIdentity testPersonIdentity = TestDataCreator.createTestPersonIdentity();
-        when(personIdentityValidator.validate(testPersonIdentity))
-                .thenReturn(ValidationResult.createValidResult());
-        when(mockThirdPartyFraudGateway.performFraudCheck(testPersonIdentity, false, ""))
-                .thenReturn(null);
-
-        IdentityVerificationResult result =
-                this.identityVerificationService.verifyIdentity(
-                        testPersonIdentity, sessionItem, requestHeaders);
-
-        InOrder inOrder = inOrder(mockEventProbe);
-        inOrder.verify(mockEventProbe).counterMetric(PERSON_DETAILS_VALIDATION_PASS);
-        inOrder.verify(mockEventProbe, never()).counterMetric(IDENTITY_CHECK_SCORE_PREFIX + 0);
-        inOrder.verify(mockEventProbe, never()).counterMetric(IDENTITY_CHECK_SCORE_PREFIX + 1);
-        inOrder.verify(mockEventProbe, never()).counterMetric(IDENTITY_CHECK_SCORE_PREFIX + 2);
-        inOrder.verify(mockEventProbe).counterMetric(FRAUD_CHECK_REQUEST_FAILED);
-
-        assertNotNull(result);
-        assertFalse(result.isSuccess());
-        assertEquals(
-                "Error occurred when attempting to invoke the third party api", result.getError());
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        // NO_FILE_FOUND_THRESHOLD, EXPECTED_DECISION_SCORE, EXPECTED_IDENTITY_FRAUD_SCORE,
-        // ZERO_SCORE_UCODE_PRESENT
-        "35, 35, 1, false", // Low decision score
-        "35, 35, 0, true", // Low decision score and Zero score uCode present
-        "35, 90, 0, true", // High decision score but Zero score uCode present
-        "35, 90, 2, false", // Fraud & Pep Ok - High decision score and Zero score uCode NOT present
-    })
-    void verifyScenarioOutcomesAreCorrectWhenNoRequestTechFailOrReturnErrorResponse(
-            int noFileFoundThreshold,
-            int expectedDecisionScore,
-            int expectedIdentityFraudScore,
-            boolean zeroScoreUCodePresent)
-            throws IOException, SqsException, OAuthErrorResponseException {
-
-        PersonIdentity testPersonIdentity = TestDataCreator.createTestPersonIdentity();
-
-        FraudCheckResult testFraudCheckResult = new FraudCheckResult();
-        testFraudCheckResult.setExecutedSuccessfully(true);
-        testFraudCheckResult.setDecisionScore(String.valueOf(expectedDecisionScore));
-        String[] thirdPartyFraudCodes = new String[] {"sample-f-code"};
-        String[] mappedFraudCodes = new String[] {"mapped-f-code"};
-        testFraudCheckResult.setThirdPartyFraudCodes(thirdPartyFraudCodes);
-
-        PepCheckResult testPEPCheckResult = new PepCheckResult();
-        testPEPCheckResult.setExecutedSuccessfully(true);
-        String[] thirdPartyPEPCodes = new String[] {"sample-p-code"};
-        String[] mappedPEPCodes = new String[] {"mapped-p-code"};
-        testPEPCheckResult.setThirdPartyFraudCodes(thirdPartyPEPCodes);
-
-        when(personIdentityValidator.validate(testPersonIdentity))
-                .thenReturn(ValidationResult.createValidResult());
-
-        when(mockFraudCheckConfigurationService.getNoFileFoundThreshold())
-                .thenReturn(noFileFoundThreshold);
-
-        if (zeroScoreUCodePresent) {
-            // Make the sample thirdPartyFraudCodes uCode a zero score one
-            thirdPartyFraudCodes = new String[] {"zero-score-ucode"};
-            testFraudCheckResult.setThirdPartyFraudCodes(thirdPartyFraudCodes);
-        }
-
-        when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyFraudCodes))
-                .thenReturn(mappedFraudCodes);
-        when(mockThirdPartyFraudGateway.performFraudCheck(testPersonIdentity, false, ""))
-                .thenReturn(testFraudCheckResult);
-
-        // Pep performed scenarios - (score above threshold and no zeroScoreUCode found)
-        if ((expectedDecisionScore > noFileFoundThreshold) && !zeroScoreUCodePresent) {
-            // Pep is checked to be enabled
-            when(mockFraudCheckConfigurationService.getPepEnabled()).thenReturn(Boolean.TRUE);
-
-            when(mockThirdPartyPepGateway.performPepCheck(testPersonIdentity, false, ""))
-                    .thenReturn(testPEPCheckResult);
-            when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyPEPCodes))
-                    .thenReturn(mappedPEPCodes);
-        }
-
-        IdentityVerificationResult result =
-                this.identityVerificationService.verifyIdentity(
-                        testPersonIdentity, sessionItem, requestHeaders);
-
-        // Performed always for step 1 fraud check
-        verify(personIdentityValidator).validate(testPersonIdentity);
-        verify(mockThirdPartyFraudGateway).performFraudCheck(testPersonIdentity, false, "");
-        verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyFraudCodes);
-
-        assertNotNull(result);
-        assertTrue(result.isSuccess());
-
-        // Fraud ucodes
-        assertEquals(mappedFraudCodes[0], result.getContraIndicators().get(0));
-
-        if ((expectedDecisionScore > noFileFoundThreshold) && !zeroScoreUCodePresent) {
-            // Performed for step 2 pep check after fraud has succeeded
-            verify(mockThirdPartyPepGateway).performPepCheck(testPersonIdentity, false, "");
-            verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyPEPCodes);
-
-            InOrder inOrder = inOrder(mockEventProbe);
-
-            inOrder.verify(mockEventProbe).counterMetric(PERSON_DETAILS_VALIDATION_PASS);
-            inOrder.verify(mockEventProbe).counterMetric(FRAUD_CHECK_REQUEST_SUCCEEDED);
-            inOrder.verify(mockEventProbe)
-                    .counterMetric(PEP_CHECK_REQUEST_SUCCEEDED); // Check Pep was done
-            inOrder.verify(mockEventProbe)
-                    .counterMetric(IDENTITY_CHECK_SCORE_PREFIX + expectedIdentityFraudScore);
-
-            // Pep ucodes are set
-            assertEquals(mappedPEPCodes[0], result.getContraIndicators().get(1));
-
-            // Checks for DecisionScore > 35 and Pep success
-            assertAllChecksSucceed(result.getChecksSucceeded(), result.getChecksFailed());
-        } else {
-            // Expected when pep is not performed due to fraud check outcome
-            InOrder inOrder = inOrder(mockEventProbe);
-
-            inOrder.verify(mockEventProbe).counterMetric(PERSON_DETAILS_VALIDATION_PASS);
-            inOrder.verify(mockEventProbe).counterMetric(FRAUD_CHECK_REQUEST_SUCCEEDED);
-            inOrder.verify(mockEventProbe, never())
-                    .counterMetric(PEP_CHECK_REQUEST_SUCCEEDED); // Check pep not done (never())
-            inOrder.verify(mockEventProbe)
-                    .counterMetric(IDENTITY_CHECK_SCORE_PREFIX + expectedIdentityFraudScore);
-
-            // Checks for DecisionScore <= 35/zeroScoreUCodePresent and Pep Not done
-            assertAllFraudChecksFailAndPepNotPresent(
-                    result.getChecksSucceeded(), result.getChecksFailed());
-        }
-
-        verify(mockAuditService)
-                .sendAuditEvent(
-                        eq(AuditEventType.RESPONSE_RECEIVED),
-                        any(AuditEventContext.class),
-                        eq(new TPREFraudAuditExtension(result.getThirdPartyFraudCodes())));
-
-        assertEquals(expectedIdentityFraudScore, result.getIdentityCheckScore());
-    }
-
-    @Test
-    void identityVerificationServiceShouldReturnErrorWhenFraudCheckFailsDueToNetworkError()
-            throws IOException, SqsException, OAuthErrorResponseException {
-        PersonIdentity testPersonIdentity = TestDataCreator.createTestPersonIdentity();
-
-        FraudCheckResult testFraudCheckResult = new FraudCheckResult();
-        testFraudCheckResult.setExecutedSuccessfully(true);
-
-        when(personIdentityValidator.validate(testPersonIdentity))
-                .thenReturn(ValidationResult.createValidResult());
-
-        // No VC in this scenario
-        when(mockThirdPartyFraudGateway.performFraudCheck(testPersonIdentity, false, ""))
-                .thenThrow(new OAuthErrorResponseException(-1, ErrorResponse.FINAL_ERROR));
-
-        IdentityVerificationResult result =
-                this.identityVerificationService.verifyIdentity(
-                        testPersonIdentity, sessionItem, requestHeaders);
-
-        InOrder inOrder = inOrder(mockEventProbe);
-        inOrder.verify(mockEventProbe).counterMetric(PERSON_DETAILS_VALIDATION_PASS);
-        inOrder.verify(mockEventProbe, never()).counterMetric(IDENTITY_CHECK_SCORE_PREFIX + 0);
-        inOrder.verify(mockEventProbe, never()).counterMetric(IDENTITY_CHECK_SCORE_PREFIX + 1);
-        inOrder.verify(mockEventProbe, never()).counterMetric(IDENTITY_CHECK_SCORE_PREFIX + 2);
-
-        inOrder.verify(mockEventProbe).counterMetric(FRAUD_CHECK_REQUEST_FAILED);
-
-        assertNotNull(result);
-        assertFalse(result.isSuccess());
-    }
-
-    @Test
-    void identityVerificationServiceShouldReturnErrorWhenFraudCheckNotPerformed()
-            throws IOException, SqsException, OAuthErrorResponseException {
-        PersonIdentity testPersonIdentity = TestDataCreator.createTestPersonIdentity();
-
-        FraudCheckResult testFraudCheckResult = new FraudCheckResult();
-        testFraudCheckResult.setExecutedSuccessfully(false); // FraudCheck Fail - No VC
-
-        when(personIdentityValidator.validate(testPersonIdentity))
-                .thenReturn(ValidationResult.createValidResult());
-
-        // No VC in this scenario
-        when(mockThirdPartyFraudGateway.performFraudCheck(testPersonIdentity, false, ""))
-                .thenReturn(testFraudCheckResult);
-
-        IdentityVerificationResult result =
-                this.identityVerificationService.verifyIdentity(
-                        testPersonIdentity, sessionItem, requestHeaders);
-
-        InOrder inOrder = inOrder(mockEventProbe);
-        inOrder.verify(mockEventProbe).counterMetric(PERSON_DETAILS_VALIDATION_PASS);
-        inOrder.verify(mockEventProbe, never()).counterMetric(IDENTITY_CHECK_SCORE_PREFIX + 0);
-        inOrder.verify(mockEventProbe, never()).counterMetric(IDENTITY_CHECK_SCORE_PREFIX + 1);
-        inOrder.verify(mockEventProbe, never()).counterMetric(IDENTITY_CHECK_SCORE_PREFIX + 2);
-
-        inOrder.verify(mockEventProbe).counterMetric(FRAUD_CHECK_REQUEST_FAILED);
-
-        assertNotNull(result);
-        assertFalse(result.isSuccess());
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        "OAuthErrorResponseException", // Network Error during Pep Check
-        "PEPExecutedSuccessfullyFalse" // Pep Check is not successfully (e.g. Error Response)
-    })
-    void verifyScenarioOutcomesAreCorrectWhenPEPCheckFailsDueToError(String errorType)
-            throws IOException, SqsException, OAuthErrorResponseException {
-
-        final int noFileFoundThreshold = 35;
-        final int expectedDecisionScore = 90;
-        final int expectedIdentityFraudScore =
-                1; // Fraud Pass with Pep attempted but either network fail, sleep thread
-        // interrupted or Error Response
-
-        PersonIdentity testPersonIdentity = TestDataCreator.createTestPersonIdentity();
-
-        FraudCheckResult testFraudCheckResult = new FraudCheckResult();
-        testFraudCheckResult.setExecutedSuccessfully(true);
-        testFraudCheckResult.setDecisionScore(String.valueOf(expectedDecisionScore));
-        String[] thirdPartyFraudCodes = new String[] {"sample-f-code"};
-        String[] mappedFraudCodes = new String[] {"mapped-f-code"};
-        testFraudCheckResult.setThirdPartyFraudCodes(thirdPartyFraudCodes);
-        testFraudCheckResult.setOldestRecordDateInMonths(366);
-
-        PepCheckResult testPEPCheckResult = new PepCheckResult();
-        testPEPCheckResult.setExecutedSuccessfully(
-                errorType.equals("PEPExecutedSuccessfullyFalse") ? false : true);
-        String[] thirdPartyPEPCodes = new String[] {"sample-p-code"};
-        String[] mappedPEPCodes = new String[] {"mapped-p-code"};
-        testPEPCheckResult.setThirdPartyFraudCodes(thirdPartyPEPCodes);
-
-        when(personIdentityValidator.validate(testPersonIdentity))
-                .thenReturn(ValidationResult.createValidResult());
-
-        when(mockFraudCheckConfigurationService.getNoFileFoundThreshold())
-                .thenReturn(noFileFoundThreshold);
-
-        when(mockThirdPartyFraudGateway.performFraudCheck(testPersonIdentity, false, ""))
-                .thenReturn(testFraudCheckResult);
-        when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyFraudCodes))
-                .thenReturn(mappedFraudCodes);
-
-        when(mockActivityHistoryScoreCalculator.calculateActivityHistoryScore(366)).thenReturn(1);
-
-        // Pep is checked to be enabled
-        when(mockFraudCheckConfigurationService.getPepEnabled()).thenReturn(Boolean.TRUE);
-
-        if (errorType.equals("OAuthErrorResponseException")) {
-            when(mockThirdPartyPepGateway.performPepCheck(testPersonIdentity, false, ""))
-                    .thenThrow(OAuthErrorResponseException.class);
-        } else {
-            when(mockThirdPartyPepGateway.performPepCheck(testPersonIdentity, false, ""))
-                    .thenReturn(testPEPCheckResult);
-        }
-
-        IdentityVerificationResult result =
-                this.identityVerificationService.verifyIdentity(
-                        testPersonIdentity, sessionItem, requestHeaders);
-
-        // Performed always for step 1 fraud check
-        verify(personIdentityValidator).validate(testPersonIdentity);
-        verify(mockThirdPartyFraudGateway).performFraudCheck(testPersonIdentity, false, "");
-        verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyFraudCodes);
-
-        assertNotNull(result);
-        assertTrue(result.isSuccess());
-        assertEquals(1, result.getActivityHistoryScore());
-        assertEquals(
-                LocalDate.now()
-                        .minusMonths(366)
-                        .withDayOfMonth(1)
-                        .format(DateTimeFormatter.ISO_DATE),
-                result.getActivityFrom());
-
-        // Fraud ucodes
-        assertEquals(mappedFraudCodes[0], result.getContraIndicators().get(0));
-        // Performed for step 2 pep check after fraud has succeeded
-        verify(mockThirdPartyPepGateway).performPepCheck(testPersonIdentity, false, "");
-
-        // Checks for DecisionScore > 35 and Pep Fail
-        InOrder inOrder = inOrder(mockEventProbe);
-
-        inOrder.verify(mockEventProbe).counterMetric(PERSON_DETAILS_VALIDATION_PASS);
-        inOrder.verify(mockEventProbe).counterMetric(FRAUD_CHECK_REQUEST_SUCCEEDED);
-        inOrder.verify(mockEventProbe)
-                .counterMetric(PEP_CHECK_REQUEST_FAILED); // Check Pep was done
-        inOrder.verify(mockEventProbe)
-                .counterMetric(IDENTITY_CHECK_SCORE_PREFIX + expectedIdentityFraudScore);
-
-        assertTrue(result.getChecksSucceeded().size() > 0);
-        assertEquals(1, result.getChecksFailed().size());
-
-        assertTrue(result.getChecksSucceeded().contains(MORTALITY_CHECK.toString()));
-        assertTrue(result.getChecksSucceeded().contains(IDENTITY_THEFT_CHECK.toString()));
-        assertTrue(result.getChecksSucceeded().contains(SYNTHETIC_IDENTITY_CHECK.toString()));
-
-        assertTrue(result.getChecksFailed().contains(IMPERSONATION_RISK_CHECK.toString()));
-
-        assertEquals(expectedIdentityFraudScore, result.getIdentityCheckScore());
-    }
-
-    // CrosscoreV2 tests
-    @Test
     void
             verifyIdentityShouldReturnResultWhenValidInputProvidedDecisionScoreLessThanThresholdCrosscoreV2()
                     throws IOException, SqsException, OAuthErrorResponseException {
-        // ensures CrosscoreV2 is enabled
-        when(mockFraudCheckConfigurationService.crosscoreV2Enabled()).thenReturn(Boolean.TRUE);
 
         when(mockTokenRequestService.requestToken(false)).thenReturn("testTokenValue");
 
@@ -569,8 +113,7 @@ class IdentityVerificationServiceTest {
 
         when(mockFraudCheckConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
 
-        when(mockThirdPartyFraudGateway.performFraudCheck(
-                        testPersonIdentity, true, TEST_ACCESS_TOKEN))
+        when(mockThirdPartyFraudGateway.performFraudCheck(testPersonIdentity, TEST_ACCESS_TOKEN))
                 .thenReturn(testFraudCheckResult);
         when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyFraudCodes))
                 .thenReturn(mappedFraudCodes);
@@ -595,18 +138,15 @@ class IdentityVerificationServiceTest {
                 result.getActivityFrom());
 
         verify(personIdentityValidator).validate(testPersonIdentity);
-        verify(mockThirdPartyFraudGateway)
-                .performFraudCheck(testPersonIdentity, true, TEST_ACCESS_TOKEN);
+        verify(mockThirdPartyFraudGateway).performFraudCheck(testPersonIdentity, TEST_ACCESS_TOKEN);
         verify(mockThirdPartyPepGateway, never())
-                .performPepCheck(testPersonIdentity, true, TEST_ACCESS_TOKEN);
+                .performPepCheck(testPersonIdentity, TEST_ACCESS_TOKEN);
         verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyFraudCodes);
     }
 
     @Test
     void verifyIdentityShouldReturnResultWhenValidInputProvidedCrosscoreV2()
             throws IOException, SqsException, OAuthErrorResponseException {
-        // ensures CrosscoreV2 is enabled
-        when(mockFraudCheckConfigurationService.crosscoreV2Enabled()).thenReturn(Boolean.TRUE);
 
         when(mockTokenRequestService.requestToken(false)).thenReturn("testTokenValue");
 
@@ -632,13 +172,12 @@ class IdentityVerificationServiceTest {
 
         when(mockFraudCheckConfigurationService.getPepEnabled()).thenReturn(Boolean.TRUE);
 
-        when(mockThirdPartyFraudGateway.performFraudCheck(
-                        testPersonIdentity, true, TEST_ACCESS_TOKEN))
+        when(mockThirdPartyFraudGateway.performFraudCheck(testPersonIdentity, TEST_ACCESS_TOKEN))
                 .thenReturn(testFraudCheckResult);
         when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyFraudCodes))
                 .thenReturn(mappedFraudCodes);
 
-        when(mockThirdPartyPepGateway.performPepCheck(testPersonIdentity, true, TEST_ACCESS_TOKEN))
+        when(mockThirdPartyPepGateway.performPepCheck(testPersonIdentity, TEST_ACCESS_TOKEN))
                 .thenReturn(testPEPCheckResult);
         when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyPEPCodes))
                 .thenReturn(mappedPEPCodes);
@@ -669,27 +208,22 @@ class IdentityVerificationServiceTest {
                 result.getActivityFrom());
 
         verify(personIdentityValidator).validate(testPersonIdentity);
-        verify(mockThirdPartyFraudGateway)
-                .performFraudCheck(testPersonIdentity, true, TEST_ACCESS_TOKEN);
+        verify(mockThirdPartyFraudGateway).performFraudCheck(testPersonIdentity, TEST_ACCESS_TOKEN);
         verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyFraudCodes);
-        verify(mockThirdPartyPepGateway)
-                .performPepCheck(testPersonIdentity, true, TEST_ACCESS_TOKEN);
+        verify(mockThirdPartyPepGateway).performPepCheck(testPersonIdentity, TEST_ACCESS_TOKEN);
         verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyPEPCodes);
     }
 
     @Test
     void verifyIdentityShouldReturnErrorWhenThirdPartyCallFailsCrosscoreV2()
             throws IOException, SqsException, OAuthErrorResponseException {
-        // ensures CrosscoreV2 is enabled
-        when(mockFraudCheckConfigurationService.crosscoreV2Enabled()).thenReturn(Boolean.TRUE);
 
         when(mockTokenRequestService.requestToken(false)).thenReturn("testTokenValue");
 
         PersonIdentity testPersonIdentity = TestDataCreator.createTestPersonIdentity();
         when(personIdentityValidator.validate(testPersonIdentity))
                 .thenReturn(ValidationResult.createValidResult());
-        when(mockThirdPartyFraudGateway.performFraudCheck(
-                        testPersonIdentity, true, TEST_ACCESS_TOKEN))
+        when(mockThirdPartyFraudGateway.performFraudCheck(testPersonIdentity, TEST_ACCESS_TOKEN))
                 .thenReturn(null);
 
         IdentityVerificationResult result =
@@ -724,8 +258,6 @@ class IdentityVerificationServiceTest {
             int expectedIdentityFraudScore,
             boolean zeroScoreUCodePresent)
             throws IOException, SqsException, OAuthErrorResponseException {
-        // ensures CrosscoreV2 is enabled
-        when(mockFraudCheckConfigurationService.crosscoreV2Enabled()).thenReturn(Boolean.TRUE);
 
         when(mockTokenRequestService.requestToken(false)).thenReturn("testTokenValue");
 
@@ -758,8 +290,7 @@ class IdentityVerificationServiceTest {
 
         when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyFraudCodes))
                 .thenReturn(mappedFraudCodes);
-        when(mockThirdPartyFraudGateway.performFraudCheck(
-                        testPersonIdentity, true, TEST_ACCESS_TOKEN))
+        when(mockThirdPartyFraudGateway.performFraudCheck(testPersonIdentity, TEST_ACCESS_TOKEN))
                 .thenReturn(testFraudCheckResult);
 
         // Pep performed scenarios - (score above threshold and no zeroScoreUCode found)
@@ -767,8 +298,7 @@ class IdentityVerificationServiceTest {
             // Pep is checked to be enabled
             when(mockFraudCheckConfigurationService.getPepEnabled()).thenReturn(Boolean.TRUE);
 
-            when(mockThirdPartyPepGateway.performPepCheck(
-                            testPersonIdentity, true, TEST_ACCESS_TOKEN))
+            when(mockThirdPartyPepGateway.performPepCheck(testPersonIdentity, TEST_ACCESS_TOKEN))
                     .thenReturn(testPEPCheckResult);
             when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyPEPCodes))
                     .thenReturn(mappedPEPCodes);
@@ -780,8 +310,7 @@ class IdentityVerificationServiceTest {
 
         // Performed always for step 1 fraud check
         verify(personIdentityValidator).validate(testPersonIdentity);
-        verify(mockThirdPartyFraudGateway)
-                .performFraudCheck(testPersonIdentity, true, TEST_ACCESS_TOKEN);
+        verify(mockThirdPartyFraudGateway).performFraudCheck(testPersonIdentity, TEST_ACCESS_TOKEN);
         verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyFraudCodes);
 
         assertNotNull(result);
@@ -792,8 +321,7 @@ class IdentityVerificationServiceTest {
 
         if ((expectedDecisionScore > noFileFoundThreshold) && !zeroScoreUCodePresent) {
             // Performed for step 2 pep check after fraud has succeeded
-            verify(mockThirdPartyPepGateway)
-                    .performPepCheck(testPersonIdentity, true, TEST_ACCESS_TOKEN);
+            verify(mockThirdPartyPepGateway).performPepCheck(testPersonIdentity, TEST_ACCESS_TOKEN);
             verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyPEPCodes);
 
             InOrder inOrder = inOrder(mockEventProbe);
@@ -848,8 +376,7 @@ class IdentityVerificationServiceTest {
                 .thenReturn(ValidationResult.createValidResult());
 
         // No VC in this scenario
-        when(mockThirdPartyFraudGateway.performFraudCheck(
-                        testPersonIdentity, true, TEST_ACCESS_TOKEN))
+        when(mockThirdPartyFraudGateway.performFraudCheck(testPersonIdentity, TEST_ACCESS_TOKEN))
                 .thenThrow(new OAuthErrorResponseException(-1, ErrorResponse.FINAL_ERROR));
 
         IdentityVerificationResult result =
@@ -880,8 +407,7 @@ class IdentityVerificationServiceTest {
                 .thenReturn(ValidationResult.createValidResult());
 
         // No VC in this scenario
-        when(mockThirdPartyFraudGateway.performFraudCheck(
-                        testPersonIdentity, true, TEST_ACCESS_TOKEN))
+        when(mockThirdPartyFraudGateway.performFraudCheck(testPersonIdentity, TEST_ACCESS_TOKEN))
                 .thenReturn(testFraudCheckResult);
 
         IdentityVerificationResult result =
@@ -914,9 +440,6 @@ class IdentityVerificationServiceTest {
                 1; // Fraud Pass with Pep attempted but either network fail, sleep thread
         // interrupted or Error Response
 
-        // ensures CrosscoreV2 is enabled
-        when(mockFraudCheckConfigurationService.crosscoreV2Enabled()).thenReturn(Boolean.TRUE);
-
         when(mockTokenRequestService.requestToken(false)).thenReturn(TEST_ACCESS_TOKEN);
 
         PersonIdentity testPersonIdentity = TestDataCreator.createTestPersonIdentity();
@@ -942,8 +465,7 @@ class IdentityVerificationServiceTest {
         when(mockFraudCheckConfigurationService.getNoFileFoundThreshold())
                 .thenReturn(noFileFoundThreshold);
 
-        when(mockThirdPartyFraudGateway.performFraudCheck(
-                        testPersonIdentity, true, TEST_ACCESS_TOKEN))
+        when(mockThirdPartyFraudGateway.performFraudCheck(testPersonIdentity, TEST_ACCESS_TOKEN))
                 .thenReturn(testFraudCheckResult);
         when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyFraudCodes))
                 .thenReturn(mappedFraudCodes);
@@ -954,12 +476,10 @@ class IdentityVerificationServiceTest {
         when(mockFraudCheckConfigurationService.getPepEnabled()).thenReturn(Boolean.TRUE);
 
         if (errorType.equals("OAuthErrorResponseException")) {
-            when(mockThirdPartyPepGateway.performPepCheck(
-                            testPersonIdentity, true, TEST_ACCESS_TOKEN))
+            when(mockThirdPartyPepGateway.performPepCheck(testPersonIdentity, TEST_ACCESS_TOKEN))
                     .thenThrow(OAuthErrorResponseException.class);
         } else {
-            when(mockThirdPartyPepGateway.performPepCheck(
-                            testPersonIdentity, true, TEST_ACCESS_TOKEN))
+            when(mockThirdPartyPepGateway.performPepCheck(testPersonIdentity, TEST_ACCESS_TOKEN))
                     .thenReturn(testPEPCheckResult);
         }
 
@@ -969,8 +489,7 @@ class IdentityVerificationServiceTest {
 
         // Performed always for step 1 fraud check
         verify(personIdentityValidator).validate(testPersonIdentity);
-        verify(mockThirdPartyFraudGateway)
-                .performFraudCheck(testPersonIdentity, true, TEST_ACCESS_TOKEN);
+        verify(mockThirdPartyFraudGateway).performFraudCheck(testPersonIdentity, TEST_ACCESS_TOKEN);
         verify(mockContraindicationMapper).mapThirdPartyFraudCodes(thirdPartyFraudCodes);
 
         assertNotNull(result);
@@ -986,8 +505,7 @@ class IdentityVerificationServiceTest {
         // Fraud ucodes
         assertEquals(mappedFraudCodes[0], result.getContraIndicators().get(0));
         // Performed for step 2 pep check after fraud has succeeded
-        verify(mockThirdPartyPepGateway)
-                .performPepCheck(testPersonIdentity, true, TEST_ACCESS_TOKEN);
+        verify(mockThirdPartyPepGateway).performPepCheck(testPersonIdentity, TEST_ACCESS_TOKEN);
 
         // Checks for DecisionScore > 35 and Pep Fail
         InOrder inOrder = inOrder(mockEventProbe);

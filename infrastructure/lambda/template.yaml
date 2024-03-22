@@ -212,14 +212,6 @@ Mappings:
       integration: "https://review-f.integration.account.gov.uk"
       production: "https://review-f.account.gov.uk"
 
-  FraudCriCrosscoreV2EnabledMapping:
-    Environment:
-      dev: "true"
-      build: "true"
-      staging: "true"
-      integration: "true"
-      production: "true"
-
   FraudCriPepEnabledMapping:
     Environment:
       dev: "true"
@@ -236,6 +228,14 @@ Mappings:
       integration: "true"
       production: "true"
 
+  # Set as EnvVar on the IdentityCheck Lambda
+  UseTLSKeyStoreEnvVarFeatureToggle:
+    Environment:
+      dev: "false"
+      build: "false"
+      staging: "true"
+      integration: "true"
+      production: "true"
 
 Resources:
 
@@ -436,6 +436,7 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-identitycheck"
           ENVIRONMENT: !Ref Environment
+          USE_TLS_KEYSTORE: !FindInMap [ UseTLSKeyStoreEnvVarFeatureToggle, Environment, !Ref Environment ]
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -494,7 +495,6 @@ Resources:
                   - "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${PREFIX}/noFileFoundThreshold"
                   - PREFIX: !If [UseParameterPrefix, !Ref ParameterPrefix , !Ref AWS::StackName]
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/FraudTableName"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/CrosscoreV2/enabled"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/pepEnabled"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/CrosscoreV2/tokenTableName"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/SessionTableName"
@@ -762,14 +762,6 @@ Resources:
       Value: !FindInMap [FraudCriAudienceMapping, Environment, !Ref 'Environment']
       Description: The fraud credential issuer (audience) identifier
 
-  FraudCriUseCrosscoreV2EnabledParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/CrosscoreV2/enabled"
-      Type: String
-      Value: !FindInMap [ FraudCriCrosscoreV2EnabledMapping, Environment, !Ref 'Environment' ]
-      Description: CrosscoreV2 enabled feature toggle
-
   FraudCriPepEnabledParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -793,6 +785,8 @@ Resources:
       Type: String
       Value: !FindInMap [ JwtTtlUnitMapping, Environment, !Ref Environment ]
       Description: The unit for the time-to-live for an JWT e.g. (MONTHS)
+
+
 
   LoggingKmsKey:
     Type: AWS::KMS::Key
@@ -844,7 +838,7 @@ Resources:
       Period: 300
       DatapointsToAlarm: 3
       EvaluationPeriods: 3
-      Threshold: 1
+      Threshold: 2
       ComparisonOperator: GreaterThanThreshold
       TreatMissingData: notBreaching
 
@@ -861,7 +855,7 @@ Resources:
       Dimensions: []
       DatapointsToAlarm: 3
       EvaluationPeriods: 3
-      Threshold: 1
+      Threshold: 5
       ComparisonOperator: GreaterThanThreshold
       TreatMissingData: notBreaching
       Metrics:
@@ -962,15 +956,15 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub "${AWS::StackName}-${Environment} - Fraud - Experian Authenticate Token Request Denied Alarm"
-      AlarmDescription: !Sub Driving Licence ${Environment} Fraud Token endpoint returned an invalid response to a token request (failure to authenticate)
+      AlarmDescription: !Sub ${Environment} Fraud Authentication Token endpoint returned multiple invalid responses to a token request (failed to authenticate and acquire new token)
       ActionsEnabled: true
       AlarmActions:
         - !Ref AlarmTopicFraud
       OKActions:
         - !Ref AlarmTopicFraud
       InsufficientDataActions: [ ]
-      EvaluationPeriods: 1
-      DatapointsToAlarm: 1
+      EvaluationPeriods: 4
+      DatapointsToAlarm: 4
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching

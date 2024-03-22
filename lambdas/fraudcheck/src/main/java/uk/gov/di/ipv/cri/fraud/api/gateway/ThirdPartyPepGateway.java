@@ -2,7 +2,6 @@ package uk.gov.di.ipv.cri.fraud.api.gateway;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.oauth2.sdk.util.StringUtils;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
@@ -25,7 +24,6 @@ import uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 
 import java.io.IOException;
-import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -54,10 +52,6 @@ public class ThirdPartyPepGateway {
     private final IdentityVerificationRequestMapper requestMapper;
     private final IdentityVerificationResponseMapper responseMapper;
     private final ObjectMapper objectMapper;
-    private final HmacGenerator hmacGenerator;
-
-    private final URI endpointUri;
-
     private final EventProbe eventProbe;
     private final Clock clock;
 
@@ -76,25 +70,18 @@ public class ThirdPartyPepGateway {
             IdentityVerificationRequestMapper requestMapper,
             IdentityVerificationResponseMapper responseMapper,
             ObjectMapper objectMapper,
-            HmacGenerator hmacGenerator,
-            String endpointUrl,
             FraudCheckConfigurationService fraudCheckConfigurationService,
             EventProbe eventProbe) {
         Objects.requireNonNull(httpRetryer, "httpClient must not be null");
         Objects.requireNonNull(requestMapper, "requestMapper must not be null");
         Objects.requireNonNull(responseMapper, "responseMapper must not be null");
         Objects.requireNonNull(objectMapper, "objectMapper must not be null");
-        Objects.requireNonNull(hmacGenerator, "hmacGenerator must not be null");
-        Objects.requireNonNull(endpointUrl, "endpointUri must not be null");
-        if (StringUtils.isBlank(endpointUrl)) {
-            throw new IllegalArgumentException("endpointUrl must be specified");
-        }
+        Objects.requireNonNull(fraudCheckConfigurationService, "objectMapper must not be null");
+
         this.httpRetryer = httpRetryer;
         this.requestMapper = requestMapper;
         this.responseMapper = responseMapper;
         this.objectMapper = objectMapper;
-        this.hmacGenerator = hmacGenerator;
-        this.endpointUri = URI.create(endpointUrl);
         this.fraudCheckConfigurationService = fraudCheckConfigurationService;
         this.eventProbe = eventProbe;
         this.clock = Clock.systemUTC();
@@ -108,15 +95,12 @@ public class ThirdPartyPepGateway {
                         PEP_HTTP_RESPONSE_TIMEOUT_MS);
     }
 
-    public PepCheckResult performPepCheck(
-            PersonIdentity personIdentity, boolean crosscoreV2Enabled, String token)
+    public PepCheckResult performPepCheck(PersonIdentity personIdentity, String token)
             throws OAuthErrorResponseException {
         LOGGER.info("Mapping person to {} request", REQUEST_NAME);
 
-        String tenantId = fraudCheckConfigurationService.getTenantId();
-        if (crosscoreV2Enabled) {
-            tenantId = fraudCheckConfigurationService.getCrosscoreV2Configuration().getTenantId();
-        }
+        String tenantId =
+                fraudCheckConfigurationService.getCrosscoreV2Configuration().getTenantId();
 
         PEPRequest apiRequest = requestMapper.mapPEPPersonIdentity(personIdentity, tenantId);
 
@@ -137,7 +121,7 @@ public class ThirdPartyPepGateway {
         }
 
         LOGGER.debug("{} Request {}", REQUEST_NAME, requestBody);
-        HttpPost postRequest = httpRequestBuilder(requestBody, crosscoreV2Enabled, token);
+        HttpPost postRequest = httpRequestBuilder(requestBody, token);
 
         // Enforce connection timeout values
         postRequest.setConfig(pepCheckRequestConfig);
@@ -176,27 +160,16 @@ public class ThirdPartyPepGateway {
         LOGGER.info("{} latency {}", REQUEST_NAME, latency);
     }
 
-    private HttpPost httpRequestBuilder(
-            String requestBody, boolean crosscoreV2Enabled, String token) {
-        HttpPost request;
-        if (crosscoreV2Enabled) {
-            request =
-                    new HttpPost(
-                            fraudCheckConfigurationService
-                                    .getCrosscoreV2Configuration()
-                                    .getEndpointUri());
-            request.addHeader("Content-Type", APPLICATION_JSON_HEADER);
-            request.addHeader("Accept", APPLICATION_JSON_HEADER);
-            request.addHeader("Authorization", "Bearer " + token);
-            request.setEntity(new StringEntity(requestBody, ContentType.APPLICATION_JSON));
-        } else { // EMTODO: Remove conditional in post v2 cleanup
-            String requestBodyHmacSignature = hmacGenerator.generateHmac(requestBody);
-
-            request = new HttpPost(endpointUri);
-            request.addHeader("Content-Type", APPLICATION_JSON_HEADER);
-            request.addHeader("hmac-signature", requestBodyHmacSignature);
-            request.setEntity(new StringEntity(requestBody, ContentType.APPLICATION_JSON));
-        }
+    private HttpPost httpRequestBuilder(String requestBody, String token) {
+        HttpPost request =
+                new HttpPost(
+                        fraudCheckConfigurationService
+                                .getCrosscoreV2Configuration()
+                                .getEndpointUri());
+        request.addHeader("Content-Type", APPLICATION_JSON_HEADER);
+        request.addHeader("Accept", APPLICATION_JSON_HEADER);
+        request.addHeader("Authorization", "Bearer " + token);
+        request.setEntity(new StringEntity(requestBody, ContentType.APPLICATION_JSON));
         return request;
     }
 
