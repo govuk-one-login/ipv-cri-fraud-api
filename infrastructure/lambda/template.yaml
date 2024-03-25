@@ -228,15 +228,6 @@ Mappings:
       integration: "true"
       production: "true"
 
-  # Set as EnvVar on the IdentityCheck Lambda
-  UseTLSKeyStoreEnvVarFeatureToggle:
-    Environment:
-      dev: "false"
-      build: "false"
-      staging: "true"
-      integration: "true"
-      production: "true"
-
 Resources:
 
 ####################################################################
@@ -436,7 +427,6 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-identitycheck"
           ENVIRONMENT: !Ref Environment
-          USE_TLS_KEYSTORE: !FindInMap [ UseTLSKeyStoreEnvVarFeatureToggle, Environment, !Ref Environment ]
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -454,20 +444,8 @@ Resources:
             TableName: !Ref ExperianTokenTable
         - DynamoDBWritePolicy:
             TableName: !Ref ExperianTokenTable
-        - Statement:
-            - Sid: ReadParameterStorePolicy
-              Effect: Allow
-              Action:
-                - 'ssm:GetParameter*'
-              Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${Environment}/credentialIssuers/fraud*'
         - SSMParameterReadPolicy:
             ParameterName: !Sub "${AWS::StackName}/verifiable-credential/issuer"
-        - Statement:
-            - Sid: ReadSecretsPolicy
-              Effect: Allow
-              Action:
-                - 'secretsmanager:GetSecretValue'
-              Resource: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${Environment}/credentialIssuers/fraud*'
         - Statement:
             Effect: Allow
             Action:

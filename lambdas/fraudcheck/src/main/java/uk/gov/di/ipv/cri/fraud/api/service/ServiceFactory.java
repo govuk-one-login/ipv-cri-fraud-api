@@ -18,16 +18,9 @@ import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.gateway.*;
 import uk.gov.di.ipv.cri.fraud.library.config.HttpRequestConfig;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.time.Clock;
-import java.util.Base64;
 
 public class ServiceFactory {
     private final IdentityVerificationService identityVerificationService;
@@ -90,10 +83,7 @@ public class ServiceFactory {
     private IdentityVerificationService createIdentityVerificationService(
             FraudCheckConfigurationService fraudConfigurationService) throws HttpException {
 
-        final boolean useTlsKeystore = Boolean.parseBoolean(System.getenv("USE_TLS_KEYSTORE"));
-
-        final CloseableHttpClient closeableHttpClient =
-                generateHttpClient(fraudCheckConfigurationService, useTlsKeystore);
+        final CloseableHttpClient closeableHttpClient = generateHttpClient();
 
         final HttpRetryer httpRetryer =
                 new HttpRetryer(closeableHttpClient, eventProbe, MAX_HTTP_RETRIES);
@@ -144,38 +134,15 @@ public class ServiceFactory {
                 tokenRequestService);
     }
 
-    private CloseableHttpClient generateHttpClient(
-            FraudCheckConfigurationService fraudCheckConfigurationService, boolean useKeyStore)
-            throws HttpException {
+    private CloseableHttpClient generateHttpClient() throws HttpException {
         try {
             SSLContextBuilder sslContextBuilder = SSLContexts.custom();
-
-            if (useKeyStore) {
-                byte[] decodedKeyStore =
-                        Base64.getDecoder()
-                                .decode(fraudCheckConfigurationService.getEncodedKeyStore());
-
-                ByteArrayInputStream decodedKeystoreAsBytes =
-                        new ByteArrayInputStream(decodedKeyStore);
-                char[] keystorePassword =
-                        fraudCheckConfigurationService.getKeyStorePassword().toCharArray();
-
-                KeyStore keystore = KeyStore.getInstance("pkcs12");
-                keystore.load(decodedKeystoreAsBytes, keystorePassword);
-
-                sslContextBuilder.loadKeyMaterial(keystore, keystorePassword);
-            }
 
             // Require TLSv1.2
             sslContextBuilder.setProtocol("TLSv1.2");
 
             return HttpClients.custom().setSSLContext(sslContextBuilder.build()).build();
-        } catch (NoSuchAlgorithmException
-                | KeyManagementException
-                | KeyStoreException
-                | UnrecoverableKeyException
-                | IOException
-                | CertificateException e) {
+        } catch (NoSuchAlgorithmException | KeyManagementException e) {
             throw new HttpException(e.getMessage());
         }
     }
