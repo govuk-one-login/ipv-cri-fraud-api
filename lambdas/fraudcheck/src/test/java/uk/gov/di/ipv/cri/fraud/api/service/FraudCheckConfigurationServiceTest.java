@@ -18,7 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static software.amazon.lambda.powertools.parameters.transform.Transformer.json;
 
 @ExtendWith(MockitoExtension.class)
 @ExtendWith(SystemStubsExtension.class)
@@ -43,20 +42,6 @@ class FraudCheckConfigurationServiceTest {
         environmentVariables.set("PARAMETER_PREFIX", PARAMETER_PREFIX);
         environmentVariables.set("AWS_STACK_NAME", AWS_STACK_NAME);
         environmentVariables.set("COMMON_PARAMETER_NAME_PREFIX", COMMON_PARAMETER_NAME_PREFIX);
-
-        String tenantIdKey = "thirdPartyApiTenantId";
-        String tenantIdValue = "test-tenant-id";
-
-        String hmacKey = "thirdPartyApiHmacKey";
-        String testHmacKeyValue = "test-key";
-
-        String endpointKey = "thirdPartyApiEndpointUrl";
-        String endpointValue = "test-endpoint";
-
-        String thirdPartyIdKey = "thirdPartyId";
-        String thirdPartyIdValue = "third-party-id";
-
-        String keyStoreKey = "thirdPartyApiKeyStore";
 
         String fraudTableNameKey = "FraudTableName";
         String fraudTableNameValue = "FraudTableValue";
@@ -103,18 +88,6 @@ class FraudCheckConfigurationServiceTest {
 
         String crosscoreV2TokenIssuerKey = "CrosscoreV2/tokenIssuer";
         String crosscoreV2TokenIssuerValue = "crosscoreV2TokenIssuer";
-
-        FraudCheckConfigurationService.KeyStoreParams testKeyStoreParams =
-                new FraudCheckConfigurationService.KeyStoreParams();
-        testKeyStoreParams.setKeyStore("keystore");
-        testKeyStoreParams.setKeyStorePassword("pwd");
-
-        when(mockParamProvider.get(String.format(KEY_FORMAT, ENVIRONMENT, tenantIdKey)))
-                .thenReturn(tenantIdValue);
-        when(mockParamProvider.get(String.format(KEY_FORMAT, ENVIRONMENT, endpointKey)))
-                .thenReturn(endpointValue);
-        when(mockParamProvider.get(String.format(KEY_FORMAT, ENVIRONMENT, thirdPartyIdKey)))
-                .thenReturn(thirdPartyIdValue);
 
         when(mockParamProvider.get(
                         String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, fraudTableNameKey)))
@@ -187,23 +160,12 @@ class FraudCheckConfigurationServiceTest {
                 .thenReturn(crosscoreV2TokenIssuerValue);
 
         // ***************************************************************************************************
-        when(mockSecretsProvider.get(String.format(KEY_FORMAT, ENVIRONMENT, hmacKey)))
-                .thenReturn(testHmacKeyValue);
-        when(mockSecretsProvider.get(
-                        String.format(KEY_FORMAT, ENVIRONMENT, keyStoreKey),
-                        FraudCheckConfigurationService.KeyStoreParams.class))
-                .thenReturn(testKeyStoreParams);
-        when(mockSecretsProvider.withTransformation(json)).thenReturn(mockSecretsProvider);
 
         FraudCheckConfigurationService fraudCheckConfigurationService =
                 new FraudCheckConfigurationService(
                         mockSecretsProvider, mockParamProvider, ENVIRONMENT);
 
         assertNotNull(fraudCheckConfigurationService);
-        verify(mockParamProvider).get(String.format(KEY_FORMAT, ENVIRONMENT, tenantIdKey));
-        verify(mockParamProvider).get(String.format(KEY_FORMAT, ENVIRONMENT, endpointKey));
-        verify(mockParamProvider).get(String.format(KEY_FORMAT, ENVIRONMENT, thirdPartyIdKey));
-        verify(mockSecretsProvider).get(String.format(KEY_FORMAT, ENVIRONMENT, hmacKey));
 
         verify(mockParamProvider)
                 .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, fraudTableNameKey));
@@ -252,21 +214,6 @@ class FraudCheckConfigurationServiceTest {
                                 STACK_PARAMETER_FORMAT, AWS_STACK_NAME, experianTokenTableNameKey));
 
         // ***************************************************************************************************
-
-        verify(mockSecretsProvider)
-                .get(
-                        String.format(KEY_FORMAT, ENVIRONMENT, keyStoreKey),
-                        FraudCheckConfigurationService.KeyStoreParams.class);
-        assertEquals(
-                testKeyStoreParams.getKeyStore(),
-                fraudCheckConfigurationService.getEncodedKeyStore());
-        assertEquals(
-                testKeyStoreParams.getKeyStorePassword(),
-                fraudCheckConfigurationService.getKeyStorePassword());
-        assertEquals(testHmacKeyValue, fraudCheckConfigurationService.getHmacKey());
-        assertEquals(thirdPartyIdValue, fraudCheckConfigurationService.getThirdPartyId());
-        assertEquals(endpointValue, fraudCheckConfigurationService.getEndpointUrl());
-        assertEquals(tenantIdValue, fraudCheckConfigurationService.getTenantId());
 
         assertEquals(fraudTableNameValue, fraudCheckConfigurationService.getFraudResultTableName());
         assertEquals(
