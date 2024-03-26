@@ -57,7 +57,7 @@ class IdentityScoreCalculatorTest {
                         fraudCheckResult, true);
         identityScore =
                 identityScoreCalculator.calculateIdentityScoreAfterPEPCheck(identityScore, true);
-        assertEquals(identityScore, 0);
+        assertEquals(0, identityScore);
     }
 
     @Test

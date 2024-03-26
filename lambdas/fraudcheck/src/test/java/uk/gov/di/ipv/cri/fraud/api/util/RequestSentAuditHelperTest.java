@@ -40,7 +40,7 @@ class RequestSentAuditHelperTest {
         Address pidAddress = pidAddresses.get(0);
 
         assertEquals(piAddress, pidAddress);
-        assertEquals(piAddress.getAddressCountry(), GlobalConstants.ADDRESS_COUNTRY);
-        assertEquals(pidAddresses.get(0).getAddressCountry(), GlobalConstants.ADDRESS_COUNTRY);
+        assertEquals(GlobalConstants.ADDRESS_COUNTRY, piAddress.getAddressCountry());
+        assertEquals(GlobalConstants.ADDRESS_COUNTRY, pidAddresses.get(0).getAddressCountry());
     }
 }

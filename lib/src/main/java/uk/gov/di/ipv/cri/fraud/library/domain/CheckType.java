@@ -10,4 +10,5 @@ public enum CheckType {
     IDENTITY_THEFT_CHECK,
     SYNTHETIC_IDENTITY_CHECK,
     IMPERSONATION_RISK_CHECK,
+    ACTIVITY_HISTORY_CHECK // Note check name not display
 }

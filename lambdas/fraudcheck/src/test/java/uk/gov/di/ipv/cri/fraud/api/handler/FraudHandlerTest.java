@@ -4,30 +4,37 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.http.HttpStatusCode;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventContext;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.common.library.exception.SqsException;
-import uk.gov.di.ipv.cri.common.library.persistence.DataStore;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
-import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationService;
-import uk.gov.di.ipv.cri.fraud.api.service.ServiceFactory;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
+import uk.gov.di.ipv.cri.fraud.library.config.ParameterStoreParameters;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
+import uk.gov.di.ipv.cri.fraud.library.service.ClientFactoryService;
+import uk.gov.di.ipv.cri.fraud.library.service.ParameterStoreService;
+import uk.gov.di.ipv.cri.fraud.library.service.ResultItemStorageService;
+import uk.gov.di.ipv.cri.fraud.library.service.ServiceFactory;
+import uk.gov.di.ipv.cri.fraud.library.service.parameterstore.ParameterPrefix;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,41 +46,62 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse.ERROR_SENDING_FRAUD_CHECK_REQUEST;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_FRAUD_CHECK_FUNCTION_INIT_DURATION;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_IDENTITY_CHECK_COMPLETED_OK;
 
 @ExtendWith(MockitoExtension.class)
+@ExtendWith(SystemStubsExtension.class)
 class FraudHandlerTest {
+
+    @SystemStub private EnvironmentVariables environmentVariables = new EnvironmentVariables();
+
     @Mock private ServiceFactory mockServiceFactory;
-    @Mock private ObjectMapper mockObjectMapper;
     @Mock private IdentityVerificationService mockIdentityVerificationService;
+
     @Mock private EventProbe mockEventProbe;
+
+    @Mock private SessionService mockSessionService;
+    @Mock private AuditService mockAuditService;
+
+    @Mock private PersonIdentityService mockPersonIdentityService;
+
+    @Mock private ResultItemStorageService<FraudResultItem> mockResultItemStorageService;
+
+    @Mock private ParameterStoreService mockParameterStoreService;
+    @Mock private ClientFactoryService mockClientFactoryService;
+
     @Mock private Context context;
-    @Mock private PersonIdentityService personIdentityService;
-    @Mock private SessionService sessionService;
-    @Mock private DataStore mockDataStore;
-    @Mock private FraudCheckConfigurationService mockFraudCheckConfigurationService;
-    @Mock private AuditService auditService;
     private FraudHandler fraudHandler;
 
     @BeforeEach
     void setup() {
-        when(mockServiceFactory.getIdentityVerificationService())
-                .thenReturn(mockIdentityVerificationService);
-        this.fraudHandler =
-                new FraudHandler(
-                        mockServiceFactory,
-                        mockObjectMapper,
-                        mockEventProbe,
-                        personIdentityService,
-                        sessionService,
-                        mockDataStore,
-                        mockFraudCheckConfigurationService,
-                        auditService);
+        environmentVariables.set("AWS_REGION", "eu-west-2");
+        environmentVariables.set("AWS_STACK_NAME", "TEST_STACK");
+        // EnvVar feature toggles
+
+        when(mockServiceFactory.getParameterStoreService()).thenReturn(mockParameterStoreService);
+
+        when(mockServiceFactory.getEventProbe()).thenReturn(mockEventProbe);
+        when(mockServiceFactory.getSessionService()).thenReturn(mockSessionService);
+        when(mockServiceFactory.getAuditService()).thenReturn(mockAuditService);
+
+        when(mockServiceFactory.getPersonIdentityService()).thenReturn(mockPersonIdentityService);
+
+        when(mockServiceFactory.getResultItemStorageService())
+                .thenReturn(mockResultItemStorageService);
+        when(mockParameterStoreService.getParameterValue(
+                        ParameterPrefix.COMMON_API,
+                        ParameterStoreParameters.FRAUD_RESULT_ITEM_TTL_PARAMETER))
+                .thenReturn(String.valueOf(1000L));
+
+        this.fraudHandler = new FraudHandler(mockServiceFactory, mockIdentityVerificationService);
     }
 
     @Test
@@ -103,13 +131,13 @@ class FraudHandlerTest {
 
         final var sessionItem = new SessionItem();
         sessionItem.setSessionId(sessionId);
-        when(sessionService.validateSessionId(anyString())).thenReturn(sessionItem);
+        when(mockSessionService.validateSessionId(anyString())).thenReturn(sessionItem);
 
-        when(mockObjectMapper.readValue(testRequestBody, PersonIdentity.class))
+        when(mockPersonIdentityService.getPersonIdentity(sessionItem.getSessionId()))
                 .thenReturn(testPersonIdentity);
 
         doNothing()
-                .when(auditService)
+                .when(mockAuditService)
                 .sendAuditEvent(eq(AuditEventType.REQUEST_SENT), any(AuditEventContext.class));
 
         when(mockIdentityVerificationService.verifyIdentity(
@@ -121,11 +149,16 @@ class FraudHandlerTest {
         APIGatewayProxyResponseEvent responseEvent =
                 fraudHandler.handleRequest(mockRequestEvent, context);
 
-        verify(mockEventProbe).counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_OK);
+        InOrder inOrder = inOrder(mockEventProbe);
+        inOrder.verify(mockEventProbe)
+                .counterMetric(eq(LAMBDA_FRAUD_CHECK_FUNCTION_INIT_DURATION), anyDouble());
+        inOrder.verify(mockEventProbe).counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_OK);
+        verifyNoMoreInteractions(mockEventProbe);
+
         final FraudResultItem fraudResultItem =
                 populateFraudResultItem(testIdentityVerificationResult, sessionItem);
 
-        verify(mockDataStore).create(fraudResultItem);
+        verify(mockResultItemStorageService).saveResultItem(fraudResultItem);
 
         assertNotNull(responseEvent);
         assertEquals(200, responseEvent.getStatusCode());
@@ -159,18 +192,18 @@ class FraudHandlerTest {
         final var sessionItem = new SessionItem();
         sessionItem.setSessionId(sessionId);
         sessionItem.setAttemptCount(1);
-        when(sessionService.validateSessionId(anyString())).thenReturn(sessionItem);
+        when(mockSessionService.validateSessionId(anyString())).thenReturn(sessionItem);
 
         final FraudResultItem fraudResultItem =
                 populateFraudResultItem(testIdentityVerificationResult, sessionItem);
-        when(mockDataStore.getItem(sessionItem.getSessionId().toString()))
+        when(mockResultItemStorageService.getResultItem(sessionItem.getSessionId()))
                 .thenReturn(fraudResultItem);
 
         // No mapping of person identity
-        verifyNoInteractions(mockObjectMapper);
+        verifyNoInteractions(mockPersonIdentityService);
 
-        // No audit events for send/recived
-        verifyNoInteractions(auditService);
+        // No audit events for send/received
+        verifyNoInteractions(mockAuditService);
 
         // No Check Down
         verifyNoInteractions(mockIdentityVerificationService);
@@ -183,7 +216,7 @@ class FraudHandlerTest {
         verify(mockEventProbe).counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_OK);
 
         // No saving of existing result
-        verifyNoMoreInteractions(mockDataStore);
+        verifyNoMoreInteractions(mockResultItemStorageService);
 
         assertNotNull(responseEvent);
         assertEquals(200, responseEvent.getStatusCode());
@@ -217,13 +250,13 @@ class FraudHandlerTest {
         final var sessionItem = new SessionItem();
         sessionItem.setSessionId(sessionId);
         sessionItem.setAttemptCount(1);
-        when(sessionService.validateSessionId(anyString())).thenReturn(sessionItem);
+        when(mockSessionService.validateSessionId(anyString())).thenReturn(sessionItem);
 
-        when(mockObjectMapper.readValue(testRequestBody, PersonIdentity.class))
+        when(mockPersonIdentityService.getPersonIdentity(sessionItem.getSessionId()))
                 .thenReturn(testPersonIdentity);
 
         doNothing()
-                .when(auditService)
+                .when(mockAuditService)
                 .sendAuditEvent(eq(AuditEventType.REQUEST_SENT), any(AuditEventContext.class));
 
         when(mockIdentityVerificationService.verifyIdentity(
@@ -235,11 +268,16 @@ class FraudHandlerTest {
         APIGatewayProxyResponseEvent responseEvent =
                 fraudHandler.handleRequest(mockRequestEvent, context);
 
-        verify(mockEventProbe).counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_OK);
+        InOrder inOrder = inOrder(mockEventProbe);
+        inOrder.verify(mockEventProbe)
+                .counterMetric(eq(LAMBDA_FRAUD_CHECK_FUNCTION_INIT_DURATION), anyDouble());
+        inOrder.verify(mockEventProbe).counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_OK);
+        verifyNoMoreInteractions(mockEventProbe);
+
         final FraudResultItem fraudResultItem =
                 populateFraudResultItem(testIdentityVerificationResult, sessionItem);
 
-        verify(mockDataStore).create(fraudResultItem);
+        verify(mockResultItemStorageService).saveResultItem(fraudResultItem);
 
         assertNotNull(responseEvent);
         assertEquals(200, responseEvent.getStatusCode());
@@ -267,29 +305,34 @@ class FraudHandlerTest {
 
         final var sessionItem = new SessionItem();
         sessionItem.setSessionId(UUID.randomUUID());
-        when(sessionService.validateSessionId(anyString())).thenReturn(sessionItem);
+        when(mockSessionService.validateSessionId(anyString())).thenReturn(sessionItem);
 
-        when(mockObjectMapper.readValue(testRequestBody, PersonIdentity.class))
+        when(mockPersonIdentityService.getPersonIdentity(sessionItem.getSessionId()))
                 .thenReturn(testPersonIdentity);
 
+        // Trigger the mapping failure via the mock
         when(mockIdentityVerificationService.verifyIdentity(
                         testPersonIdentity, sessionItem, requestHeaders))
-                .thenReturn(testIdentityVerificationResult);
-
-        doNothing()
-                .when(auditService)
-                .sendAuditEvent(eq(AuditEventType.REQUEST_SENT), any(AuditEventContext.class));
+                .thenThrow(
+                        new OAuthErrorResponseException(
+                                HttpStatusCode.INTERNAL_SERVER_ERROR,
+                                ERROR_SENDING_FRAUD_CHECK_REQUEST));
 
         when(context.getFunctionName()).thenReturn("functionName");
         when(context.getFunctionVersion()).thenReturn("1.0");
         APIGatewayProxyResponseEvent responseEvent =
                 fraudHandler.handleRequest(mockRequestEvent, context);
 
-        verify(mockEventProbe).counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR);
+        InOrder inOrder = inOrder(mockEventProbe);
+        inOrder.verify(mockEventProbe)
+                .counterMetric(eq(LAMBDA_FRAUD_CHECK_FUNCTION_INIT_DURATION), anyDouble());
+        inOrder.verify(mockEventProbe).counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR);
+        verifyNoMoreInteractions(mockEventProbe);
 
         assertNotNull(responseEvent);
         assertEquals(500, responseEvent.getStatusCode());
-        final String EXPECTED_ERROR = "{\"error_description\":\"error message\"}";
+        final String EXPECTED_ERROR =
+                "{\"oauth_error\":{\"error_description\":\"Unexpected server error\",\"error\":\"server_error\"}}";
         assertEquals(EXPECTED_ERROR, responseEvent.getBody());
     }
 

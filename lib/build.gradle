@@ -14,10 +14,19 @@ dependencies {
 			"com.nimbusds:oauth2-oidc-sdk:${dependencyVersions.nimbusds_oauth_version}",
 			"software.amazon.awssdk:dynamodb:${dependencyVersions.aws_sdk_version}",
 			"software.amazon.awssdk:dynamodb-enhanced:${dependencyVersions.aws_sdk_version}",
+			"software.amazon.awssdk:kms:${dependencyVersions.aws_sdk_version}",
+			"software.amazon.awssdk:sqs:${dependencyVersions.aws_sdk_version}",
 			"software.amazon.awssdk:apache-client:${dependencyVersions.aws_sdk_version}",
 			"com.fasterxml.jackson.core:jackson-core:${dependencyVersions.jackson_version}",
+			"com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${dependencyVersions.jackson_version}",
+			"com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${dependencyVersions.jackson_version}",
+			"com.fasterxml.jackson.core:jackson-databind:${dependencyVersions.jackson_version}",
 			"com.fasterxml.jackson.core:jackson-annotations:${dependencyVersions.jackson_version}",
 			"org.aspectj:aspectjrt:${dependencyVersions.aspectjrt_version}"
+
+	aspect "software.amazon.lambda:powertools-logging:${dependencyVersions.aws_powertools_logging_version}",
+			"software.amazon.lambda:powertools-metrics:${dependencyVersions.aws_powertools_metrics_version}",
+			"software.amazon.lambda:powertools-parameters:${dependencyVersions.aws_powertools_parameters_version}"
 
 	testImplementation "org.junit.jupiter:junit-jupiter-engine:${dependencyVersions.junit_version}",
 			"org.junit.jupiter:junit-jupiter-api:${dependencyVersions.junit_version}",
@@ -27,12 +36,19 @@ dependencies {
 			"org.hamcrest:hamcrest:${dependencyVersions.hamcrest_version}",
 			"com.github.tomakehurst:wiremock-jre8:${dependencyVersions.wiremock_version}",
 			"uk.org.webcompere:system-stubs-core:${dependencyVersions.webcompere_version}",
-			"uk.org.webcompere:system-stubs-jupiter:${dependencyVersions.webcompere_version}"
+			"uk.org.webcompere:system-stubs-jupiter:${dependencyVersions.webcompere_version}",
+			"org.apache.httpcomponents:httpcore:${dependencyVersions.httpcomponents_core_version}",
+			"org.apache.httpcomponents:httpclient:${dependencyVersions.httpcomponents_client_version}"
 
 	testFixturesImplementation "uk.gov.account:cri-common-lib:${dependencyVersions.cri_common_lib_version}",
 			"com.fasterxml.jackson.core:jackson-core:${dependencyVersions.jackson_version}",
+			"com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${dependencyVersions.jackson_version}",
+			"com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${dependencyVersions.jackson_version}",
+			"com.fasterxml.jackson.core:jackson-databind:${dependencyVersions.jackson_version}",
 			"com.fasterxml.jackson.core:jackson-annotations:${dependencyVersions.jackson_version}",
-			"org.aspectj:aspectjrt:${dependencyVersions.aspectjrt_version}"
+			"org.apache.httpcomponents:httpcore:${dependencyVersions.httpcomponents_core_version}",
+			"org.apache.httpcomponents:httpclient:${dependencyVersions.httpcomponents_client_version}"
+	"org.aspectj:aspectjrt:${dependencyVersions.aspectjrt_version}"
 }
 
 tasks.named("jar") {

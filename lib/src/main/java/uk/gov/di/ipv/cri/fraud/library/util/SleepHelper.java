@@ -1,4 +1,4 @@
-package uk.gov.di.ipv.cri.fraud.api.util;
+package uk.gov.di.ipv.cri.fraud.library.util;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

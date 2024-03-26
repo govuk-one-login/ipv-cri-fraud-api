@@ -101,7 +101,7 @@ public class IdentityVerificationInfoResponseValidator {
     }
 
     private void validateIdentityVerificationResponseHeader(
-            ResponseHeader header, final List<String> validationErrors, boolean pepEnabled) {
+            ResponseHeader header, final List<String> validationErrors, boolean isPepResponse) {
         if (header == null) {
             validationErrors.add(NULL_HEADER_ERROR_MESSAGE);
             return;
@@ -132,7 +132,7 @@ public class IdentityVerificationInfoResponseValidator {
                 header.getMessageTime(), "MessageTime", validationErrors);
 
         validateIdentityVerificationResponseHeaderOverallResponse(
-                header.getOverallResponse(), validationErrors, pepEnabled);
+                header.getOverallResponse(), validationErrors, isPepResponse);
 
         JsonValidationUtility.validateStringDataEmptyIsFail(
                 header.getResponseCode(),
@@ -155,7 +155,7 @@ public class IdentityVerificationInfoResponseValidator {
     private void validateIdentityVerificationResponseHeaderOverallResponse(
             OverallResponse overallResponse,
             final List<String> validationErrors,
-            boolean pepEnabled) {
+            boolean isPepResponse) {
         if (overallResponse != null) {
             String subObjectName = "OverallResponse:";
 
@@ -178,7 +178,7 @@ public class IdentityVerificationInfoResponseValidator {
                     subObjectName + DECISION_TEXT_FIELD_NAME,
                     validationErrors);
 
-            if (!pepEnabled
+            if (!isPepResponse
                     && (JsonValidationUtility.validateListDataEmptyIsFail(
                             overallResponse.getDecisionReasons(),
                             subObjectName + "DecisionReasons",
@@ -223,7 +223,7 @@ public class IdentityVerificationInfoResponseValidator {
     private void validateIdentityVerificationResponseClientResponsePayload(
             ClientResponsePayload payload,
             final List<String> validationErrors,
-            boolean pepEnabled) {
+            boolean isPepResponse) {
 
         if (payload == null) {
             validationErrors.add(NULL_CLIENT_RESPONSE_PAYLOAD_ERROR_MESSAGE);
@@ -244,7 +244,7 @@ public class IdentityVerificationInfoResponseValidator {
                 decisionElements, "DecisionElements", validationErrors)) {
             for (DecisionElement decisionElement : decisionElements) {
                 validateIdentityVerificationResponseClientResponsePayloadDecisionElement(
-                        decisionElement, validationErrors, pepEnabled);
+                        decisionElement, validationErrors, isPepResponse);
             }
         }
     }
@@ -323,14 +323,14 @@ public class IdentityVerificationInfoResponseValidator {
     private void validateIdentityVerificationResponseClientResponsePayloadDecisionElement(
             DecisionElement decisionElement,
             final List<String> validationErrors,
-            boolean pepEnabled) {
+            boolean isPepResponse) {
         if (decisionElement == null) {
             validationErrors.add(NULL_DECISION_ELEMENT_ERROR_MESSAGE);
             return;
         }
 
         String subObjectName = "DecisionElement:";
-        if (!pepEnabled) {
+        if (!isPepResponse) {
             JsonValidationUtility.validateStringDataEmptyIsFail(
                     decisionElement.getApplicantId(),
                     DECISION_ELEMENTS_APP_ID_MAX_LEN,

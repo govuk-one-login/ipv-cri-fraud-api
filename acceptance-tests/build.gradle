@@ -68,7 +68,8 @@ dependencies {
 		cucumber_junit_version             : "7.13.0"
 	]
 
-	implementation "software.amazon.awssdk:kms:${dependencyVersions.aws_sdk_version}",
+	implementation "uk.gov.account:cri-common-lib:${dependencyVersions.cri_common_lib_version}",
+			"software.amazon.awssdk:kms:${dependencyVersions.aws_sdk_version}",
 			"com.fasterxml.jackson.core:jackson-core:${dependencyVersions.jackson_version}",
 			"com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${dependencyVersions.jackson_version}",
 			"com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${dependencyVersions.jackson_version}",

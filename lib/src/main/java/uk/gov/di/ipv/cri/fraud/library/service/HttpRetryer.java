@@ -1,4 +1,4 @@
-package uk.gov.di.ipv.cri.fraud.api.service;
+package uk.gov.di.ipv.cri.fraud.library.service;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -7,10 +7,10 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
-import uk.gov.di.ipv.cri.fraud.api.util.HTTPReply;
-import uk.gov.di.ipv.cri.fraud.api.util.HTTPReplyHelper;
-import uk.gov.di.ipv.cri.fraud.api.util.SleepHelper;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
+import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
+import uk.gov.di.ipv.cri.fraud.library.util.HTTPReplyHelper;
+import uk.gov.di.ipv.cri.fraud.library.util.SleepHelper;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
@@ -89,49 +89,66 @@ public class HttpRetryer {
                     throw e;
                 }
 
-                // For retries (tryCount>0) we want to rethrow only the last Exception
-                if (tryCount < maxRetries) {
-
-                    LOGGER.info(
-                            "HTTPRequestRetry {} - totalRequests {}, retries {}, retrying {}",
-                            e.getMessage(),
-                            tryCount + 1,
-                            tryCount,
-                            true);
-
-                    retry = true;
-                } else {
-
-                    LOGGER.info(
-                            "HTTPRequestRetry {} - totalRequests {}, retries {}, retrying {}",
-                            e.getMessage(),
-                            tryCount + 1,
-                            tryCount,
-                            false);
-
-                    LOGGER.warn(
-                            "Failure when executing http request - {} reason {}",
-                            e.getClass().getCanonicalName(),
-                            e.getMessage());
-                    eventProbe.counterMetric(httpRetryStatusConfig.httpRetryerSendFailMetric(e));
-
-                    throw e;
-                }
+                // DT
+                retry = determineIfToRetry(tryCount, e, httpRetryStatusConfig);
             }
         } while (retry && (tryCount++ < maxRetries));
 
-        LOGGER.info("HTTPRequestRetry Exited lastStatusCode {}", statusCode);
+        captureExitStatusMetrics(statusCode, tryCount, httpRetryStatusConfig);
 
-        if (httpRetryStatusConfig.isSuccessStatusCode(statusCode)) {
+        return reply;
+    }
+
+    private boolean determineIfToRetry(
+            int tryCount,
+            IOException caughtIOException,
+            HttpRetryStatusConfig httpRetryStatusConfig)
+            throws IOException {
+
+        // For retries (tryCount>0) we want to rethrow only the last Exception
+        if (tryCount < maxRetries) {
+
+            LOGGER.info(
+                    "HTTPRequestRetry {} - totalRequests {}, retries {}, retrying {}",
+                    caughtIOException.getMessage(),
+                    tryCount + 1,
+                    tryCount,
+                    true);
+
+            return true;
+        } else {
+
+            LOGGER.info(
+                    "HTTPRequestRetry {} - totalRequests {}, retries {}, retrying {}",
+                    caughtIOException.getMessage(),
+                    tryCount + 1,
+                    tryCount,
+                    false);
+
+            LOGGER.warn(
+                    "Failure when executing http request - {} reason {}",
+                    caughtIOException.getClass().getCanonicalName(),
+                    caughtIOException.getMessage());
+
+            eventProbe.counterMetric(
+                    httpRetryStatusConfig.httpRetryerSendFailMetric(caughtIOException));
+
+            throw caughtIOException;
+        }
+    }
+
+    private void captureExitStatusMetrics(
+            int lastStatusCode, int finalTryCount, HttpRetryStatusConfig httpRetryStatusConfig) {
+        LOGGER.info("HTTPRequestRetry Exited lastStatusCode {}", lastStatusCode);
+
+        if (httpRetryStatusConfig.isSuccessStatusCode(lastStatusCode)) {
             eventProbe.counterMetric(httpRetryStatusConfig.httpRetryerSendOkMetric());
-        } else if (tryCount < maxRetries) {
+        } else if (finalTryCount < maxRetries) {
             // Reachable when the remote api responds initially with a retryable status code, then
             // during a retry with a non-retryable status code.
             eventProbe.counterMetric(httpRetryStatusConfig.httpRetryerSendErrorMetric());
         } else {
             eventProbe.counterMetric(httpRetryStatusConfig.httpRetryerMaxRetriesMetric());
         }
-
-        return reply;
     }
 }

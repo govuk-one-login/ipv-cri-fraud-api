@@ -1,14 +1,23 @@
 package uk.gov.di.ipv.cri.fraud.library.error;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nimbusds.oauth2.sdk.ErrorObject;
 import net.minidev.json.JSONObject;
-import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 
-@ExcludeFromGeneratedCoverageReport
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CommonExpressOAuthError {
+
+    /* OAuth Redirect */
     @JsonProperty("oauth_error")
     private final JSONObject error;
+
+    /* Internal State */
+    @JsonProperty("cri_internal_error_code")
+    private String criInternalErrorCode;
+
+    @JsonProperty("cri_internal_error_message")
+    private String criInternalErrorMessage;
 
     /**
      * @param errorObject For the error to be standards compliant it should be one of OAuth2Error
@@ -25,6 +34,16 @@ public class CommonExpressOAuthError {
      */
     public CommonExpressOAuthError(ErrorObject errorObject) {
         error = errorObject.toJSONObject();
+    }
+
+    /**
+     * Only to be set in Dev - allows backend API tests to assert the error state of the cri
+     *
+     * @param errorResponse
+     */
+    public void setCriInternalErrorState(ErrorResponse errorResponse) {
+        this.criInternalErrorCode = String.valueOf(errorResponse.getCode());
+        this.criInternalErrorMessage = errorResponse.getMessage();
     }
 
     public JSONObject getError() {

@@ -2,6 +2,18 @@
 Feature: Fraud CRI API
 
   @intialJWT_happy_path @fraudCRI_API @pre-merge @dev
+  Scenario: Happy Path with KENNETH DECERQUEIRA
+    Given user KENNETH DECERQUEIRA row number 197 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
+    And user sends a POST request to session endpoint
+    And user gets a session-id
+    When user sends a POST request to Fraud endpoint
+    And user gets authorisation code
+    And user sends a POST request to Access Token endpoint fraud-cri-dev
+    Then user requests Fraud CRI VC
+    And VC should contain ci  and identityFraudScore 2
+    And VC is for person KENNETH DECERQUEIRA
+
+  @fraudCRI_API @pre-merge @dev
   Scenario: Acquire initial JWT and Fraud Check with PEP error response failure(STUB)
     Given user ALBERT PEP_ERROR_RESPONSE row number 6 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
     And user sends a POST request to session endpoint
@@ -131,3 +143,75 @@ Feature: Fraud CRI API
     And user sends a POST request to Access Token endpoint fraud-cri-dev
     Then user requests Fraud CRI VC
     And VC should contain ci  and identityFraudScore 1
+
+  @fraudCRI_API @pre-merge @dev
+  Scenario: HappyPath Authenticate has delays enabled (FWAIT_INTIME)
+    Given user KENNETH FWAIT_INTIME row number 197 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
+    And user sends a POST request to session endpoint
+    And user gets a session-id
+    When user sends a POST request to Fraud endpoint
+    And user gets authorisation code
+    And user sends a POST request to Access Token endpoint fraud-cri-dev
+    Then user requests Fraud CRI VC
+    And VC should contain ci  and identityFraudScore 2
+    And VC is for person KENNETH FWAIT_INTIME
+
+  @fraudCRI_API @pre-merge @dev
+  Scenario: FailPath Authenticate Times-out (FWAIT_OUTOFTIME)
+    Given user KENNETH FWAIT_OUTOFTIME row number 197 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
+    And user sends a POST request to session endpoint
+    And user gets a session-id
+    When user sends a POST request to Fraud endpoint and the API returns the error {"oauth_error":{"error_description":"Unexpected server error","error":"server_error"}
+
+  @fraudCRI_API @pre-merge @dev
+  Scenario: HappyPath PEP has delays enabled (PWAIT_INTIME)
+    Given user KENNETH PWAIT_INTIME row number 197 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
+    And user sends a POST request to session endpoint
+    And user gets a session-id
+    When user sends a POST request to Fraud endpoint
+    And user gets authorisation code
+    And user sends a POST request to Access Token endpoint fraud-cri-dev
+    Then user requests Fraud CRI VC
+    And VC should contain ci  and identityFraudScore 2
+    And VC is for person KENNETH PWAIT_INTIME
+
+  @fraudCRI_API @pre-merge @dev
+  Scenario: FailPath PEP Times-out (PWAIT_OUTOFTIME)
+    Given user KENNETH PWAIT_OUTOFTIME row number 197 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
+    And user sends a POST request to session endpoint
+    And user gets a session-id
+    When user sends a POST request to Fraud endpoint
+    And user gets authorisation code
+    And user sends a POST request to Access Token endpoint fraud-cri-dev
+    Then user requests Fraud CRI VC
+    And VC should contain ci  and identityFraudScore 1
+    And VC is for person KENNETH PWAIT_OUTOFTIME
+
+  @fraudCRI_API @pre-merge @dev
+  Scenario: HappyPath both API's have delays enabled (ALL_WAIT_INTIME)
+    Given user KENNETH ALL_WAIT_INTIME row number 197 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
+    And user sends a POST request to session endpoint
+    And user gets a session-id
+    When user sends a POST request to Fraud endpoint
+    And user gets authorisation code
+    And user sends a POST request to Access Token endpoint fraud-cri-dev
+    Then user requests Fraud CRI VC
+    And VC should contain ci  and identityFraudScore 2
+    And VC is for person KENNETH ALL_WAIT_INTIME
+
+  @fraudCRI_API @pre-merge @dev
+  Scenario Outline: FailPath PEP Times-out user has activity history (AHS_PEP_TECH_FAIL)
+    Given user KENNETH AHS_PEP_TECH_FAIL row number 197 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
+    And user sends a POST request to session endpoint
+    And user gets a session-id
+    When user sends a POST request to Fraud endpoint
+    And user gets authorisation code
+    And user sends a POST request to Access Token endpoint fraud-cri-dev
+    Then user requests Fraud CRI VC
+    And VC is for person KENNETH AHS_PEP_TECH_FAIL
+    And VC should contain ci  and identityFraudScore <identityFraudScore>
+    And VC should contain activityHistory score of <activityHistoryScore>
+    And VC evidence checks should contain <checks>
+    Examples:
+      | identityFraudScore | activityHistoryScore | checks |
+      | 1                  | 1                    | mortality_check,identity_theft_check,synthetic_identity_check,activity_history_check |

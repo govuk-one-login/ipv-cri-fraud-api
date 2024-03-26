@@ -1,91 +1,78 @@
 package uk.gov.di.ipv.cri.fraud.api.service;
 
-import software.amazon.lambda.powertools.parameters.ParamProvider;
-import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
+import lombok.Getter;
+import uk.gov.di.ipv.cri.fraud.library.service.ParameterStoreService;
+import uk.gov.di.ipv.cri.fraud.library.service.parameterstore.ParameterPrefix;
 
 import java.net.URI;
+import java.util.Map;
 
-@ExcludeFromGeneratedCoverageReport
+@Getter
 public class CrosscoreV2Configuration {
 
-    private final String parameterPrefix;
-    private final String stackParameterPrefix;
+    public static final String CC2_PARAMETER_PATH = "CrosscoreV2";
+
+    public static final String TOKEN_TABLE_NAME_PARAMETER_KEY = "CrosscoreV2/tokenTableName";
+    public static final String TOKEN_END_POINT_PARAMETER_KEY = "tokenEndpoint";
+    public static final String TOKEN_USER_DOMAIN_PARAMETER_KEY = "userDomain";
+    public static final String TOKEN_USERNAME_PARAMETER_KEY = "Username";
+    public static final String TOKEN_PASSWORD_PARAMETER_KEY = "Password";
+    public static final String TOKEN_CLIENT_ID_PARAMETER_KEY = "clientId";
+    public static final String TOKEN_CLIENT_SECRET_PARAMETER_KEY = "clientSecret";
+
+    public static final String TOKEN_ISSUER_PARAMETER_KEY = "tokenIssuer";
+
+    public static final String CC2_ENDPOINT_PARAMETER_KEY = "endpointUrl";
+    public static final String CC2_TENANT_ID_PARAMETER_KEY = "tenantId";
+
+    // Dynamo
+    private final String tokenTableName;
+
+    // Token Endpoint
     private final String tokenEndpoint;
-    private final String clientId;
-    private final String clientSecret;
+
+    // Token Header
+    private final String userDomain;
+
+    // Token Body
     private final String username;
     private final String password;
-    private final String tokenTableName;
-    private final String userDomain;
-    private final URI endpointUri;
-    private final String tenantId;
+    private final String clientId;
+    private final String clientSecret;
+
+    // Token Response Validation
     private final String tokenIssuer;
 
-    public CrosscoreV2Configuration(
-            ParamProvider paramProvider, String parameterPrefix, String stackParameterPrefix) {
-        this.parameterPrefix = parameterPrefix;
-        this.stackParameterPrefix = stackParameterPrefix;
+    // Crosscore Endpoint
+    private final URI endpointUri;
 
-        this.tokenEndpoint = paramProvider.get(getParameterName("CrosscoreV2/tokenEndpoint"));
-        this.clientId = paramProvider.get(getParameterName("CrosscoreV2/clientId"));
-        this.clientSecret = paramProvider.get(getParameterName("CrosscoreV2/clientSecret"));
-        this.username = paramProvider.get(getParameterName("CrosscoreV2/Username"));
-        this.password = paramProvider.get(getParameterName("CrosscoreV2/Password"));
-        this.userDomain = paramProvider.get(getParameterName("CrosscoreV2/userDomain"));
+    // Crosscore Header
+    private final String tenantId;
 
+    public CrosscoreV2Configuration(ParameterStoreService parameterStoreService) {
+
+        Map<String, String> ccV2ParameterMap =
+                parameterStoreService.getAllParametersFromPath(
+                        ParameterPrefix.OVERRIDE, CC2_PARAMETER_PATH);
+
+        // The map above contains a token table name but from the prefix.
+        // The one used must always be the stacks token table name
         this.tokenTableName =
-                paramProvider.get(getStackParameterName("CrosscoreV2/tokenTableName"));
-        this.endpointUri =
-                URI.create(paramProvider.get(getParameterName("CrosscoreV2/endpointUrl")));
-        this.tenantId = paramProvider.get(getParameterName("CrosscoreV2/tenantId"));
-        this.tokenIssuer = paramProvider.get(getParameterName("CrosscoreV2/tokenIssuer"));
-    }
+                parameterStoreService.getParameterValue(
+                        ParameterPrefix.STACK, TOKEN_TABLE_NAME_PARAMETER_KEY);
 
-    public String getTokenEndpoint() {
-        return tokenEndpoint;
-    }
+        this.tokenEndpoint = ccV2ParameterMap.get(TOKEN_END_POINT_PARAMETER_KEY);
 
-    public String getClientId() {
-        return clientId;
-    }
+        this.userDomain = ccV2ParameterMap.get(TOKEN_USER_DOMAIN_PARAMETER_KEY);
 
-    public String getClientSecret() {
-        return clientSecret;
-    }
+        this.username = ccV2ParameterMap.get(TOKEN_USERNAME_PARAMETER_KEY);
+        this.password = ccV2ParameterMap.get(TOKEN_PASSWORD_PARAMETER_KEY);
+        this.clientId = ccV2ParameterMap.get(TOKEN_CLIENT_ID_PARAMETER_KEY);
+        this.clientSecret = ccV2ParameterMap.get(TOKEN_CLIENT_SECRET_PARAMETER_KEY);
 
-    public String getUsername() {
-        return username;
-    }
+        this.tokenIssuer = ccV2ParameterMap.get(TOKEN_ISSUER_PARAMETER_KEY);
 
-    public String getPassword() {
-        return password;
-    }
-
-    public String getUserDomain() {
-        return userDomain;
-    }
-
-    public String getTokenTableName() {
-        return tokenTableName;
-    }
-
-    public URI getEndpointUri() {
-        return endpointUri;
-    }
-
-    public String getTenantId() {
-        return tenantId;
-    }
-
-    public String getTokenIssuer() {
-        return tokenIssuer;
-    }
-
-    private String getParameterName(String parameterName) {
-        return String.format("/%s/%s", parameterPrefix, parameterName);
-    }
-
-    private String getStackParameterName(String parameterName) {
-        return String.format("/%s/%s", stackParameterPrefix, parameterName);
+        this.endpointUri = URI.create(ccV2ParameterMap.get(CC2_ENDPOINT_PARAMETER_KEY));
+        this.tenantId = ccV2ParameterMap.get(CC2_TENANT_ID_PARAMETER_KEY);
     }
 }

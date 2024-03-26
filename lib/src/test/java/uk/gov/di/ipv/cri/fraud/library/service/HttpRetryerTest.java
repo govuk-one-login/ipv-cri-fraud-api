@@ -1,4 +1,4 @@
-package uk.gov.di.ipv.cri.fraud.api.service;
+package uk.gov.di.ipv.cri.fraud.library.service;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -13,8 +13,8 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
-import uk.gov.di.ipv.cri.fraud.api.util.HttpResponseFixtures;
-import uk.gov.di.ipv.cri.fraud.api.util.HttpRetryStatusConfigFixtures;
+import uk.gov.di.ipv.cri.fraud.library.HttpResponseFixtures;
+import uk.gov.di.ipv.cri.fraud.library.HttpRetryStatusConfigFixtures;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 
 import java.io.IOException;

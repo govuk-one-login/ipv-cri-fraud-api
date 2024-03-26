@@ -1,6 +1,6 @@
-package uk.gov.di.ipv.cri.fraud.api.util;
+package uk.gov.di.ipv.cri.fraud.library;
 
-import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryStatusConfig;
+import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryStatusConfig;
 
 import java.util.List;
 

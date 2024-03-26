@@ -17,11 +17,13 @@ import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.TokenRequestPayload;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.TokenResponse;
 import uk.gov.di.ipv.cri.fraud.api.persistence.item.TokenItem;
 import uk.gov.di.ipv.cri.fraud.api.util.AccessTokenValidator;
-import uk.gov.di.ipv.cri.fraud.api.util.HTTPReply;
 import uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 import uk.gov.di.ipv.cri.fraud.library.exception.TokenExpiryWindowException;
 import uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric;
+import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryStatusConfig;
+import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryer;
+import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
 
 import java.io.IOException;
 import java.net.URI;

@@ -6,7 +6,15 @@ if [ -f "$CONF_FILE" ]; then
   export $(grep -v '^#' $CONF_FILE | xargs)
 fi
 
+if [ -z "$BROWSER" ];
+then
+  BROWSER="chrome-headless"
+  echo "Browser not previously chosen defaulting to $BROWSER";
+fi
+
 ##### Ask fundamental test questions
+read -p "What browser do you want to use? [previous=$BROWSER] " BROWSER_NEW
+
 read -p "What environment are you running against? [previous=$ENVIRONMENT] " ENVIRONMENT_NEW
 
 read -p "Are you using a local stub? [previous=$LOCAL] " LOCAL_NEW
@@ -18,11 +26,15 @@ read -p "Are you including Backend tests? [previous=$BACKEND] " BACKEND_NEW
 read -p "Which tag would you like to run (include the @ in the name)? [previous=$TAG] " TAG_NEW
 
 ##### Update env vars with answers if set
+BROWSER=$([[ -z "$BROWSER_NEW" ]] && echo "$BROWSER" || echo "$BROWSER_NEW")
 ENVIRONMENT=$([[ -z "$ENVIRONMENT_NEW" ]] && echo "$ENVIRONMENT" || echo "$ENVIRONMENT_NEW")
 LOCAL=$([ -z "$LOCAL_NEW" ] && echo "$LOCAL" || echo "$LOCAL_NEW")
 E2E=$([ -z "$E2E_NEW" ] && echo "$E2E" || echo "$E2E_NEW")
 BACKEND=$([ -z "$BACKEND_NEW" ] && echo "$BACKEND" || echo "$BACKEND_NEW")
 TAG=$([ -z "$TAG_NEW" ] && echo "$TAG" || echo "$TAG_NEW")
+
+##### Export browser for test run
+export BROWSER=${BROWSER}
 
 ##### Export environment for test run
 export ENVIRONMENT=${ENVIRONMENT}
@@ -77,6 +89,7 @@ if [ -f "$CONF_FILE" ]; then
   rm test-args.conf
 fi
 
+echo "BROWSER=${BROWSER}" >> test-args.conf
 echo "ENVIRONMENT=${ENVIRONMENT}" >> test-args.conf
 echo "CORE_STUB_URL=${CORE_STUB_URL}" >> test-args.conf
 echo "CORE_STUB_USERNAME=${CORE_STUB_USERNAME}" >> test-args.conf
@@ -92,6 +105,3 @@ echo "TAG=${TAG}" >> test-args.conf
 
 ###### Run tests
 ./gradlew clean cucumber -P tags=${TAG}
-
-
-

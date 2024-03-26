@@ -4,218 +4,113 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import software.amazon.lambda.powertools.parameters.ParamProvider;
-import software.amazon.lambda.powertools.parameters.SecretsProvider;
+import uk.gov.di.ipv.cri.fraud.library.service.ParameterStoreService;
+import uk.gov.di.ipv.cri.fraud.library.service.parameterstore.ParameterPrefix;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
-import java.util.Arrays;
+import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @ExtendWith(SystemStubsExtension.class)
 class FraudCheckConfigurationServiceTest {
-    private static final String KEY_FORMAT = "/%s/credentialIssuers/fraud/%s";
-
-    private static final String STACK_PARAMETER_FORMAT = "/%s/%s";
 
     @SystemStub private EnvironmentVariables environmentVariables = new EnvironmentVariables();
+
     private final String ENVIRONMENT = "dev"; // env used for older ccv1 secrets manager parameters
     private final String AWS_STACK_NAME = "fraud-api-dev";
-    private final String PARAMETER_PREFIX = AWS_STACK_NAME;
+    private final String AWS_REGION = "eu-west-2";
+    private final String PARAMETER_PREFIX = "fraud-api-pipeline";
     private final String COMMON_PARAMETER_NAME_PREFIX = "common-cri-api";
 
-    @Mock private SecretsProvider mockSecretsProvider;
-    @Mock private ParamProvider mockParamProvider;
+    @Mock private ParameterStoreService mockParameterStoreService;
 
     @Test
     void shouldInitialiseConfigFieldsWhenValidInputProvided() {
         environmentVariables.set("ENVIRONMENT", ENVIRONMENT);
-        environmentVariables.set("AWS_REGION", "eu-west-2");
+        environmentVariables.set("AWS_REGION", AWS_REGION);
         environmentVariables.set("PARAMETER_PREFIX", PARAMETER_PREFIX);
         environmentVariables.set("AWS_STACK_NAME", AWS_STACK_NAME);
         environmentVariables.set("COMMON_PARAMETER_NAME_PREFIX", COMMON_PARAMETER_NAME_PREFIX);
 
-        String fraudTableNameKey = "FraudTableName";
-        String fraudTableNameValue = "FraudTableValue";
-
-        String contraindicationMappingsKey = "contraindicationMappings";
+        // CRI
         String contraindicationMappingsValue = "null:null";
-
-        String zeroScoreUcodesKey = "zeroScoreUcodes";
         String zeroScoreUcodesValue = "U001,U002";
         List<String> zeroScoreUcodesListValue = List.of(zeroScoreUcodesValue.split(","));
-
-        String noFileFoundThresholdKey = "noFileFoundThreshold";
         Integer noFileFoundThresholdValue = 35;
 
-        String sessionTtlKey = "SessionTtl";
-        long sessionTtlValue = 7200L;
-
-        String experianTokenTableNameKey = "CrosscoreV2/tokenTableName";
+        // CC2
         String experianTokenTableValue = "ExperianTokenTableValue";
-
-        String tokenEndpointKey = "CrosscoreV2/tokenEndpoint";
         String tokenEndpointValue = "tokenEndpointValue";
-
-        String tokenClientIdKey = "CrosscoreV2/clientId";
         String tokenClientIdValue = "clientIdValue";
-
-        String tokenClientSecretKey = "CrosscoreV2/clientSecret";
         String tokenClientSecretValue = "clientSecretValue";
-
-        String tokenUserNameKey = "CrosscoreV2/Username";
         String tokenUserNameValue = "tokenUserValue";
-
-        String tokenPasswordKey = "CrosscoreV2/Password";
         String tokenPasswordValue = "tokenPasswordValue";
-
-        String tokenUserDomainKey = "CrosscoreV2/userDomain";
         String tokenUserDomainValue = "tokenUserDomainValue";
-
-        String crosscoreV2EndpointUrlKey = "CrosscoreV2/endpointUrl";
-        String crosscoreV2EndpointUrlValue = "crosscoreV2EndpointUrlValue";
-
-        String crosscoreV2TenantIdKey = "CrosscoreV2/tenantId";
+        String crosscoreV2EndpointUrlValue = "http://example.com";
         String crosscoreV2TenantIdValue = "crosscoreV2TenantId";
-
-        String crosscoreV2TokenIssuerKey = "CrosscoreV2/tokenIssuer";
         String crosscoreV2TokenIssuerValue = "crosscoreV2TokenIssuer";
 
-        when(mockParamProvider.get(
-                        String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, fraudTableNameKey)))
-                .thenReturn(fraudTableNameValue);
-        when(mockParamProvider.get(
-                        String.format(
-                                STACK_PARAMETER_FORMAT,
-                                AWS_STACK_NAME,
-                                contraindicationMappingsKey)))
+        // CRI Params
+        when(mockParameterStoreService.getParameterValue(
+                        ParameterPrefix.OVERRIDE,
+                        FraudCheckConfigurationService.CONTRAINDICATION_MAPPINGS_PARAMETER_KEY))
                 .thenReturn(contraindicationMappingsValue);
-        when(mockParamProvider.get(
-                        String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, zeroScoreUcodesKey)))
+        when(mockParameterStoreService.getParameterValue(
+                        ParameterPrefix.OVERRIDE,
+                        FraudCheckConfigurationService.ZERO_SCORE_UCODES_PARAMETER_KEY))
                 .thenReturn(zeroScoreUcodesValue);
-        when(mockParamProvider.get(
-                        String.format(
-                                STACK_PARAMETER_FORMAT, AWS_STACK_NAME, noFileFoundThresholdKey)))
+        when(mockParameterStoreService.getParameterValue(
+                        ParameterPrefix.OVERRIDE,
+                        FraudCheckConfigurationService.NO_FILE_FOUND_THRESHOLD_PARAMETER_KEY))
                 .thenReturn(String.valueOf(noFileFoundThresholdValue));
-        when(mockParamProvider.get(
-                        String.format(
-                                STACK_PARAMETER_FORMAT,
-                                COMMON_PARAMETER_NAME_PREFIX,
-                                sessionTtlKey)))
-                .thenReturn(String.valueOf(sessionTtlValue));
 
-        // **********************************CrossCoreV2Params*********************************************
+        // Crosscore2
+        Map<String, String> cc2TestParamMap =
+                Map.of(
+                        CrosscoreV2Configuration.TOKEN_END_POINT_PARAMETER_KEY,
+                        tokenEndpointValue,
+                        CrosscoreV2Configuration.TOKEN_USER_DOMAIN_PARAMETER_KEY,
+                        tokenUserDomainValue,
+                        CrosscoreV2Configuration.TOKEN_USERNAME_PARAMETER_KEY,
+                        tokenUserNameValue,
+                        CrosscoreV2Configuration.TOKEN_PASSWORD_PARAMETER_KEY,
+                        tokenPasswordValue,
+                        CrosscoreV2Configuration.TOKEN_CLIENT_ID_PARAMETER_KEY,
+                        tokenClientIdValue,
+                        CrosscoreV2Configuration.TOKEN_CLIENT_SECRET_PARAMETER_KEY,
+                        tokenClientSecretValue,
+                        CrosscoreV2Configuration.TOKEN_ISSUER_PARAMETER_KEY,
+                        crosscoreV2TokenIssuerValue,
+                        CrosscoreV2Configuration.CC2_ENDPOINT_PARAMETER_KEY,
+                        crosscoreV2EndpointUrlValue,
+                        CrosscoreV2Configuration.CC2_TENANT_ID_PARAMETER_KEY,
+                        crosscoreV2TenantIdValue);
 
-        when(mockParamProvider.get(
-                        String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenEndpointKey)))
-                .thenReturn(tokenEndpointValue);
+        when(mockParameterStoreService.getAllParametersFromPath(
+                        ParameterPrefix.OVERRIDE, CrosscoreV2Configuration.CC2_PARAMETER_PATH))
+                .thenReturn(cc2TestParamMap);
 
-        when(mockParamProvider.get(
-                        String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenClientIdKey)))
-                .thenReturn(tokenClientIdValue);
-
-        when(mockParamProvider.get(
-                        String.format(
-                                STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenClientSecretKey)))
-                .thenReturn(tokenClientSecretValue);
-
-        when(mockParamProvider.get(
-                        String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenUserNameKey)))
-                .thenReturn(tokenUserNameValue);
-
-        when(mockParamProvider.get(
-                        String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenPasswordKey)))
-                .thenReturn(tokenPasswordValue);
-
-        when(mockParamProvider.get(
-                        String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenUserDomainKey)))
-                .thenReturn(tokenUserDomainValue);
-
-        when(mockParamProvider.get(
-                        String.format(
-                                STACK_PARAMETER_FORMAT, AWS_STACK_NAME, experianTokenTableNameKey)))
+        when(mockParameterStoreService.getParameterValue(
+                        ParameterPrefix.STACK,
+                        CrosscoreV2Configuration.TOKEN_TABLE_NAME_PARAMETER_KEY))
                 .thenReturn(experianTokenTableValue);
 
-        when(mockParamProvider.get(
-                        String.format(
-                                STACK_PARAMETER_FORMAT, AWS_STACK_NAME, crosscoreV2EndpointUrlKey)))
-                .thenReturn(crosscoreV2EndpointUrlValue);
-
-        when(mockParamProvider.get(
-                        String.format(
-                                STACK_PARAMETER_FORMAT, AWS_STACK_NAME, crosscoreV2TenantIdKey)))
-                .thenReturn(crosscoreV2TenantIdValue);
-
-        when(mockParamProvider.get(
-                        String.format(
-                                STACK_PARAMETER_FORMAT, AWS_STACK_NAME, crosscoreV2TokenIssuerKey)))
-                .thenReturn(crosscoreV2TokenIssuerValue);
-
-        // ***************************************************************************************************
-
+        // Creation
         FraudCheckConfigurationService fraudCheckConfigurationService =
-                new FraudCheckConfigurationService(
-                        mockSecretsProvider, mockParamProvider, ENVIRONMENT);
+                new FraudCheckConfigurationService(mockParameterStoreService);
 
         assertNotNull(fraudCheckConfigurationService);
 
-        verify(mockParamProvider)
-                .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, fraudTableNameKey));
-        verify(mockParamProvider)
-                .get(
-                        String.format(
-                                STACK_PARAMETER_FORMAT,
-                                AWS_STACK_NAME,
-                                contraindicationMappingsKey));
-        verify(mockParamProvider)
-                .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, zeroScoreUcodesKey));
-        verify(mockParamProvider)
-                .get(
-                        String.format(
-                                STACK_PARAMETER_FORMAT, AWS_STACK_NAME, noFileFoundThresholdKey));
-        verify(mockParamProvider)
-                .get(
-                        String.format(
-                                STACK_PARAMETER_FORMAT,
-                                COMMON_PARAMETER_NAME_PREFIX,
-                                sessionTtlKey));
-        // **********************************CrossCoreV2
-        // Params*********************************************
-
-        verify(mockParamProvider)
-                .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenEndpointKey));
-        verify(mockParamProvider)
-                .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenClientIdKey));
-        verify(mockParamProvider)
-                .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenClientSecretKey));
-        verify(mockParamProvider)
-                .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenUserNameKey));
-        verify(mockParamProvider)
-                .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenPasswordKey));
-        verify(mockParamProvider)
-                .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, tokenUserDomainKey));
-        verify(mockParamProvider)
-                .get(String.format(STACK_PARAMETER_FORMAT, AWS_STACK_NAME, crosscoreV2TenantIdKey));
-        verify(mockParamProvider)
-                .get(
-                        String.format(
-                                STACK_PARAMETER_FORMAT, AWS_STACK_NAME, crosscoreV2TokenIssuerKey));
-        verify(mockParamProvider)
-                .get(
-                        String.format(
-                                STACK_PARAMETER_FORMAT, AWS_STACK_NAME, experianTokenTableNameKey));
-
-        // ***************************************************************************************************
-
-        assertEquals(fraudTableNameValue, fraudCheckConfigurationService.getFraudResultTableName());
+        // CRI Params
         assertEquals(
                 contraindicationMappingsValue,
                 fraudCheckConfigurationService.getContraindicationMappings());
@@ -223,20 +118,17 @@ class FraudCheckConfigurationServiceTest {
         assertEquals(
                 noFileFoundThresholdValue,
                 fraudCheckConfigurationService.getNoFileFoundThreshold());
-        assertEquals(sessionTtlValue, fraudCheckConfigurationService.getFraudResultItemTtl());
 
-        // **********************************CrossCoreV2
-        // Params*********************************************
-
+        // CC2
+        verify(mockParameterStoreService)
+                .getAllParametersFromPath(
+                        ParameterPrefix.OVERRIDE, CrosscoreV2Configuration.CC2_PARAMETER_PATH);
         assertEquals(
                 tokenEndpointValue,
                 fraudCheckConfigurationService.getCrosscoreV2Configuration().getTokenEndpoint());
         assertEquals(
-                tokenClientIdValue,
-                fraudCheckConfigurationService.getCrosscoreV2Configuration().getClientId());
-        assertEquals(
-                tokenClientSecretValue,
-                fraudCheckConfigurationService.getCrosscoreV2Configuration().getClientSecret());
+                tokenUserDomainValue,
+                fraudCheckConfigurationService.getCrosscoreV2Configuration().getUserDomain());
         assertEquals(
                 tokenUserNameValue,
                 fraudCheckConfigurationService.getCrosscoreV2Configuration().getUsername());
@@ -244,53 +136,29 @@ class FraudCheckConfigurationServiceTest {
                 tokenPasswordValue,
                 fraudCheckConfigurationService.getCrosscoreV2Configuration().getPassword());
         assertEquals(
-                tokenUserDomainValue,
-                fraudCheckConfigurationService.getCrosscoreV2Configuration().getUserDomain());
+                tokenClientIdValue,
+                fraudCheckConfigurationService.getCrosscoreV2Configuration().getClientId());
+
         assertEquals(
-                crosscoreV2TenantIdValue,
-                fraudCheckConfigurationService.getCrosscoreV2Configuration().getTenantId());
+                tokenClientSecretValue,
+                fraudCheckConfigurationService.getCrosscoreV2Configuration().getClientSecret());
         assertEquals(
                 crosscoreV2TokenIssuerValue,
                 fraudCheckConfigurationService.getCrosscoreV2Configuration().getTokenIssuer());
+        // NOTE URI's
+        assertEquals(
+                URI.create(crosscoreV2EndpointUrlValue),
+                fraudCheckConfigurationService.getCrosscoreV2Configuration().getEndpointUri());
+        assertEquals(
+                crosscoreV2TenantIdValue,
+                fraudCheckConfigurationService.getCrosscoreV2Configuration().getTenantId());
+
+        verify(mockParameterStoreService)
+                .getParameterValue(
+                        ParameterPrefix.STACK,
+                        CrosscoreV2Configuration.TOKEN_TABLE_NAME_PARAMETER_KEY);
         assertEquals(
                 experianTokenTableValue,
                 fraudCheckConfigurationService.getCrosscoreV2Configuration().getTokenTableName());
-        // ***************************************************************************************************
-
-    }
-
-    @Test
-    void shouldThrowNullPointerExceptionWhenSecretsProviderNull() {
-        NullPointerException thrownException =
-                assertThrows(
-                        NullPointerException.class,
-                        () -> new FraudCheckConfigurationService(null, null, ""));
-        assertEquals("secretsProvider must not be null", thrownException.getMessage());
-    }
-
-    @Test
-    void shouldThrowNullPointerExceptionWhenParamProviderNull() {
-        NullPointerException thrownException =
-                assertThrows(
-                        NullPointerException.class,
-                        () -> new FraudCheckConfigurationService(mockSecretsProvider, null, ""));
-        assertEquals("paramProvider must not be null", thrownException.getMessage());
-    }
-
-    @Test
-    void shouldThrowIllegalArgumentExceptionWhenEnvNullOrEmpty() {
-        Arrays.stream(new String[] {null, "", "  "})
-                .forEach(
-                        (env) -> {
-                            IllegalArgumentException thrownException =
-                                    assertThrows(
-                                            IllegalArgumentException.class,
-                                            () ->
-                                                    new FraudCheckConfigurationService(
-                                                            mockSecretsProvider,
-                                                            mockParamProvider,
-                                                            env));
-                            assertEquals("env must be specified", thrownException.getMessage());
-                        });
     }
 }
