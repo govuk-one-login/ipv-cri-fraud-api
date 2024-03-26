@@ -7,6 +7,7 @@ import au.com.dius.pact.provider.junitsupport.Provider;
 import au.com.dius.pact.provider.junitsupport.State;
 import au.com.dius.pact.provider.junitsupport.loader.PactBroker;
 import au.com.dius.pact.provider.junitsupport.loader.PactBrokerAuth;
+import au.com.dius.pact.provider.junitsupport.loader.SelectorBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nimbusds.jose.JOSEException;
@@ -106,6 +107,14 @@ class IssueCredentialHandlerTest {
     private SessionService sessionService;
     private final ObjectMapper objectMapper =
             new ObjectMapper().registerModules(new JavaTimeModule());
+
+    @au.com.dius.pact.provider.junitsupport.loader.PactBrokerConsumerVersionSelectors
+    public static SelectorBuilder consumerVersionSelectors() {
+        return new SelectorBuilder()
+                .tag("FraudVcProvider")
+                .branch("main", "IpvCoreBack")
+                .deployedOrReleased();
+    }
 
     @BeforeAll
     static void setupServer() {
