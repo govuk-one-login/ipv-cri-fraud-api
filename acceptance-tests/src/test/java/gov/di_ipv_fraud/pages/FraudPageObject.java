@@ -312,7 +312,7 @@ public class FraudPageObject extends UniversalSteps {
     }
 
     public void jsonErrorResponse(String testStatusCode) throws JsonProcessingException {
-        String testErrorDescription = "general error";
+        String testErrorDescription = "Unexpected server error";
         JsonNode insideError = getVCFromJson("errorObject");
         LOGGER.info("insideError = " + insideError);
         JsonNode errorDescription = insideError.get("description");
