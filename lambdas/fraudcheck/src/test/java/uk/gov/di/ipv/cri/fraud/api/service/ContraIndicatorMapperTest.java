@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ContraIndicatorRemoteMapperTest {
+public class ContraIndicatorMapperTest {
 
     private static final String TEST_UCODE_1 = "Z101";
     private static final String TEST_CIMAP_1 = TEST_UCODE_1 + ":A1";
@@ -25,11 +25,11 @@ public class ContraIndicatorRemoteMapperTest {
     private static final String TEST_CIMAP_STRING =
             TEST_CIMAP_1 + "||" + TEST_CIMAP_2 + "||" + TEST_CIMAP_3;
 
-    private static ContraIndicatorRemoteMapper envVarMapper;
+    private static ContraIndicatorMapper envVarMapper;
 
     @BeforeAll
     public static void Setup() {
-        envVarMapper = new ContraIndicatorRemoteMapper(TEST_CIMAP_STRING);
+        envVarMapper = new ContraIndicatorMapper(TEST_CIMAP_STRING);
     }
 
     @Test

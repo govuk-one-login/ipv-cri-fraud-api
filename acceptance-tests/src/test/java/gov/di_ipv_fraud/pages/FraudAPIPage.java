@@ -8,9 +8,11 @@ import com.nimbusds.jwt.SignedJWT;
 import gov.di_ipv_fraud.model.AuthorisationResponse;
 import gov.di_ipv_fraud.model.Check;
 import gov.di_ipv_fraud.service.ConfigurationService;
-import gov.di_ipv_fraud.step_definitions.FraudAPIStepDefs;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
+import uk.gov.di.ipv.cri.common.library.domain.personidentity.NamePart;
 
 import java.io.IOException;
 import java.net.URI;
@@ -22,13 +24,15 @@ import java.text.ParseException;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FraudAPIPage {
+
+    private static final Logger LOGGER = LogManager.getLogger();
 
     private static String CLIENT_ID;
     private static String SESSION_REQUEST_BODY;
@@ -39,9 +43,10 @@ public class FraudAPIPage {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final int LindaDuffThirdPartyRowNumber = 6;
 
+    private static String VC;
+
     private final ConfigurationService configurationService =
             new ConfigurationService(System.getenv("ENVIRONMENT"));
-    private static final Logger LOGGER = Logger.getLogger(FraudAPIStepDefs.class.getName());
 
     public String getAuthorisationJwtFromStub(String criId, String rowNumberString)
             throws URISyntaxException, IOException, InterruptedException {
@@ -130,7 +135,7 @@ public class FraudAPIPage {
         assertTrue(StringUtils.isNotBlank(SESSION_ID));
     }
 
-    public void postRequestToFraudEndpoint() throws IOException, InterruptedException {
+    public String postRequestToFraudEndpoint() throws IOException, InterruptedException {
         String privateApiGatewayUrl = configurationService.getPrivateAPIEndpoint();
         HttpRequest.Builder baseHttpRequest =
                 HttpRequest.newBuilder()
@@ -143,6 +148,18 @@ public class FraudAPIPage {
         HttpRequest request = baseHttpRequest.build();
         String fraudCheckResponse = sendHttpRequest(request).body();
         LOGGER.info("fraudCheckResponse = " + fraudCheckResponse);
+
+        return fraudCheckResponse;
+    }
+
+    // Use this instead of the above to assert the response from the fraud check
+    public String postRequestToFraudEndpointAndAPIReturnsResponseMatching(String expectedResponse)
+            throws IOException, InterruptedException {
+        String fraudCheckResponse = postRequestToFraudEndpoint();
+
+        LOGGER.info("fraudCheckResponseMessage = " + fraudCheckResponse);
+
+        return fraudCheckResponse;
     }
 
     public void getAuthorisationCode() throws IOException, InterruptedException {
@@ -193,7 +210,7 @@ public class FraudAPIPage {
         ACCESS_TOKEN = deserialisedResponse.get("access_token");
     }
 
-    public String requestFraudCRIVC() throws IOException, InterruptedException, ParseException {
+    public void requestFraudCRIVC() throws IOException, InterruptedException, ParseException {
         String publicApiGatewayUrl = configurationService.getPublicAPIEndpoint();
         HttpRequest request =
                 HttpRequest.newBuilder()
@@ -206,14 +223,13 @@ public class FraudAPIPage {
         String requestFraudVCResponse = sendHttpRequest(request).body();
         LOGGER.info("requestFraudVCResponse = " + requestFraudVCResponse);
         SignedJWT signedJWT = SignedJWT.parse(requestFraudVCResponse);
-        return signedJWT.getJWTClaimsSet().toString();
+        VC = signedJWT.getJWTClaimsSet().toString();
     }
 
     public void ciAndIdentityFraudScoreInVC(String ci, Integer identityFraudScore)
             throws URISyntaxException, IOException, InterruptedException, ParseException {
-        String fraudCRIVC = requestFraudCRIVC();
-        LOGGER.info("fraudCRIVC = " + fraudCRIVC);
-        JsonNode jsonNode = objectMapper.readTree((fraudCRIVC));
+        LOGGER.info("fraudCRIVC = " + VC);
+        JsonNode jsonNode = objectMapper.readTree((VC));
         JsonNode evidenceArray = jsonNode.get("vc").get("evidence");
         JsonNode firstItemInEvidenceArray = evidenceArray.get(0);
         LOGGER.info("firstItemInEvidenceArray = " + firstItemInEvidenceArray);
@@ -238,9 +254,8 @@ public class FraudAPIPage {
 
     public void activityHistoryScoreInVC(Integer activityHistoryScore)
             throws IOException, InterruptedException, ParseException {
-        String fraudCRIVC = requestFraudCRIVC();
-        LOGGER.info("fraudCRIVC = " + fraudCRIVC);
-        JsonNode jsonNode = objectMapper.readTree((fraudCRIVC));
+        LOGGER.info("fraudCRIVC = " + VC);
+        JsonNode jsonNode = objectMapper.readTree((VC));
         JsonNode evidenceArray = jsonNode.get("vc").get("evidence");
         JsonNode firstItemInEvidenceArray = evidenceArray.get(0);
 
@@ -252,17 +267,17 @@ public class FraudAPIPage {
 
     public void evidenceChecksInVC(List<String> evidenceChecks, String... activityFrom)
             throws IOException, InterruptedException, ParseException {
-        String fraudCRIVC = requestFraudCRIVC();
-        LOGGER.info("fraudCRIVC = " + fraudCRIVC);
-        JsonNode jsonNode = objectMapper.readTree((fraudCRIVC));
+        LOGGER.info("fraudCRIVC = " + VC);
+        JsonNode jsonNode = objectMapper.readTree((VC));
         JsonNode evidenceArray = jsonNode.get("vc").get("evidence");
         JsonNode firstItemInEvidenceArray = evidenceArray.get(0);
 
         JsonNode checkDetailsNode = firstItemInEvidenceArray.get("checkDetails");
+        JsonNode failedCheckDetailsNode = firstItemInEvidenceArray.get("failedCheckDetails");
 
         int checkFound = 0;
 
-        if (checkDetailsNode.isArray()) {
+        if (null != checkDetailsNode && checkDetailsNode.isArray()) {
             for (final JsonNode checkNode : checkDetailsNode) {
                 ObjectMapper objectMapper = new ObjectMapper();
                 Check check = objectMapper.convertValue(checkNode, Check.class);
@@ -289,6 +304,48 @@ public class FraudAPIPage {
             }
         }
         Assert.assertEquals(evidenceChecks.size(), checkFound);
+
+        // Ensure none of the above checks also appear in failedCheckDetails
+        // Tests need updated to also provide the expected failedCheckDetails and assert contents
+        if (null != failedCheckDetailsNode && failedCheckDetailsNode.isArray()) {
+            for (final JsonNode checkNode : failedCheckDetailsNode) {
+                Check failedCheck = objectMapper.convertValue(checkNode, Check.class);
+
+                // activity history check has no fraud check field
+                if (evidenceChecks.contains("activity_history_check")
+                        && null == failedCheck.getFraudCheck()) {
+                    LOGGER.warn("Activity history check found in failed checks");
+                } else {
+                    LOGGER.info("{} check found in failed checks", failedCheck.getFraudCheck());
+                }
+
+                assertFalse(evidenceChecks.contains(failedCheck.getFraudCheck()));
+            }
+        }
+    }
+
+    public void checkVCPersonDetails(String expectedGivenName, String expectedFamilyName)
+            throws IOException {
+        LOGGER.info("fraudCRIVC = " + VC);
+        JsonNode jsonNode = objectMapper.readTree((VC));
+
+        JsonNode vcNode = jsonNode.get("vc");
+        JsonNode credentialSubjectNode = vcNode.get("credentialSubject");
+        JsonNode namePartsNode = credentialSubjectNode.get("name").get(0).get("nameParts");
+        LOGGER.info("namePartsNode = " + namePartsNode);
+
+        List<NamePart> nameParts =
+                objectMapper.readerForListOf(NamePart.class).readValue(namePartsNode);
+        LOGGER.info(
+                "nameParts = "
+                        + nameParts.stream()
+                                .map(NamePart::getValue)
+                                .reduce(
+                                        "",
+                                        (givenName, familyName) -> givenName + " " + familyName));
+
+        assertEquals(expectedGivenName, nameParts.get(0).getValue());
+        assertEquals(expectedFamilyName, nameParts.get(1).getValue());
     }
 
     private String getClaimsForUser(String baseUrl, String criId, int userDataRowNumber)

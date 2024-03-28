@@ -1,4 +1,4 @@
-package uk.gov.di.ipv.cri.fraud.api.util;
+package uk.gov.di.ipv.cri.fraud.library.util;
 
 import lombok.experimental.UtilityClass;
 import org.apache.http.Header;

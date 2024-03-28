@@ -44,6 +44,12 @@ public class FraudAPIStepDefs extends FraudAPIPage {
         postRequestToFraudEndpoint();
     }
 
+    @When("user sends a POST request to Fraud endpoint and the API returns the error (.*)$")
+    public void user_sends_a_post_request_to_fraud_end_point(String response)
+            throws IOException, InterruptedException {
+        postRequestToFraudEndpointAndAPIReturnsResponseMatching(response);
+    }
+
     @And("user gets authorisation code")
     public void user_gets_authorisation_code() throws IOException, InterruptedException {
         getAuthorisationCode();
@@ -63,6 +69,12 @@ public class FraudAPIStepDefs extends FraudAPIPage {
     public void vc_should_contain_ci_and_identityFraudScore(String ci, Integer identityFraudScore)
             throws IOException, InterruptedException, ParseException, URISyntaxException {
         ciAndIdentityFraudScoreInVC(ci, identityFraudScore);
+    }
+
+    @And("VC is for person (.*) (.*)$")
+    public void vc_is_for_user(String GivenName, String FamilyName)
+            throws IOException, InterruptedException, ParseException, URISyntaxException {
+        checkVCPersonDetails(GivenName, FamilyName);
     }
 
     @And("user changes (.*) in session request to (.*) for (.*)$")

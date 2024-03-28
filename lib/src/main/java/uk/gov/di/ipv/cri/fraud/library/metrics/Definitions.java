@@ -14,6 +14,12 @@ public class Definitions {
     public static final String LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR =
             "lambda_issue_credential_completed_error";
 
+    // Runtime Capture of colds starts as custom metric for monitoring
+    public static final String LAMBDA_FRAUD_CHECK_FUNCTION_INIT_DURATION =
+            "lambda_fraud_check_function_init_duration";
+    public static final String LAMBDA_ISSUE_CREDENTIAL_FUNCTION_INIT_DURATION =
+            "lambda_issue_credential_function_init_duration";
+
     // PersonIdentityValidator
     public static final String PERSON_DETAILS_VALIDATION_PASS = "person_details_validation_pass";
     public static final String PERSON_DETAILS_VALIDATION_FAIL = "person_details_validation_fail";

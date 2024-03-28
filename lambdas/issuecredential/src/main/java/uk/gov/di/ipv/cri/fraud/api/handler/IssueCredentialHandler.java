@@ -4,7 +4,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.OAuth2Error;
@@ -13,102 +12,109 @@ import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.AccessTokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import software.amazon.awssdk.awscore.defaultsmode.DefaultsMode;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.http.HttpStatusCode;
-import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
-import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.lambda.powertools.logging.CorrelationIdPathConstants;
 import software.amazon.lambda.powertools.logging.Logging;
 import software.amazon.lambda.powertools.metrics.Metrics;
-import software.amazon.lambda.powertools.parameters.ParamManager;
+import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverageReport;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventContext;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.common.library.exception.SessionNotFoundException;
 import uk.gov.di.ipv.cri.common.library.exception.SqsException;
-import uk.gov.di.ipv.cri.common.library.service.AuditEventFactory;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.ApiGatewayResponseGenerator;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
+import uk.gov.di.ipv.cri.common.library.util.KMSSigner;
 import uk.gov.di.ipv.cri.fraud.api.exception.CredentialRequestException;
-import uk.gov.di.ipv.cri.fraud.api.service.FraudRetrievalService;
-import uk.gov.di.ipv.cri.fraud.api.service.IssueCredentialConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.VerifiableCredentialService;
 import uk.gov.di.ipv.cri.fraud.api.util.IssueCredentialFraudAuditExtensionUtil;
 import uk.gov.di.ipv.cri.fraud.library.error.CommonExpressOAuthError;
+import uk.gov.di.ipv.cri.fraud.library.metrics.Definitions;
 import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
+import uk.gov.di.ipv.cri.fraud.library.service.ResultItemStorageService;
+import uk.gov.di.ipv.cri.fraud.library.service.ServiceFactory;
 
-import java.time.Clock;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import static uk.gov.di.ipv.cri.common.library.error.ErrorResponse.SESSION_NOT_FOUND;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_ISSUE_CREDENTIAL_COMPLETED_OK;
 
 public class IssueCredentialHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
+    // We need this first and static for it to be created as soon as possible during function init
+    private static final long FUNCTION_INIT_START_TIME_MILLISECONDS = System.currentTimeMillis();
+
     private static final Logger LOGGER = LogManager.getLogger();
+
     public static final String AUTHORIZATION_HEADER_KEY = "Authorization";
+    public static final String LAMBDA_HANDLING_EXCEPTION =
+            "Exception while handling lambda {} exception {}";
 
-    private final VerifiableCredentialService verifiableCredentialService;
-    private final PersonIdentityService personIdentityService;
-    private final FraudRetrievalService fraudRetrievalService;
-    private final SessionService sessionService;
+    // CommonLib
+    private ConfigurationService commonLibConfigurationService;
     private EventProbe eventProbe;
-    private final AuditService auditService;
-    private final IssueCredentialConfigurationService issueCredentialConfigurationService;
+    private SessionService sessionService;
+    private AuditService auditService;
+    private PersonIdentityService personIdentityService;
 
-    public IssueCredentialHandler(
-            VerifiableCredentialService verifiableCredentialService,
-            SessionService sessionService,
-            EventProbe eventProbe,
-            AuditService auditService,
-            PersonIdentityService personIdentityService,
-            FraudRetrievalService fraudRetrievalService,
-            IssueCredentialConfigurationService issueCredentialConfigurationService) {
-        this.verifiableCredentialService = verifiableCredentialService;
-        this.personIdentityService = personIdentityService;
-        this.sessionService = sessionService;
-        this.eventProbe = eventProbe;
-        this.auditService = auditService;
-        this.fraudRetrievalService = fraudRetrievalService;
-        this.issueCredentialConfigurationService = issueCredentialConfigurationService;
+    private ResultItemStorageService<FraudResultItem> fraudResultItemStorageService;
+    private VerifiableCredentialService verifiableCredentialService;
+
+    private long functionInitMetricLatchedValue = 0;
+    private boolean functionInitMetricCaptured = false;
+
+    @ExcludeFromGeneratedCoverageReport
+    public IssueCredentialHandler() {
+        ServiceFactory serviceFactory = new ServiceFactory();
+
+        KMSSigner kmsSigner =
+                new KMSSigner(
+                        serviceFactory
+                                .getCommonLibConfigurationService()
+                                .getCommonParameterValue("verifiableCredentialKmsSigningKeyId"),
+                        serviceFactory.getClientFactoryService().getKMSClient());
+
+        // VerifiableCredentialService is internal to IssueCredentialHandler
+        VerifiableCredentialService verifiableCredentialServiceNotAssignedYet =
+                new VerifiableCredentialService(serviceFactory, kmsSigner);
+
+        initializeLambdaServices(serviceFactory, verifiableCredentialServiceNotAssignedYet);
     }
 
-    public IssueCredentialHandler() {
-        ConfigurationService commonConfigurationService = new ConfigurationService();
-        this.verifiableCredentialService =
-                getVerifiableCredentialService(commonConfigurationService);
-        this.personIdentityService = new PersonIdentityService();
-        this.sessionService = new SessionService();
-        this.eventProbe = new EventProbe();
+    public IssueCredentialHandler(
+            ServiceFactory serviceFactory,
+            VerifiableCredentialService verifiableCredentialService) {
+        initializeLambdaServices(serviceFactory, verifiableCredentialService);
+    }
 
-        SqsClient sqsClient =
-                SqsClient.builder()
-                        .defaultsMode(DefaultsMode.STANDARD)
-                        .httpClientBuilder(UrlConnectionHttpClient.builder())
-                        .build();
+    private void initializeLambdaServices(
+            ServiceFactory serviceFactory,
+            VerifiableCredentialService verifiableCredentialService) {
+        this.commonLibConfigurationService = serviceFactory.getCommonLibConfigurationService();
 
-        this.auditService =
-                new AuditService(
-                        sqsClient,
-                        commonConfigurationService,
-                        new ObjectMapper(),
-                        new AuditEventFactory(commonConfigurationService, Clock.systemUTC()));
-        this.fraudRetrievalService = new FraudRetrievalService();
-        this.issueCredentialConfigurationService =
-                new IssueCredentialConfigurationService(
-                        ParamManager.getSecretsProvider(),
-                        ParamManager.getSsmProvider(),
-                        System.getenv("ENVIRONMENT"));
+        this.eventProbe = serviceFactory.getEventProbe();
+
+        this.sessionService = serviceFactory.getSessionService();
+        this.auditService = serviceFactory.getAuditService();
+
+        this.personIdentityService = serviceFactory.getPersonIdentityService();
+
+        this.fraudResultItemStorageService = serviceFactory.getResultItemStorageService();
+
+        this.verifiableCredentialService = verifiableCredentialService;
+
+        // Runtime/SnapStart function init duration
+        functionInitMetricLatchedValue =
+                System.currentTimeMillis() - FUNCTION_INIT_START_TIME_MILLISECONDS;
     }
 
     @Override
@@ -123,6 +129,30 @@ public class IssueCredentialHandler
                     context.getFunctionName(),
                     context.getFunctionVersion());
 
+            // Recorded here as sending metrics during function init may fail depending on lambda
+            // config
+            if (!functionInitMetricCaptured) {
+                eventProbe.counterMetric(
+                        Definitions.LAMBDA_ISSUE_CREDENTIAL_FUNCTION_INIT_DURATION,
+                        functionInitMetricLatchedValue);
+                LOGGER.info("Lambda function init duration {}ms", functionInitMetricLatchedValue);
+                functionInitMetricCaptured = true;
+            }
+
+            // Lambda Lifetime
+            long runTimeDuration =
+                    System.currentTimeMillis() - FUNCTION_INIT_START_TIME_MILLISECONDS;
+            Duration duration = Duration.of(runTimeDuration, ChronoUnit.MILLIS);
+            String formattedDuration =
+                    String.format(
+                            "%d:%02d:%02d",
+                            duration.toHours(), duration.toMinutesPart(), duration.toSecondsPart());
+            LOGGER.info(
+                    "Lambda {}, Lifetime duration {}, {}ms",
+                    context.getFunctionName(),
+                    formattedDuration,
+                    runTimeDuration);
+
             LOGGER.info("Validating authorization token...");
             var accessToken = validateInputHeaderBearerToken(input.getHeaders());
             var sessionItem = this.sessionService.getSessionByAccessToken(accessToken);
@@ -132,25 +162,27 @@ public class IssueCredentialHandler
             var personIdentityDetailed =
                     personIdentityService.getPersonIdentityDetailed(sessionItem.getSessionId());
             FraudResultItem fraudResult =
-                    fraudRetrievalService.getFraudResult(sessionItem.getSessionId());
+                    fraudResultItemStorageService.getResultItem(sessionItem.getSessionId());
             LOGGER.info("VC content retrieved.");
 
             LOGGER.info("Generating verifiable credential...");
             SignedJWT signedJWT =
                     verifiableCredentialService.generateSignedVerifiableCredentialJwt(
                             sessionItem.getSubject(), fraudResult, personIdentityDetailed);
+
+            final String verifiableCredentialIssuer =
+                    commonLibConfigurationService.getVerifiableCredentialIssuer();
+
             auditService.sendAuditEvent(
                     AuditEventType.VC_ISSUED,
                     new AuditEventContext(input.getHeaders(), sessionItem),
                     IssueCredentialFraudAuditExtensionUtil.generateVCISSFraudAuditExtension(
-                            verifiableCredentialService.getVerifiableCredentialIssuer(),
-                            List.of(fraudResult),
-                            issueCredentialConfigurationService.isActivityHistoryEnabled()));
+                            verifiableCredentialIssuer, List.of(fraudResult)));
 
             LOGGER.info("Credential generated");
 
             // Lambda Complete No Error
-            eventProbe.counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_OK);
+            eventProbe.counterMetric(Definitions.LAMBDA_ISSUE_CREDENTIAL_COMPLETED_OK);
 
             auditService.sendAuditEvent(
                     AuditEventType.END, new AuditEventContext(input.getHeaders(), sessionItem));
@@ -161,7 +193,7 @@ public class IssueCredentialHandler
 
             String customOAuth2ErrorDescription = SESSION_NOT_FOUND.getMessage();
             LOGGER.error(customOAuth2ErrorDescription);
-            eventProbe.counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
+            eventProbe.counterMetric(Definitions.LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
 
             LOGGER.debug(e.getMessage(), e);
 
@@ -170,42 +202,35 @@ public class IssueCredentialHandler
                     new CommonExpressOAuthError(
                             OAuth2Error.ACCESS_DENIED, customOAuth2ErrorDescription));
         } catch (AwsServiceException ex) {
-            LOGGER.warn(
-                    "Exception while handling lambda {} exception {}",
-                    context.getFunctionName(),
-                    ex.getClass());
+            LOGGER.warn(LAMBDA_HANDLING_EXCEPTION, context.getFunctionName(), ex.getClass());
 
-            eventProbe.counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
+            eventProbe.counterMetric(Definitions.LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, ex.awsErrorDetails().errorMessage());
         } catch (CredentialRequestException | ParseException | JOSEException e) {
-            LOGGER.warn(
-                    "Exception while handling lambda {} exception {}",
-                    context.getFunctionName(),
-                    e.getClass());
+            LOGGER.warn(LAMBDA_HANDLING_EXCEPTION, context.getFunctionName(), e.getClass());
 
-            eventProbe.counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
+            eventProbe.counterMetric(Definitions.LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.BAD_REQUEST, ErrorResponse.VERIFIABLE_CREDENTIAL_ERROR);
         } catch (SqsException sqsException) {
             LOGGER.error(
-                    "Exception while handling lambda {} exception {}",
-                    context.getFunctionName(),
-                    sqsException.getClass());
+                    LAMBDA_HANDLING_EXCEPTION, context.getFunctionName(), sqsException.getClass());
 
-            eventProbe.counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
+            eventProbe.counterMetric(Definitions.LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, sqsException.getMessage());
         } catch (Exception e) {
-            LOGGER.error(
-                    "Exception while handling lambda {} exception {}",
-                    context.getFunctionName(),
-                    e.getClass());
+            // This is where unexpected exceptions will reach (null pointers etc)
+            // We should not log unknown exceptions, due to possibility of PII
+            LOGGER.error(LAMBDA_HANDLING_EXCEPTION, context.getFunctionName(), e.getClass());
 
-            eventProbe.counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
+            LOGGER.debug(e.getMessage(), e);
+
+            eventProbe.counterMetric(Definitions.LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
 
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, e.getMessage());
@@ -228,12 +253,5 @@ public class IssueCredentialHandler
                                                 ErrorResponse.MISSING_AUTHORIZATION_HEADER));
 
         return AccessToken.parse(token, AccessTokenType.BEARER);
-    }
-
-    private VerifiableCredentialService getVerifiableCredentialService(
-            ConfigurationService configurationService) {
-        Supplier<VerifiableCredentialService> factory =
-                () -> new VerifiableCredentialService(configurationService);
-        return factory.get();
     }
 }

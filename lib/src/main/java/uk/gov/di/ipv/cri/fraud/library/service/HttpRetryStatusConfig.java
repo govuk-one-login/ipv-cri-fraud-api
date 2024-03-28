@@ -1,4 +1,4 @@
-package uk.gov.di.ipv.cri.fraud.api.service;
+package uk.gov.di.ipv.cri.fraud.library.service;
 
 public interface HttpRetryStatusConfig {
     // Call back to allow configuring the status codes to retry per api/endpoint

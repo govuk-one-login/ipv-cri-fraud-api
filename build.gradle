@@ -65,6 +65,7 @@ ext {
 
 		// Contract Tests
 		pact_provider_version              : "4.6.4",
+		slf4j_log4j12_version              : "2.0.12" // For contract test debug
 	]
 
 	// Sets the version used on the lambda + lib (ac tests have separate dependencies)
@@ -74,8 +75,8 @@ ext {
 	]
 
 	// Code Coverage (Lines/Branches) cannot be below this value on a per sub project basis
-	minUnitTestLineCoverage = 0.7
-	minUnitTestBranchCoverage = 0.7
+	minUnitTestLineCoverage = 0.80
+	minUnitTestBranchCoverage = 0.80
 }
 
 sonar {

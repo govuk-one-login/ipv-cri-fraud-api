@@ -16,17 +16,13 @@ public class IssueCredentialFraudAuditExtensionUtil {
     }
 
     public static VCISSFraudAuditExtension generateVCISSFraudAuditExtension(
-            String vcIssuer,
-            List<FraudResultItem> fraudResultItems,
-            boolean activityHistoryEnabled) {
+            String vcIssuer, List<FraudResultItem> fraudResultItems) {
 
         List<Evidence> evidenceList = new ArrayList<>();
 
         for (FraudResultItem fraudResultItem : fraudResultItems) {
 
-            Evidence evidence =
-                    EvidenceHelper.fraudCheckResultItemToEvidence(
-                            fraudResultItem, activityHistoryEnabled);
+            Evidence evidence = EvidenceHelper.fraudCheckResultItemToEvidence(fraudResultItem);
 
             evidenceList.add(evidence);
         }
