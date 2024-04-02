@@ -1,7 +1,7 @@
 @fraud_CRI
 Feature: Fraud CRI
 
-  @happy_path @build-fraud @staging-fraud @integration-fraud
+  @build-fraud @staging-fraud @integration-fraud @stub @uat
   Scenario: User Journey Happy Path (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -11,7 +11,7 @@ Feature: Fraud CRI
     And The test is complete and I close the driver
 
 #  To be removed after the test is moved to the front repo
-  @happy_path @build-fraud @staging-fraud @integration-fraud
+  @build-fraud @staging-fraud @integration-fraud @stub @uat
   Scenario: Beta Banner Reject Analysis
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -24,7 +24,7 @@ Feature: Fraud CRI
     Then I check the page to change cookie preferences opens
     And The test is complete and I close the driver
 
-  @unhappy_path @build-fraud @staging-fraud @integration-fraud
+  @build-fraud @staging-fraud @integration-fraud @stub @uat
   Scenario: User Journey Unhappy Path (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -32,7 +32,7 @@ Feature: Fraud CRI
     And I navigate to the verifiable issuer to check for a Invalid response from thirdParty
     And The test is complete and I close the driver
 
-  @userSearch_by_userName_happyPath @build-fraud @staging-fraud @integration-fraud
+  @build-fraud @staging-fraud @integration-fraud @stub @uat
   Scenario: User Search By UserName User Journey Happy Path (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -42,7 +42,7 @@ Feature: Fraud CRI
     And JSON payload should contain user's name
     And The test is complete and I close the driver
 
-  @Spinner_icon_within_Fraud_CRI_screen @build-fraud @staging-fraud @integration-fraud
+  @build-fraud @staging-fraud @integration-fraud @stub @uat
   Scenario: User is presented with a spinner when clicking on the Continue button in the Fraud CRI screen (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -54,7 +54,7 @@ Feature: Fraud CRI
     And The test is complete and I close the driver
 
 
-  @userSearch_by_invalid_userName @staging-fraud
+  @staging-fraud @uat
   Scenario: User Search By Invalid UserName(STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -64,17 +64,7 @@ Feature: Fraud CRI
     And JSON response should contain error details and status code as 302
     And The test is complete and I close the driver
 
-  @userSearch_by_invalid_userName @integration-fraud
-  Scenario: User Search By Invalid UserName(STUB)
-    Given I navigate to the IPV Core Stub
-    And I click the Fraud CRI for the Integration environment
-    When I search for user name Debra Kiritharnathan in the ThirdParty table
-    And I click on Go to Fraud CRI link
-    Then I navigate to the verifiable issuer to check for a Invalid response from thirdParty
-    And JSON response should contain error details and status code as 302
-    And The test is complete and I close the driver
-
-  @edituser_happyPath @build-fraud @staging-fraud @integration-fraud
+  @build-fraud @staging-fraud @integration-fraud @stub @uat
   Scenario: Edit User Happy Path (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -88,7 +78,7 @@ Feature: Fraud CRI
     And JSON payload should contain user's House name as Test 45 and House number as 455
     And The test is complete and I close the driver
 
-  @happy_path_with_ci_fraud @staging-fraud
+  @staging-fraud @uat
   Scenario: User Journey Happy Path with A01 CI
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -102,7 +92,7 @@ Feature: Fraud CRI
     And JSON payload should contain ci A01 and score 2
     And The test is complete and I close the driver
 
-  @pep_test_all_users @build-fraud
+  @build-fraud @stub
   Scenario Outline: Edit User Happy Path with pep CI (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -125,7 +115,7 @@ Feature: Fraud CRI
       | ANTHONY CI4        | 17/02/1963 | T03 | 0     |
       | ANTHONY NO_FILE_35 | 17/02/1963 |     | 1     |
 
-  @pep_test_all_users @staging-fraud
+  @staging-fraud @uat
   Scenario Outline: Edit User Happy Path with pep CI (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -172,7 +162,7 @@ Feature: Fraud CRI
       | DIPTI STUPPART        | 26/01/1989 | P02 | 2     |
       | JAMALA BROWER         | 27/10/1963 | P02 | 2     |
 
-  @test_PEP_user_with_multiple_addresses @staging-fraud
+  @staging-fraud @uat
   Scenario Outline: Edit PEP User with multiple addresses (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -199,7 +189,7 @@ Feature: Fraud CRI
       | name                    | dob            | ci  | score |
       | ANTHONY ROBERTS         | 25/06/1959     |     |   1   |
 
-  @test_PEP_user_with_multiple_addresses @build-fraud
+  @build-fraud @stub
   Scenario Outline: Edit PEP User with multiple addresses (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -225,7 +215,7 @@ Feature: Fraud CRI
       | name                    | dob            | ci  | score |
       | ANTHONY ROBERTS         | 25/06/1959     |     |   2   |
 
-  @build-fraud
+  @build-fraud @stub
   Scenario Outline:Crosscore Authenticate and PEP completed and user is a PEP
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -250,7 +240,7 @@ Feature: Fraud CRI
       | JAMALA BROWER           | 27/10/1963     |    |2    |
 
 
-  @build-fraud
+  @build-fraud @stub
   Scenario Outline:Crosscore Authenticate and PEP completed and user not PEP
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -275,7 +265,7 @@ Feature: Fraud CRI
       | ALBERT PEPS             | 05/10/1943     |P01   | 2     |
 
 
-  @build-fraud
+  @build-fraud @stub
   Scenario Outline: Mortality u-code returned
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -299,7 +289,7 @@ Feature: Fraud CRI
       | ALBERT GILT    | 05/10/1943       | T02  | 0     |
 
 
-  @build-fraud
+  @build-fraud @stub
   Scenario Outline: Crosscore Authenticate completed and PEP not completed due to error from ThirdParty
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -323,7 +313,7 @@ Feature: Fraud CRI
       | name                         | dob              | ci   | score  |
       | ALBERT PEP_ERROR_RESPONSE    | 05/10/1943       |      | 1    |
 
-  @build-fraud
+  @build-fraud @stub
   Scenario Outline: Crosscore Authenticate completed and PEP not completed due to technical failure
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
@@ -347,7 +337,7 @@ Feature: Fraud CRI
       | name                    | dob              | ci   | score  |
       | ALBERT PEP_TECH_FAIL    | 05/10/1943       |      | 1    |
 
-  @build-fraud
+  @build-fraud @stub
   Scenario Outline: Decision score below 35
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment
