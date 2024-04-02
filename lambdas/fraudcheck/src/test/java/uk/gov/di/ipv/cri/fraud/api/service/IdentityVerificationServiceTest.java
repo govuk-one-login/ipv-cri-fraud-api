@@ -1,5 +1,6 @@
 package uk.gov.di.ipv.cri.fraud.api.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +26,7 @@ import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyPepGateway;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 import uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
+import uk.gov.di.ipv.cri.fraud.library.service.ServiceFactory;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -55,17 +57,27 @@ import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.PERSON_DETAILS
 
 @ExtendWith(MockitoExtension.class)
 class IdentityVerificationServiceTest {
+
+    @Mock private ServiceFactory mockServiceFactory;
+
+    @Mock private ObjectMapper mockObjectMapper;
+    @Mock private EventProbe mockEventProbe;
+    @Mock private AuditService mockAuditService;
+
+    @Mock private ThirdPartyAPIServiceFactory mockThirdPartyAPIServiceFactory;
+
+    @Mock private TokenRequestService mockTokenRequestService;
     @Mock private ThirdPartyFraudGateway mockThirdPartyFraudGateway;
     @Mock private ThirdPartyPepGateway mockThirdPartyPepGateway;
+
     @Mock private PersonIdentityValidator personIdentityValidator;
-    @Mock private ContraindicationMapper mockContraindicationMapper;
+    @Mock private ContraIndicatorMapper mockContraindicationMapper;
     @Mock private ActivityHistoryScoreCalculator mockActivityHistoryScoreCalculator;
-    @Mock private AuditService mockAuditService;
+
+    @Mock private FraudCheckConfigurationService mockFraudCheckConfigurationService;
+
     @Mock private SessionItem sessionItem;
     @Mock private Map<String, String> requestHeaders;
-    @Mock private FraudCheckConfigurationService mockFraudCheckConfigurationService;
-    @Mock private TokenRequestService mockTokenRequestService;
-    @Mock private EventProbe mockEventProbe;
 
     private IdentityVerificationService identityVerificationService;
 
@@ -77,18 +89,30 @@ class IdentityVerificationServiceTest {
         when(mockFraudCheckConfigurationService.getZeroScoreUcodes())
                 .thenReturn(List.of("zero-score-ucode"));
 
+        when(mockServiceFactory.getObjectMapper()).thenReturn(mockObjectMapper);
+        when(mockServiceFactory.getEventProbe()).thenReturn(mockEventProbe);
+        when(mockServiceFactory.getAuditService()).thenReturn(mockAuditService);
+
+        when(mockThirdPartyAPIServiceFactory.getTokenRequestService())
+                .thenReturn(mockTokenRequestService);
+        when(mockThirdPartyAPIServiceFactory.getThirdPartyFraudGateway())
+                .thenReturn(mockThirdPartyFraudGateway);
+        when(mockThirdPartyAPIServiceFactory.getThirdPartyPepGateway())
+                .thenReturn(mockThirdPartyPepGateway);
+
         this.identityVerificationService =
                 new IdentityVerificationService(
-                        mockThirdPartyFraudGateway,
-                        mockThirdPartyPepGateway,
+                        mockServiceFactory,
+                        mockThirdPartyAPIServiceFactory,
+                        //                        mockTokenRequestService,
+                        //                        mockThirdPartyFraudGateway,
+                        //                        mockThirdPartyPepGateway,
                         personIdentityValidator,
                         mockContraindicationMapper,
-                        new IdentityScoreCalculator(mockFraudCheckConfigurationService),
+                        //                        new
+                        // IdentityScoreCalculator(mockFraudCheckConfigurationService),
                         mockActivityHistoryScoreCalculator,
-                        mockAuditService,
-                        mockFraudCheckConfigurationService,
-                        mockEventProbe,
-                        mockTokenRequestService);
+                        mockFraudCheckConfigurationService);
     }
 
     @Test
@@ -169,8 +193,6 @@ class IdentityVerificationServiceTest {
 
         when(personIdentityValidator.validate(testPersonIdentity))
                 .thenReturn(ValidationResult.createValidResult());
-
-        when(mockFraudCheckConfigurationService.getPepEnabled()).thenReturn(Boolean.TRUE);
 
         when(mockThirdPartyFraudGateway.performFraudCheck(testPersonIdentity, TEST_ACCESS_TOKEN))
                 .thenReturn(testFraudCheckResult);
@@ -295,9 +317,6 @@ class IdentityVerificationServiceTest {
 
         // Pep performed scenarios - (score above threshold and no zeroScoreUCode found)
         if ((expectedDecisionScore > noFileFoundThreshold) && !zeroScoreUCodePresent) {
-            // Pep is checked to be enabled
-            when(mockFraudCheckConfigurationService.getPepEnabled()).thenReturn(Boolean.TRUE);
-
             when(mockThirdPartyPepGateway.performPepCheck(testPersonIdentity, TEST_ACCESS_TOKEN))
                     .thenReturn(testPEPCheckResult);
             when(mockContraindicationMapper.mapThirdPartyFraudCodes(thirdPartyPEPCodes))
@@ -471,9 +490,6 @@ class IdentityVerificationServiceTest {
                 .thenReturn(mappedFraudCodes);
 
         when(mockActivityHistoryScoreCalculator.calculateActivityHistoryScore(366)).thenReturn(1);
-
-        // Pep is checked to be enabled
-        when(mockFraudCheckConfigurationService.getPepEnabled()).thenReturn(Boolean.TRUE);
 
         if (errorType.equals("OAuthErrorResponseException")) {
             when(mockThirdPartyPepGateway.performPepCheck(testPersonIdentity, TEST_ACCESS_TOKEN))

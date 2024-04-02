@@ -9,19 +9,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-public class ContraIndicatorRemoteMapper implements ContraindicationMapper {
+public class ContraIndicatorMapper {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static final String CIMAP = "CIMap";
 
     private final Map<String, String> uCodeCIMap;
-    private FraudCheckConfigurationService fraudCheckConfigurationService;
 
-    public ContraIndicatorRemoteMapper(
-            FraudCheckConfigurationService fraudCheckConfigurationService) {
-        this.fraudCheckConfigurationService = fraudCheckConfigurationService;
+    public ContraIndicatorMapper(FraudCheckConfigurationService fraudCheckConfigurationService) {
 
         final String contraindicatorMappingString =
                 System.getenv().get(CIMAP) == null
@@ -37,7 +33,7 @@ public class ContraIndicatorRemoteMapper implements ContraindicationMapper {
      *
      * @param mappingString
      */
-    public ContraIndicatorRemoteMapper(String mappingString) {
+    public ContraIndicatorMapper(String mappingString) {
         Objects.requireNonNull(mappingString);
 
         // Create the map
@@ -55,7 +51,7 @@ public class ContraIndicatorRemoteMapper implements ContraindicationMapper {
                 Arrays.stream(thirdPartyFraudCodes)
                         .filter(this.uCodeCIMap::containsKey)
                         .map(this.uCodeCIMap::get)
-                        .collect(Collectors.toList());
+                        .toList();
 
         if (contraindicators.size() != thirdPartyFraudCodes.length) {
             String[] unmappedFraudCodes =

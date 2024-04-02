@@ -1,4 +1,4 @@
-package uk.gov.di.ipv.cri.fraud.api.util;
+package uk.gov.di.ipv.cri.fraud.library;
 
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
@@ -25,7 +25,13 @@ public class HttpResponseFixtures {
 
     // Used to create response scenarios in unit tests
     public static CloseableHttpResponse createHttpResponse(
-            int statusCode, Map<String, String> headers, String responseBody, boolean ioException) {
+            int statusCode,
+            Map<String, String> headerMap,
+            String responseBody,
+            boolean ioException) {
+
+        final Header[] apacheHeaders = createHeaders(headerMap);
+
         return new CloseableHttpResponse() {
 
             @Override
@@ -55,26 +61,6 @@ public class HttpResponseFixtures {
 
             @Override
             public Header[] getAllHeaders() {
-                Header[] apacheHeaders;
-
-                if (headers != null) {
-                    int numHeaders = headers.size();
-
-                    apacheHeaders = new Header[numHeaders];
-
-                    List<String> keys = new ArrayList<>(headers.keySet());
-
-                    for (int h = 0; h < numHeaders; h++) {
-
-                        String key = keys.get(0);
-                        String value = headers.get(key);
-
-                        apacheHeaders[h] = new BasicHeader(key, value);
-                    }
-                } else {
-                    apacheHeaders = new Header[0];
-                }
-
                 return apacheHeaders;
             }
 
@@ -115,12 +101,34 @@ public class HttpResponseFixtures {
 
             @Override
             public HeaderIterator headerIterator() {
-                return null;
+                return new HeaderIterator() {
+                    int i = 0;
+
+                    @Override
+                    public boolean hasNext() {
+                        return i < apacheHeaders.length;
+                    }
+
+                    @Override
+                    public Header nextHeader() {
+                        return apacheHeaders[i++];
+                    }
+
+                    @Override
+                    public Object next() {
+                        return nextHeader();
+                    }
+
+                    @Override
+                    public void remove() {
+                        //
+                    }
+                };
             }
 
             @Override
             public HeaderIterator headerIterator(String name) {
-                return null;
+                return headerIterator();
             }
 
             @Override
@@ -264,5 +272,28 @@ public class HttpResponseFixtures {
                 // Test Fixture
             }
         };
+    }
+
+    private static Header[] createHeaders(Map<String, String> headerMap) {
+
+        if (null == headerMap) {
+            return new Header[0];
+        }
+
+        int numHeaders = headerMap.size();
+
+        Header[] headers = new Header[numHeaders];
+
+        List<String> keys = new ArrayList<>(headerMap.keySet());
+
+        for (int h = 0; h < numHeaders; h++) {
+
+            String key = keys.get(0);
+            String value = headerMap.get(key);
+
+            headers[h] = new BasicHeader(key, value);
+        }
+
+        return headers;
     }
 }

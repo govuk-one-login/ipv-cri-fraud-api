@@ -29,7 +29,7 @@ class IdentityVerificationResponseLoggerTest {
     @BeforeEach
     void setUp() {
         ObjectMapper mapper = new ObjectMapper();
-        mapper.enable(SerializationFeature.INDENT_OUTPUT); // TODO
+        mapper.enable(SerializationFeature.INDENT_OUTPUT);
         identityVerificationResponseLogger = new IdentityVerificationResponseLogger(mapper);
     }
 

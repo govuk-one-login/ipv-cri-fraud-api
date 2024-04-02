@@ -16,6 +16,9 @@ import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.AccessTokenType;
+import org.apache.log4j.BasicConfigurator;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,10 +28,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
-import software.amazon.lambda.powertools.parameters.ParamProvider;
-import software.amazon.lambda.powertools.parameters.SecretsProvider;
 import uk.gov.di.ipv.cri.common.library.domain.SessionRequest;
 import uk.gov.di.ipv.cri.common.library.persistence.DataStore;
 import uk.gov.di.ipv.cri.common.library.persistence.item.CanonicalAddress;
@@ -44,15 +43,16 @@ import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.common.library.util.ListUtil;
-import uk.gov.di.ipv.cri.common.library.util.SignedJWTFactory;
-import uk.gov.di.ipv.cri.common.library.util.VerifiableCredentialClaimsSetBuilder;
 import uk.gov.di.ipv.cri.fraud.api.handler.IssueCredentialHandler;
 import uk.gov.di.ipv.cri.fraud.api.pact.utils.Injector;
 import uk.gov.di.ipv.cri.fraud.api.pact.utils.MockHttpServer;
-import uk.gov.di.ipv.cri.fraud.api.service.FraudRetrievalService;
-import uk.gov.di.ipv.cri.fraud.api.service.IssueCredentialConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.VerifiableCredentialService;
+import uk.gov.di.ipv.cri.fraud.library.config.ParameterStoreParameters;
 import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
+import uk.gov.di.ipv.cri.fraud.library.service.ParameterStoreService;
+import uk.gov.di.ipv.cri.fraud.library.service.ResultItemStorageService;
+import uk.gov.di.ipv.cri.fraud.library.service.ServiceFactory;
+import uk.gov.di.ipv.cri.fraud.library.service.parameterstore.ParameterPrefix;
 
 import java.io.IOException;
 import java.net.URI;
@@ -76,6 +76,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static uk.gov.di.ipv.cri.fraud.library.domain.CheckType.ACTIVITY_HISTORY_CHECK;
 import static uk.gov.di.ipv.cri.fraud.library.domain.CheckType.IDENTITY_THEFT_CHECK;
 import static uk.gov.di.ipv.cri.fraud.library.domain.CheckType.IMPERSONATION_RISK_CHECK;
 import static uk.gov.di.ipv.cri.fraud.library.domain.CheckType.MORTALITY_CHECK;
@@ -90,23 +91,26 @@ import static uk.gov.di.ipv.cri.fraud.library.domain.CheckType.SYNTHETIC_IDENTIT
                         username = "${PACT_BROKER_USERNAME}",
                         password = "${PACT_BROKER_PASSWORD}"))
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class IssueCredentialHandlerTest {
 
-    private static final int PORT = 5050;
+    private static final int PORT = 5030;
 
-    @Mock private ConfigurationService configurationService;
-    @Mock private IssueCredentialConfigurationService icConfigurationService;
-    @Mock private DataStore<SessionItem> dataStore;
-    @Mock private DataStore<PersonIdentityItem> personIdentityDataStore;
-    @Mock private EventProbe eventProbe;
-    @Mock private AuditService auditService;
-    @Mock private DataStore<FraudResultItem> fraudItemDataStore;
-    @Mock private SecretsProvider secretsProvider;
-    @Mock private ParamProvider paramProvider;
+    @Mock private ServiceFactory mockServiceFactory;
+    @Mock private EventProbe mockEventProbe;
+    @Mock private ConfigurationService mockCommonLibConfigurationService;
     private SessionService sessionService;
+    @Mock private AuditService mockAuditService;
+    @Mock private ResultItemStorageService<FraudResultItem> mockFraudResultItemStorageService;
+    @Mock private ParameterStoreService mockParameterStoreService;
+
+    @Mock private DataStore<SessionItem> mockSessionItemDataStore;
+    @Mock private DataStore<PersonIdentityItem> mockPersonIdentityDataStore;
+
     private final ObjectMapper objectMapper =
             new ObjectMapper().registerModules(new JavaTimeModule());
+
+    // Off by default to prevent logging all secrets
+    private static final boolean ENABLE_FULL_DEBUG = false;
 
     @au.com.dius.pact.provider.junitsupport.loader.PactBrokerConsumerVersionSelectors
     public static SelectorBuilder consumerVersionSelectors() {
@@ -120,33 +124,19 @@ class IssueCredentialHandlerTest {
     static void setupServer() {
         System.setProperty("pact.verifier.publishResults", "true");
         System.setProperty("pact.content_type.override.application/jwt", "text");
+
+        if (ENABLE_FULL_DEBUG) {
+            // AutoConfig SL4j with Log4J
+            BasicConfigurator.configure();
+            Configurator.setAllLevels("", Level.DEBUG);
+        }
     }
 
     @BeforeEach
     void pactSetup(PactVerificationContext context)
             throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, JOSEException {
 
-        long todayPlusADay =
-                LocalDate.now().plusDays(2).toEpochSecond(LocalTime.now(), ZoneOffset.UTC);
-
-        when(configurationService.getVerifiableCredentialIssuer())
-                .thenReturn("dummyFraudComponentId");
-        when(configurationService.getSessionExpirationEpoch()).thenReturn(todayPlusADay);
-        when(configurationService.getAuthorizationCodeExpirationEpoch()).thenReturn(todayPlusADay);
-        when(configurationService.getMaxJwtTtl()).thenReturn(1000L);
-        when(configurationService.getParameterValue("JwtTtlUnit")).thenReturn("HOURS");
-        when(configurationService.getVerifiableCredentialIssuer())
-                .thenReturn("dummyFraudComponentId");
-        when(configurationService.getParameterValueByAbsoluteName(
-                        "/release-flags/vc-expiry-removed"))
-                .thenReturn("true");
-        when(configurationService.getParameterValue("release-flags/vc-contains-unique-id"))
-                .thenReturn("true");
-        when(icConfigurationService.isActivityHistoryEnabled()).thenReturn(true);
-
-        sessionService =
-                new SessionService(
-                        dataStore, configurationService, Clock.systemUTC(), new ListUtil());
+        mockServiceFactoryBehaviour();
 
         KeyFactory kf = KeyFactory.getInstance("EC");
         EncodedKeySpec privateKeySpec =
@@ -157,33 +147,11 @@ class IssueCredentialHandlerTest {
                                                 + "gLV1xaks+DB5n6ity2MvBlzDUw=="));
         JWSSigner signer = new ECDSASigner((ECPrivateKey) kf.generatePrivate(privateKeySpec));
 
-        SignedJWTFactory signedClaimSetJwt = new SignedJWTFactory(signer);
-
-        VerifiableCredentialClaimsSetBuilder vcClaimsSetBuilder =
-                new VerifiableCredentialClaimsSetBuilder(
-                        this.configurationService, Clock.systemUTC());
-
-        PersonIdentityMapper personIdentityMapper = new PersonIdentityMapper();
-
         Injector tokenHandlerInjector =
                 new Injector(
                         new IssueCredentialHandler(
-                                new VerifiableCredentialService(
-                                        signedClaimSetJwt,
-                                        configurationService,
-                                        objectMapper,
-                                        vcClaimsSetBuilder,
-                                        icConfigurationService),
-                                sessionService,
-                                eventProbe,
-                                auditService,
-                                new PersonIdentityService(
-                                        personIdentityMapper,
-                                        configurationService,
-                                        personIdentityDataStore),
-                                new FraudRetrievalService(
-                                        fraudItemDataStore, icConfigurationService),
-                                icConfigurationService),
+                                mockServiceFactory,
+                                new VerifiableCredentialService(mockServiceFactory, signer)),
                         "/credential/issue",
                         "/");
         MockHttpServer.startServer(new ArrayList<>(List.of(tokenHandlerInjector)), PORT, signer);
@@ -201,6 +169,10 @@ class IssueCredentialHandlerTest {
 
     @State("dummyAccessToken is a valid access token")
     void accessTokenIsValid() {
+
+        // Controls the TTLS
+        mockHappyPathVcParameters();
+
         long todayPlusADay =
                 LocalDate.now().plusDays(2).toEpochSecond(LocalTime.now(), ZoneOffset.UTC);
 
@@ -238,7 +210,8 @@ class IssueCredentialHandlerTest {
         personIdentityItem.setNames(List.of(name));
         personIdentityItem.setBirthDates(List.of(birthDate));
 
-        when(personIdentityDataStore.getItem(sessionId.toString())).thenReturn(personIdentityItem);
+        when(mockPersonIdentityDataStore.getItem(sessionId.toString()))
+                .thenReturn(personIdentityItem);
 
         // SESSION HANDBACK
         performAuthorizationCodeSet(sessionService, sessionId);
@@ -248,7 +221,8 @@ class IssueCredentialHandlerTest {
         SessionItem session = performAccessTokenSet(sessionService, sessionId);
         // ACCESS TOKEN GENERATION AND SETTING
 
-        when(dataStore.getItemByIndex(SessionItem.ACCESS_TOKEN_INDEX, "Bearer dummyAccessToken"))
+        when(mockSessionItemDataStore.getItemByIndex(
+                        SessionItem.ACCESS_TOKEN_INDEX, "Bearer dummyAccessToken"))
                 .thenReturn(List.of(session));
     }
 
@@ -284,14 +258,14 @@ class IssueCredentialHandlerTest {
         resultItem.setActivityFrom("2013-12-01");
         resultItem.setCheckDetails(
                 List.of(
-                        MORTALITY_CHECK.toString().toLowerCase(),
+                        MORTALITY_CHECK.toString(),
                         IDENTITY_THEFT_CHECK.toString(),
-                        SYNTHETIC_IDENTITY_CHECK.toString().toLowerCase()));
-        resultItem.setFailedCheckDetails(
-                List.of(IMPERSONATION_RISK_CHECK.toString().toLowerCase()));
+                        SYNTHETIC_IDENTITY_CHECK.toString(),
+                        ACTIVITY_HISTORY_CHECK.toString()));
+        resultItem.setFailedCheckDetails(List.of(IMPERSONATION_RISK_CHECK.toString()));
         resultItem.setContraIndicators(List.of());
 
-        when(fraudItemDataStore.getItem(sessionId)).thenReturn(resultItem);
+        when(mockFraudResultItemStorageService.getResultItem(sessionUUID)).thenReturn(resultItem);
     }
 
     @State("VC evidence identityFraudScore is 2")
@@ -314,12 +288,13 @@ class IssueCredentialHandlerTest {
         resultItem.setContraIndicators(List.of());
         resultItem.setCheckDetails(
                 List.of(
-                        MORTALITY_CHECK.toString().toLowerCase(),
+                        MORTALITY_CHECK.toString(),
                         IDENTITY_THEFT_CHECK.toString(),
                         SYNTHETIC_IDENTITY_CHECK.toString(),
-                        IMPERSONATION_RISK_CHECK.toString().toLowerCase()));
+                        IMPERSONATION_RISK_CHECK.toString(),
+                        ACTIVITY_HISTORY_CHECK.toString()));
 
-        when(fraudItemDataStore.getItem(sessionId)).thenReturn(resultItem);
+        when(mockFraudResultItemStorageService.getResultItem(sessionUUID)).thenReturn(resultItem);
     }
 
     @State("VC evidence activityHistoryScore is 1")
@@ -369,12 +344,13 @@ class IssueCredentialHandlerTest {
         resultItem.setActivityFrom("2013-12-01");
         resultItem.setCheckDetails(
                 List.of(
-                        MORTALITY_CHECK.toString().toLowerCase(),
+                        MORTALITY_CHECK.toString(),
                         IDENTITY_THEFT_CHECK.toString(),
-                        SYNTHETIC_IDENTITY_CHECK.toString().toLowerCase(),
-                        IMPERSONATION_RISK_CHECK.toString()));
+                        SYNTHETIC_IDENTITY_CHECK.toString(),
+                        IMPERSONATION_RISK_CHECK.toString(),
+                        ACTIVITY_HISTORY_CHECK.toString()));
 
-        when(fraudItemDataStore.getItem(sessionId)).thenReturn(resultItem);
+        when(mockFraudResultItemStorageService.getResultItem(sessionUUID)).thenReturn(resultItem);
     }
 
     @State(
@@ -420,11 +396,11 @@ class IssueCredentialHandlerTest {
         ArgumentCaptor<SessionItem> sessionItemArgumentCaptor =
                 ArgumentCaptor.forClass(SessionItem.class);
 
-        verify(dataStore).create(sessionItemArgumentCaptor.capture());
+        verify(mockSessionItemDataStore).create(sessionItemArgumentCaptor.capture());
 
         SessionItem savedSessionitem = sessionItemArgumentCaptor.getValue();
 
-        when(dataStore.getItem(sessionId.toString())).thenReturn(savedSessionitem);
+        when(mockSessionItemDataStore.getItem(sessionId.toString())).thenReturn(savedSessionitem);
     }
 
     private UUID performInitialSessionRequest(SessionService sessionService, long todayPlusADay) {
@@ -438,8 +414,59 @@ class IssueCredentialHandlerTest {
         sessionRequest.setClientId("ipv-core");
         sessionRequest.setSubject("test-subject");
 
-        doNothing().when(dataStore).create(any(SessionItem.class));
+        doNothing().when(mockSessionItemDataStore).create(any(SessionItem.class));
 
         return sessionService.saveSession(sessionRequest);
+    }
+
+    private void mockServiceFactoryBehaviour() {
+
+        when(mockServiceFactory.getObjectMapper()).thenReturn(objectMapper);
+        when(mockServiceFactory.getEventProbe()).thenReturn(mockEventProbe);
+        when(mockServiceFactory.getParameterStoreService()).thenReturn(mockParameterStoreService);
+        when(mockServiceFactory.getParameterStoreService()).thenReturn(mockParameterStoreService);
+        when(mockServiceFactory.getCommonLibConfigurationService())
+                .thenReturn(mockCommonLibConfigurationService);
+        sessionService =
+                new SessionService(
+                        mockSessionItemDataStore,
+                        mockCommonLibConfigurationService,
+                        Clock.systemUTC(),
+                        new ListUtil());
+        when(mockServiceFactory.getSessionService()).thenReturn(sessionService);
+        when(mockServiceFactory.getAuditService()).thenReturn(mockAuditService);
+        when(mockServiceFactory.getPersonIdentityService())
+                .thenReturn(
+                        new PersonIdentityService(
+                                new PersonIdentityMapper(),
+                                mockCommonLibConfigurationService,
+                                mockPersonIdentityDataStore));
+        when(mockServiceFactory.getResultItemStorageService())
+                .thenReturn(mockFraudResultItemStorageService);
+    }
+
+    private void mockHappyPathVcParameters() {
+        // Mock mockCommonLibConfigurationService and TTL's
+        long todayPlusADay =
+                LocalDate.now().plusDays(2).toEpochSecond(LocalTime.now(), ZoneOffset.UTC);
+        when(mockCommonLibConfigurationService.getVerifiableCredentialIssuer())
+                .thenReturn("dummyFraudComponentId");
+        when(mockCommonLibConfigurationService.getSessionExpirationEpoch())
+                .thenReturn(todayPlusADay);
+        when(mockCommonLibConfigurationService.getAuthorizationCodeExpirationEpoch())
+                .thenReturn(todayPlusADay);
+        when(mockCommonLibConfigurationService.getMaxJwtTtl()).thenReturn(1000L);
+
+        when(mockParameterStoreService.getParameterValue(
+                        ParameterPrefix.STACK, ParameterStoreParameters.MAX_JWT_TTL_UNIT))
+                .thenReturn("HOURS");
+        when(mockCommonLibConfigurationService.getVerifiableCredentialIssuer())
+                .thenReturn("dummyFraudComponentId");
+        when(mockCommonLibConfigurationService.getParameterValueByAbsoluteName(
+                        "/release-flags/vc-expiry-removed"))
+                .thenReturn("true");
+        when(mockCommonLibConfigurationService.getParameterValue(
+                        "release-flags/vc-contains-unique-id"))
+                .thenReturn("true");
     }
 }

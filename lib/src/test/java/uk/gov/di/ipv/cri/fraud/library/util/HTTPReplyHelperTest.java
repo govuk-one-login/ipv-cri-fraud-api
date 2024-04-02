@@ -1,9 +1,10 @@
-package uk.gov.di.ipv.cri.fraud.api.util;
+package uk.gov.di.ipv.cri.fraud.library.util;
 
 import org.apache.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import uk.gov.di.ipv.cri.fraud.library.HttpResponseFixtures;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 
 import java.util.HashMap;
@@ -12,7 +13,6 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static uk.gov.di.ipv.cri.fraud.api.util.HttpResponseFixtures.createHttpResponse;
 
 @ExtendWith(MockitoExtension.class)
 class HTTPReplyHelperTest {
@@ -32,7 +32,7 @@ class HTTPReplyHelperTest {
         expectedHeadersMap.put(expectedTestHeaderKey, expectedTestHeaderValue);
 
         HttpResponse mockResponse =
-                createHttpResponse(
+                HttpResponseFixtures.createHttpResponse(
                         expectedStatusCode, expectedHeadersMap, expectedBodyContent, false);
 
         HTTPReply reply = HTTPReplyHelper.retrieveResponse(mockResponse, ENDPOINT_NAME);
@@ -49,7 +49,8 @@ class HTTPReplyHelperTest {
         int expectedStatusCode = 200;
         String expectedBodyContent = String.format(NO_BODY_TEXT_FORMAT, ENDPOINT_NAME);
 
-        HttpResponse mockResponse = createHttpResponse(expectedStatusCode, null, null, false);
+        HttpResponse mockResponse =
+                HttpResponseFixtures.createHttpResponse(expectedStatusCode, null, null, false);
 
         HTTPReply reply = HTTPReplyHelper.retrieveResponse(mockResponse, ENDPOINT_NAME);
 
@@ -60,7 +61,7 @@ class HTTPReplyHelperTest {
     @Test
     void shouldThrowOAuthHttpResponseExceptionWhenIOExceptionEncounteredRetrievingHTTPReply() {
 
-        HttpResponse mockResponse = createHttpResponse(200, null, null, true);
+        HttpResponse mockResponse = HttpResponseFixtures.createHttpResponse(200, null, null, true);
 
         OAuthErrorResponseException thrownException =
                 assertThrows(

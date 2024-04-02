@@ -3,6 +3,7 @@ package uk.gov.di.ipv.cri.fraud.api.domain.checkdetails;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import uk.gov.di.ipv.cri.fraud.library.domain.CheckType;
 
 import java.util.Objects;
 
@@ -26,11 +27,9 @@ public class Check {
     @JsonProperty("identityCheckPolicy")
     private String identityCheckPolicy;
 
-    public Check(String fraudCheck) {
-        this.fraudCheck = fraudCheck;
+    public Check(CheckType checkType) {
+        this.fraudCheck = checkType.toString().toLowerCase();
     }
-
-    public Check() {}
 
     public String getFraudCheck() {
         return fraudCheck;
@@ -62,6 +61,10 @@ public class Check {
 
     public void setIdentityCheckPolicy(String identityCheckPolicy) {
         this.identityCheckPolicy = identityCheckPolicy;
+    }
+
+    public void clearFraudCheckField() {
+        fraudCheck = null;
     }
 
     @Override

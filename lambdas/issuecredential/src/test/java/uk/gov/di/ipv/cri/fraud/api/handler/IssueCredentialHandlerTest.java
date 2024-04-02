@@ -13,9 +13,9 @@ import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
@@ -28,16 +28,20 @@ import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.common.library.exception.SqsException;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
+import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.audit.VCISSFraudAuditExtension;
-import uk.gov.di.ipv.cri.fraud.api.service.FraudRetrievalService;
-import uk.gov.di.ipv.cri.fraud.api.service.IssueCredentialConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.VerifiableCredentialService;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 import uk.gov.di.ipv.cri.fraud.library.FraudPersonIdentityDetailedMapper;
 import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
+import uk.gov.di.ipv.cri.fraud.library.service.ResultItemStorageService;
+import uk.gov.di.ipv.cri.fraud.library.service.ServiceFactory;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.util.List;
 import java.util.Map;
@@ -49,17 +53,38 @@ import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_ISSUE_C
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_ISSUE_CREDENTIAL_COMPLETED_OK;
 
 @ExtendWith(MockitoExtension.class)
+@ExtendWith(SystemStubsExtension.class)
 class IssueCredentialHandlerTest {
+    @SystemStub private EnvironmentVariables environmentVariables = new EnvironmentVariables();
+
     public static final String SUBJECT = "subject";
-    @Mock private Context context;
-    @Mock private VerifiableCredentialService mockVerifiableCredentialService;
-    @Mock private SessionService mockSessionService;
-    @Mock private PersonIdentityService mockPersonIdentityService;
-    @Mock private FraudRetrievalService mockFraudRetrievalService;
+
+    @Mock ConfigurationService mockCommonLibConfigurationService;
+
+    @Mock ServiceFactory mockServiceFactory;
+
     @Mock private EventProbe mockEventProbe;
+
+    @Mock private SessionService mockSessionService;
     @Mock private AuditService mockAuditService;
-    @Mock private IssueCredentialConfigurationService mockIssueCredentialConfigurationService;
-    @InjectMocks private IssueCredentialHandler handler;
+
+    @Mock private PersonIdentityService mockPersonIdentityService;
+    @Mock private ResultItemStorageService<FraudResultItem> fraudResultItemStorageService;
+
+    @Mock private VerifiableCredentialService mockVerifiableCredentialService;
+
+    @Mock private Context context;
+
+    private IssueCredentialHandler handler;
+
+    @BeforeEach
+    void setup() {
+        environmentVariables.set("AWS_REGION", "eu-west-2");
+
+        mockServiceFactoryBehaviour();
+
+        handler = new IssueCredentialHandler(mockServiceFactory, mockVerifiableCredentialService);
+    }
 
     @Test
     void shouldReturn200OkWhenIssueCredentialRequestIsValid() throws JOSEException, SqsException {
@@ -81,12 +106,12 @@ class IssueCredentialHandlerTest {
         when(mockSessionService.getSessionByAccessToken(accessToken)).thenReturn(sessionItem);
         when(mockPersonIdentityService.getPersonIdentityDetailed(any()))
                 .thenReturn(personIdentityDetailed);
-        when(mockFraudRetrievalService.getFraudResult(sessionItem.getSessionId()))
+        when(fraudResultItemStorageService.getResultItem(sessionItem.getSessionId()))
                 .thenReturn(fraudResultItem);
         when(mockVerifiableCredentialService.generateSignedVerifiableCredentialJwt(
                         sessionItem.getSubject(), fraudResultItem, personIdentityDetailed))
                 .thenReturn(mock(SignedJWT.class));
-        when(mockIssueCredentialConfigurationService.isActivityHistoryEnabled()).thenReturn(true);
+
         doNothing()
                 .when(mockAuditService)
                 .sendAuditEvent(
@@ -94,13 +119,10 @@ class IssueCredentialHandlerTest {
                         any(AuditEventContext.class),
                         any(VCISSFraudAuditExtension.class));
 
-        when(mockEventProbe.counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_OK))
-                .thenReturn(mockEventProbe);
-
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, context);
 
         verify(mockSessionService).getSessionByAccessToken(accessToken);
-        verify(mockFraudRetrievalService).getFraudResult(sessionItem.getSessionId());
+        verify(fraudResultItemStorageService).getResultItem(sessionItem.getSessionId());
         verify(mockPersonIdentityService).getPersonIdentityDetailed(any());
         verify(mockVerifiableCredentialService)
                 .generateSignedVerifiableCredentialJwt(
@@ -140,7 +162,7 @@ class IssueCredentialHandlerTest {
         when(mockSessionService.getSessionByAccessToken(accessToken)).thenReturn(sessionItem);
         when(mockPersonIdentityService.getPersonIdentityDetailed(any()))
                 .thenReturn(personIdentityDetailed);
-        when(mockFraudRetrievalService.getFraudResult(sessionItem.getSessionId()))
+        when(fraudResultItemStorageService.getResultItem(sessionItem.getSessionId()))
                 .thenReturn(fraudResultItem);
         when(mockVerifiableCredentialService.generateSignedVerifiableCredentialJwt(
                         sessionItem.getSubject(), fraudResultItem, personIdentityDetailed))
@@ -149,7 +171,7 @@ class IssueCredentialHandlerTest {
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, context);
 
         verify(mockSessionService).getSessionByAccessToken(accessToken);
-        verify(mockFraudRetrievalService).getFraudResult(sessionItem.getSessionId());
+        verify(fraudResultItemStorageService).getResultItem(sessionItem.getSessionId());
         verify(mockPersonIdentityService).getPersonIdentityDetailed(any());
         verify(mockVerifiableCredentialService)
                 .generateSignedVerifiableCredentialJwt(
@@ -263,9 +285,6 @@ class IssueCredentialHandlerTest {
                                 .awsErrorDetails(awsErrorDetails)
                                 .build());
 
-        when(mockEventProbe.counterMetric(LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR))
-                .thenReturn(mockEventProbe);
-
         APIGatewayProxyResponseEvent response = handler.handleRequest(event, context);
 
         verify(mockSessionService).getSessionByAccessToken(accessToken);
@@ -291,5 +310,20 @@ class IssueCredentialHandlerTest {
                         .serialize();
 
         event.setBody(requestJWT);
+    }
+
+    private void mockServiceFactoryBehaviour() {
+        when(mockServiceFactory.getCommonLibConfigurationService())
+                .thenReturn(mockCommonLibConfigurationService);
+
+        when(mockServiceFactory.getEventProbe()).thenReturn(mockEventProbe);
+
+        when(mockServiceFactory.getSessionService()).thenReturn(mockSessionService);
+        when(mockServiceFactory.getAuditService()).thenReturn(mockAuditService);
+
+        when(mockServiceFactory.getPersonIdentityService()).thenReturn(mockPersonIdentityService);
+
+        when(mockServiceFactory.getResultItemStorageService())
+                .thenReturn(fraudResultItemStorageService);
     }
 }

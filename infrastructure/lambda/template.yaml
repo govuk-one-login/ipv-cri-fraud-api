@@ -228,6 +228,17 @@ Mappings:
       integration: "true"
       production: "true"
 
+  # Set as EnvVar on the CheckLambda
+  # devEnvironmentOnlyEnhancedDebug changes CRI behaviour
+  # Do not enable outside of Dev
+  DevEnvironmentOnlyEnhancedDebugMappingEnvVar:
+    Environment:
+      dev: "false"
+      build: "false"
+      staging: "false"
+      integration: "false"
+      production: "false"
+
 Resources:
 
 ####################################################################
@@ -427,6 +438,7 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-identitycheck"
           ENVIRONMENT: !Ref Environment
+          DEV_ENVIRONMENT_ONLY_ENHANCED_DEBUG: !FindInMap [ DevEnvironmentOnlyEnhancedDebugMappingEnvVar, Environment, !Ref Environment ]
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -487,7 +499,9 @@ Resources:
               Action:
                 - ssm:GetParametersByPath
               Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/clients/*"
+                - !Sub
+                  - "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${PREFIX}/CrosscoreV2"
+                  - PREFIX: !If [UseParameterPrefix, !Ref ParameterPrefix , !Ref AWS::StackName]
         - SQSSendMessagePolicy:
             QueueName: !ImportValue AuditEventQueueName
 
@@ -763,8 +777,6 @@ Resources:
       Type: String
       Value: !FindInMap [ JwtTtlUnitMapping, Environment, !Ref Environment ]
       Description: The unit for the time-to-live for an JWT e.g. (MONTHS)
-
-
 
   LoggingKmsKey:
     Type: AWS::KMS::Key

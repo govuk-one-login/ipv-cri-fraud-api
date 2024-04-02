@@ -41,7 +41,8 @@ dependencies {
 			"uk.org.webcompere:system-stubs-core:${dependencyVersions.webcompere_version}",
 			"uk.org.webcompere:system-stubs-jupiter:${dependencyVersions.webcompere_version}",
 			"au.com.dius.pact:provider:${dependencyVersions.pact_provider_version}",
-			"au.com.dius.pact.provider:junit5:${dependencyVersions.pact_provider_version}"
+			"au.com.dius.pact.provider:junit5:${dependencyVersions.pact_provider_version}",
+			"org.slf4j:slf4j-log4j12:${dependencyVersions.slf4j_log4j12_version}"
 }
 
 tasks.register('buildZip', Zip) {

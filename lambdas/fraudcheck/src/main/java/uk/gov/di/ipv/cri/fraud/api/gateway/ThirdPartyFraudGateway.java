@@ -16,12 +16,12 @@ import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationReque
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.IdentityVerificationResponse;
 import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckHttpRetryStatusConfig;
-import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryStatusConfig;
-import uk.gov.di.ipv.cri.fraud.api.service.HttpRetryer;
-import uk.gov.di.ipv.cri.fraud.api.util.HTTPReply;
 import uk.gov.di.ipv.cri.fraud.library.config.HttpRequestConfig;
 import uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
+import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryStatusConfig;
+import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryer;
+import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
 
 import java.io.IOException;
 import java.time.Clock;
@@ -49,7 +49,7 @@ public class ThirdPartyFraudGateway {
 
     private static final String APPLICATION_JSON_HEADER = "application/json";
 
-    private final FraudCheckConfigurationService fraudConfigurationService;
+    private final FraudCheckConfigurationService fraudCheckConfigurationService;
     private final IdentityVerificationRequestMapper requestMapper;
     private final IdentityVerificationResponseMapper responseMapper;
     private final ObjectMapper objectMapper;
@@ -71,19 +71,19 @@ public class ThirdPartyFraudGateway {
             IdentityVerificationRequestMapper requestMapper,
             IdentityVerificationResponseMapper responseMapper,
             ObjectMapper objectMapper,
-            FraudCheckConfigurationService fraudConfigurationService,
+            FraudCheckConfigurationService fraudCheckConfigurationService,
             EventProbe eventProbe) {
         Objects.requireNonNull(httpRetryer, "httpClient must not be null");
         Objects.requireNonNull(requestMapper, "requestMapper must not be null");
         Objects.requireNonNull(responseMapper, "responseMapper must not be null");
         Objects.requireNonNull(objectMapper, "objectMapper must not be null");
         Objects.requireNonNull(
-                fraudConfigurationService, "fraudCheckConfigurationService must not be null");
+                fraudCheckConfigurationService, "fraudCheckConfigurationService must not be null");
         this.httpRetryer = httpRetryer;
         this.requestMapper = requestMapper;
         this.responseMapper = responseMapper;
         this.objectMapper = objectMapper;
-        this.fraudConfigurationService = fraudConfigurationService;
+        this.fraudCheckConfigurationService = fraudCheckConfigurationService;
         this.eventProbe = eventProbe;
         this.clock = Clock.systemUTC();
 
@@ -100,7 +100,8 @@ public class ThirdPartyFraudGateway {
             throws OAuthErrorResponseException {
         LOGGER.info("Mapping person to {} request", REQUEST_NAME);
 
-        String tenantId = fraudConfigurationService.getCrosscoreV2Configuration().getTenantId();
+        String tenantId =
+                fraudCheckConfigurationService.getCrosscoreV2Configuration().getTenantId();
 
         IdentityVerificationRequest apiRequest =
                 requestMapper.mapPersonIdentity(personIdentity, tenantId);
@@ -163,7 +164,9 @@ public class ThirdPartyFraudGateway {
     private HttpPost httpRequestBuilder(String requestBody, String token) {
         HttpPost request =
                 new HttpPost(
-                        fraudConfigurationService.getCrosscoreV2Configuration().getEndpointUri());
+                        fraudCheckConfigurationService
+                                .getCrosscoreV2Configuration()
+                                .getEndpointUri());
         request.addHeader("Content-Type", APPLICATION_JSON_HEADER);
         request.addHeader("Accept", APPLICATION_JSON_HEADER);
         request.addHeader("Authorization", "Bearer " + token);

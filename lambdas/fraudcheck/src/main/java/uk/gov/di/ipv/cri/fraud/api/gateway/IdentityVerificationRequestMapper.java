@@ -19,6 +19,8 @@ public class IdentityVerificationRequestMapper {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
+    private static final String MAIN_CONTACT = "MAINCONTACT_1";
+
     public IdentityVerificationRequestMapper() {
         // No Args constructor
     }
@@ -31,7 +33,7 @@ public class IdentityVerificationRequestMapper {
 
         Payload apiRequestPayload = new Payload();
         Contact contact = new Contact();
-        contact.setId("MAINCONTACT_1");
+        contact.setId(MAIN_CONTACT);
 
         PersonDetails contactPersonDetails = new PersonDetails();
         contactPersonDetails.setDateOfBirth(
@@ -52,7 +54,6 @@ public class IdentityVerificationRequestMapper {
         Application application = new Application();
         application.setApplicants(List.of(applicant));
         application.setProductDetails(null);
-        // application.setOriginalRequestTime(Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
 
         apiRequestPayload.setApplication(application);
         apiRequestPayload.setSource("WEB");
@@ -72,7 +73,7 @@ public class IdentityVerificationRequestMapper {
 
         Payload apiRequestPayload = new Payload();
         Contact contact = new Contact();
-        contact.setId("MAINCONTACT_1");
+        contact.setId(MAIN_CONTACT);
 
         PersonDetails contactPersonDetails = new PersonDetails();
         contactPersonDetails.setDateOfBirth(
@@ -147,7 +148,7 @@ public class IdentityVerificationRequestMapper {
     private Applicant createApplicant() {
         Applicant applicant = new Applicant();
         applicant.setId("APPLICANT_1");
-        applicant.setContactId("MAINCONTACT_1");
+        applicant.setContactId(MAIN_CONTACT);
         applicant.setType("INDIVIDUAL");
         applicant.setApplicantType("MAIN_APPLICANT");
         applicant.setConsent(true);
@@ -157,7 +158,7 @@ public class IdentityVerificationRequestMapper {
     private Applicant createPEPApplicant() {
         Applicant applicant = new Applicant();
         applicant.setId("APPLICANT_1");
-        applicant.setContactId("MAINCONTACT_1");
+        applicant.setContactId(MAIN_CONTACT);
         applicant.setType(null);
         applicant.setApplicantType("APPLICANT");
         applicant.setConsent(true);

@@ -5,9 +5,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum ErrorResponse {
-    FAILED_TO_PARSE_DRIVING_PERMIT_FORM_DATA(1000, "Failed to parse Driving Permit form data"),
+    FAILED_TO_RETRIEVE_PERSON_IDENTITY(1000, "Failed to retrieve retrieve personIdentity"),
     FORM_DATA_FAILED_VALIDATION(1001, "Form Data failed validation"),
     TOO_MANY_RETRY_ATTEMPTS(1002, "Too many retry attempts made"),
+
+    IDENTITY_VERIFICATION_UNSUCCESSFUL(1003, "identity verification unsuccessful"),
 
     FAILED_TO_RETRIEVE_HTTP_RESPONSE_BODY(1099, "Failed to retrieve http response body"),
 

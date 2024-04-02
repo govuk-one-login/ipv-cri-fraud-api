@@ -1,5 +1,7 @@
 package uk.gov.di.ipv.cri.fraud.api.service;
 
+import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryStatusConfig;
+
 import java.util.List;
 
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.TOKEN_HTTP_RETRYER_REQUEST_SEND_FAIL;

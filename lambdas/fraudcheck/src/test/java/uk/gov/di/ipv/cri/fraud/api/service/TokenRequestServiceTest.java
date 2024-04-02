@@ -22,9 +22,10 @@ import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.TokenResponse;
 import uk.gov.di.ipv.cri.fraud.api.persistence.item.TokenItem;
-import uk.gov.di.ipv.cri.fraud.api.util.HTTPReply;
 import uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
+import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryer;
+import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
 
 import java.io.IOException;
 import java.time.Instant;

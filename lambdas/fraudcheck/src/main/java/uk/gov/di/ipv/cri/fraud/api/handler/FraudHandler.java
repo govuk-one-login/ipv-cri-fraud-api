@@ -4,8 +4,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.nimbusds.oauth2.sdk.OAuth2Error;
 import org.apache.http.HttpException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,8 +16,6 @@ import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverage
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventContext;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
-import uk.gov.di.ipv.cri.common.library.error.ErrorResponse;
-import uk.gov.di.ipv.cri.common.library.persistence.DataStore;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
@@ -28,33 +25,51 @@ import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyFraudGateway;
 import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyPepGateway;
+import uk.gov.di.ipv.cri.fraud.api.service.ActivityHistoryScoreCalculator;
+import uk.gov.di.ipv.cri.fraud.api.service.ContraIndicatorMapper;
 import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationService;
-import uk.gov.di.ipv.cri.fraud.api.service.ServiceFactory;
+import uk.gov.di.ipv.cri.fraud.api.service.PersonIdentityValidator;
+import uk.gov.di.ipv.cri.fraud.api.service.ThirdPartyAPIServiceFactory;
 import uk.gov.di.ipv.cri.fraud.api.util.RequestSentAuditHelper;
-import uk.gov.di.ipv.cri.fraud.api.util.SleepHelper;
+import uk.gov.di.ipv.cri.fraud.library.config.ParameterStoreParameters;
+import uk.gov.di.ipv.cri.fraud.library.error.CommonExpressOAuthError;
+import uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse;
+import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
+import uk.gov.di.ipv.cri.fraud.library.metrics.Definitions;
 import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
+import uk.gov.di.ipv.cri.fraud.library.service.ParameterStoreService;
+import uk.gov.di.ipv.cri.fraud.library.service.ResultItemStorageService;
+import uk.gov.di.ipv.cri.fraud.library.service.ServiceFactory;
+import uk.gov.di.ipv.cri.fraud.library.service.parameterstore.ParameterPrefix;
+import uk.gov.di.ipv.cri.fraud.library.util.SleepHelper;
 
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
-import java.util.UUID;
-
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_IDENTITY_CHECK_COMPLETED_OK;
 
 public class FraudHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
+    // We need this first and static for it to be created as soon as possible during function init
+    private static final long FUNCTION_INIT_START_TIME_MILLISECONDS = System.currentTimeMillis();
+
     private static final Logger LOGGER = LogManager.getLogger();
-    private final IdentityVerificationService identityVerificationService;
-    private final ObjectMapper objectMapper;
-    private final EventProbe eventProbe;
-    private final PersonIdentityService personIdentityService;
-    private final SessionService sessionService;
-    private final DataStore<FraudResultItem> dataStore;
-    private final FraudCheckConfigurationService fraudCheckConfigurationService;
-    private final AuditService auditService;
+
+    private static final boolean DEV_ENVIRONMENT_ONLY_ENHANCED_DEBUG =
+            Boolean.parseBoolean(System.getenv("DEV_ENVIRONMENT_ONLY_ENHANCED_DEBUG"));
+
+    private EventProbe eventProbe;
+
+    private SessionService sessionService;
+    private AuditService auditService;
+
+    private PersonIdentityService personIdentityService;
+
+    private IdentityVerificationService identityVerificationService;
+
+    private ResultItemStorageService<FraudResultItem> fraudResultItemStorageService;
 
     // Max Wait is FRAUD timeout + PEP timeout + some time for processing a result
     private static final int MAX_ATTEMPT_DUPLICATE_CHECK_WAIT_DURATION_MS =
@@ -65,40 +80,88 @@ public class FraudHandler
     // The lambda will recheck for a result at this interval
     private static final int DUPLICATE_CHECK_POLLING_INTERVAL_MS = 1000;
 
-    public FraudHandler() throws NoSuchAlgorithmException, InvalidKeyException, HttpException {
-        this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        ServiceFactory serviceFactory = new ServiceFactory(objectMapper);
-        this.eventProbe = new EventProbe();
-        this.identityVerificationService = serviceFactory.getIdentityVerificationService();
-        this.personIdentityService = new PersonIdentityService();
-        this.sessionService = new SessionService();
-        this.fraudCheckConfigurationService = serviceFactory.getFraudCheckConfigurationService();
-        this.dataStore =
-                new DataStore<>(
-                        fraudCheckConfigurationService.getFraudResultTableName(),
-                        FraudResultItem.class,
-                        DataStore.getClient());
-        this.auditService = serviceFactory.getAuditService();
-    }
+    private long fraudResultItemTtl;
+
+    private long functionInitMetricLatchedValue = 0;
+    private boolean functionInitMetricCaptured = false;
 
     @ExcludeFromGeneratedCoverageReport
+    public FraudHandler() throws HttpException {
+        ServiceFactory serviceFactory = new ServiceFactory();
+
+        FraudCheckConfigurationService fraudCheckConfigurationServiceNotYetAssigned =
+                createFraudCheckConfigurationService(serviceFactory);
+
+        IdentityVerificationService identityVerificationServiceNotAssignedYet =
+                createIdentityVerificationService(
+                        serviceFactory, fraudCheckConfigurationServiceNotYetAssigned);
+
+        initializeLambdaServices(serviceFactory, identityVerificationServiceNotAssignedYet);
+    }
+
     public FraudHandler(
             ServiceFactory serviceFactory,
-            ObjectMapper objectMapper,
-            EventProbe eventProbe,
-            PersonIdentityService personIdentityService,
-            SessionService sessionService,
-            DataStore<FraudResultItem> dataStore,
-            FraudCheckConfigurationService fraudCheckConfigurationService,
-            AuditService auditService) {
-        this.identityVerificationService = serviceFactory.getIdentityVerificationService();
-        this.objectMapper = objectMapper;
-        this.eventProbe = eventProbe;
-        this.personIdentityService = personIdentityService;
-        this.sessionService = sessionService;
-        this.fraudCheckConfigurationService = fraudCheckConfigurationService;
-        this.dataStore = dataStore;
-        this.auditService = auditService;
+            IdentityVerificationService identityVerificationService) {
+        initializeLambdaServices(serviceFactory, identityVerificationService);
+    }
+
+    public void initializeLambdaServices(
+            ServiceFactory serviceFactory,
+            IdentityVerificationService identityVerificationService) {
+
+        this.eventProbe = serviceFactory.getEventProbe();
+        this.sessionService = serviceFactory.getSessionService();
+        this.auditService = serviceFactory.getAuditService();
+        this.personIdentityService = serviceFactory.getPersonIdentityService();
+
+        ParameterStoreService parameterStoreService = serviceFactory.getParameterStoreService();
+
+        this.fraudResultItemStorageService = serviceFactory.getResultItemStorageService();
+
+        fraudResultItemTtl =
+                Long.parseLong(
+                        parameterStoreService.getParameterValue(
+                                ParameterPrefix.COMMON_API,
+                                ParameterStoreParameters.FRAUD_RESULT_ITEM_TTL_PARAMETER));
+
+        this.identityVerificationService = identityVerificationService;
+
+        // Runtime/SnapStart function init duration
+        functionInitMetricLatchedValue =
+                System.currentTimeMillis() - FUNCTION_INIT_START_TIME_MILLISECONDS;
+    }
+
+    private IdentityVerificationService createIdentityVerificationService(
+            ServiceFactory serviceFactory,
+            FraudCheckConfigurationService fraudCheckConfigurationService)
+            throws HttpException {
+
+        final ThirdPartyAPIServiceFactory thirdPartyAPIServiceFactory =
+                new ThirdPartyAPIServiceFactory(serviceFactory, fraudCheckConfigurationService);
+
+        final ActivityHistoryScoreCalculator activityHistoryScoreCalculator =
+                new ActivityHistoryScoreCalculator();
+
+        final PersonIdentityValidator personIdentityValidator = new PersonIdentityValidator();
+
+        final ContraIndicatorMapper contraindicationMapper =
+                new ContraIndicatorMapper(fraudCheckConfigurationService);
+
+        return new IdentityVerificationService(
+                serviceFactory,
+                thirdPartyAPIServiceFactory,
+                personIdentityValidator,
+                contraindicationMapper,
+                activityHistoryScoreCalculator,
+                fraudCheckConfigurationService);
+    }
+
+    private FraudCheckConfigurationService createFraudCheckConfigurationService(
+            ServiceFactory serviceFactory) {
+
+        ParameterStoreService parameterStoreService = serviceFactory.getParameterStoreService();
+
+        return new FraudCheckConfigurationService(parameterStoreService);
     }
 
     @Override
@@ -112,6 +175,31 @@ public class FraudHandler
                     "Initiating lambda {} version {}",
                     context.getFunctionName(),
                     context.getFunctionVersion());
+
+            // Recorded here as sending metrics during function init may fail depending on lambda
+            // config
+            if (!functionInitMetricCaptured) {
+                eventProbe.counterMetric(
+                        Definitions.LAMBDA_FRAUD_CHECK_FUNCTION_INIT_DURATION,
+                        functionInitMetricLatchedValue);
+                LOGGER.info("Lambda function init duration {}ms", functionInitMetricLatchedValue);
+                functionInitMetricCaptured = true;
+            }
+
+            // Lambda Lifetime
+            long runTimeDuration =
+                    System.currentTimeMillis() - FUNCTION_INIT_START_TIME_MILLISECONDS;
+            Duration duration = Duration.of(runTimeDuration, ChronoUnit.MILLIS);
+            String formattedDuration =
+                    String.format(
+                            "%d:%02d:%02d",
+                            duration.toHours(), duration.toMinutesPart(), duration.toSecondsPart());
+            LOGGER.info(
+                    "Lambda {}, Lifetime duration {}, {}ms",
+                    context.getFunctionName(),
+                    formattedDuration,
+                    runTimeDuration);
+
             Map<String, String> headers = input.getHeaders();
             final String sessionId = headers.get("session_id");
             LOGGER.info("Extracting session from header ID {}", sessionId);
@@ -124,18 +212,23 @@ public class FraudHandler
                 return completedOk();
             }
 
-            PersonIdentity personIdentity = null;
-            if (null != sessionId) {
-                personIdentity =
-                        personIdentityService.getPersonIdentity(UUID.fromString(sessionId));
-            }
+            PersonIdentity personIdentity =
+                    personIdentityService.getPersonIdentity(sessionItem.getSessionId());
             if (null == personIdentity) {
-                LOGGER.info("Person not found for session {}", sessionId);
-                personIdentity = objectMapper.readValue(input.getBody(), PersonIdentity.class);
+                String message =
+                        String.format(
+                                "Could not retrieve person identity for session %s",
+                                sessionItem.getSessionId());
+
+                LOGGER.error(message);
+
+                throw new OAuthErrorResponseException(
+                        HttpStatusCode.INTERNAL_SERVER_ERROR,
+                        ErrorResponse.FAILED_TO_RETRIEVE_PERSON_IDENTITY);
             }
 
             LOGGER.info("Verifying identity...");
-            IdentityVerificationResult result =
+            IdentityVerificationResult identityVerificationResult =
                     identityVerificationService.verifyIdentity(
                             personIdentity, sessionItem, headers);
 
@@ -146,47 +239,59 @@ public class FraudHandler
                                     personIdentity),
                             input.getHeaders(),
                             sessionItem));
-            if (!result.isSuccess()) {
-                LOGGER.info("Third party failed to assert identity. Error {}", result.getError());
 
-                if (result.getError().equals("PersonIdentityValidationError")) {
-                    LOGGER.error(String.join(",", result.getValidationErrors()));
+            if (!identityVerificationResult.isSuccess()) {
+                LOGGER.info(
+                        "Third party failed to assert identity. Error {}",
+                        identityVerificationResult.getError());
+
+                if (identityVerificationResult.getError().equals("PersonIdentityValidationError")) {
+                    String errorLogMessage =
+                            String.join(",", identityVerificationResult.getValidationErrors());
+                    LOGGER.error(errorLogMessage);
                 }
 
-                eventProbe.counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR);
-
-                return ApiGatewayResponseGenerator.proxyJsonResponse(
+                // Caught below in the common OAuthErrorResponseException handler
+                throw new OAuthErrorResponseException(
                         HttpStatusCode.INTERNAL_SERVER_ERROR,
-                        Map.of("error_description", result.getError()));
+                        ErrorResponse.IDENTITY_VERIFICATION_UNSUCCESSFUL);
             }
             LOGGER.info("Identity verified.");
 
             LOGGER.info("Generating authorization code...");
             sessionService.createAuthorizationCode(sessionItem);
 
-            // Result for later use in VC generation
-            final FraudResultItem fraudResultItem =
-                    new FraudResultItem(
-                            UUID.fromString(sessionId),
-                            result.getContraIndicators(),
-                            result.getIdentityCheckScore(),
-                            result.getActivityHistoryScore(),
-                            result.getDecisionScore());
-            fraudResultItem.setTtl(
-                    fraudCheckConfigurationService.getFraudResultItemExpirationEpoch());
-            fraudResultItem.setTransactionId(result.getTransactionId());
-            fraudResultItem.setPepTransactionId(result.getPepTransactionId());
-
-            fraudResultItem.setCheckDetails(result.getChecksSucceeded());
-            fraudResultItem.setFailedCheckDetails(result.getChecksFailed());
-
-            fraudResultItem.setActivityFrom(result.getActivityFrom());
-
             LOGGER.info("Saving fraud results...");
-            dataStore.create(fraudResultItem);
+            FraudResultItem fraudResultItem =
+                    createFraudResultItem(identityVerificationResult, sessionItem);
+            fraudResultItemStorageService.saveResultItem(fraudResultItem);
             LOGGER.info("Fraud results saved.");
 
             return completedOk();
+        } catch (OAuthErrorResponseException e) {
+            // Fraud Check Lambda Completed with an Error
+            eventProbe.counterMetric(Definitions.LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR);
+
+            CommonExpressOAuthError commonExpressOAuthError;
+
+            if (!DEV_ENVIRONMENT_ONLY_ENHANCED_DEBUG) {
+                // Standard oauth compliant route
+                commonExpressOAuthError = new CommonExpressOAuthError(OAuth2Error.SERVER_ERROR);
+            } else {
+                // Debug in DEV only as Oauth errors appear in the redirect url
+                // This will output the specific error message
+                // Note Unit tests expect server error (correctly)
+                // and will fail if this is set (during unit tests)
+                String customOAuth2ErrorDescription = e.getErrorReason();
+
+                commonExpressOAuthError =
+                        new CommonExpressOAuthError(
+                                OAuth2Error.SERVER_ERROR, customOAuth2ErrorDescription);
+            }
+
+            return ApiGatewayResponseGenerator.proxyJsonResponse(
+                    e.getStatusCode(), // Status Code determined by throw location
+                    commonExpressOAuthError);
         } catch (Exception e) {
             // This is where unexpected exceptions will reach (null pointers etc)
             // We should not log unknown exceptions, due to possibility of PII
@@ -197,17 +302,49 @@ public class FraudHandler
 
             LOGGER.debug(e.getMessage(), e);
 
-            eventProbe.counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR);
+            eventProbe.counterMetric(Definitions.LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR);
 
+            // Oauth compliant response
             return ApiGatewayResponseGenerator.proxyJsonResponse(
-                    HttpStatusCode.INTERNAL_SERVER_ERROR, ErrorResponse.GENERIC_SERVER_ERROR);
+                    HttpStatusCode.INTERNAL_SERVER_ERROR,
+                    new CommonExpressOAuthError(OAuth2Error.SERVER_ERROR));
         }
+    }
+
+    private FraudResultItem createFraudResultItem(
+            IdentityVerificationResult identityVerificationResult, SessionItem sessionItem) {
+
+        // Result for later use in VC generation
+        final FraudResultItem fraudResultItem =
+                new FraudResultItem(
+                        sessionItem.getSessionId(),
+                        identityVerificationResult.getContraIndicators(),
+                        identityVerificationResult.getIdentityCheckScore(),
+                        identityVerificationResult.getActivityHistoryScore(),
+                        identityVerificationResult.getDecisionScore());
+
+        // Expiry
+        fraudResultItem.setTtl(
+                Clock.systemUTC()
+                        .instant()
+                        .plus(fraudResultItemTtl, ChronoUnit.SECONDS)
+                        .getEpochSecond());
+
+        fraudResultItem.setTransactionId(identityVerificationResult.getTransactionId());
+        fraudResultItem.setPepTransactionId(identityVerificationResult.getPepTransactionId());
+
+        fraudResultItem.setCheckDetails(identityVerificationResult.getChecksSucceeded());
+        fraudResultItem.setFailedCheckDetails(identityVerificationResult.getChecksFailed());
+
+        fraudResultItem.setActivityFrom(identityVerificationResult.getActivityFrom());
+
+        return fraudResultItem;
     }
 
     private APIGatewayProxyResponseEvent completedOk() {
 
         // Lambda Complete No Error
-        eventProbe.counterMetric(LAMBDA_IDENTITY_CHECK_COMPLETED_OK);
+        eventProbe.counterMetric(Definitions.LAMBDA_IDENTITY_CHECK_COMPLETED_OK);
 
         return ApiGatewayResponseGenerator.proxyJsonResponse(HttpStatusCode.OK, null);
     }
@@ -243,7 +380,7 @@ public class FraudHandler
             do {
                 LOGGER.info("Searching for a completed result");
                 FraudResultItem fraudResultItem =
-                        dataStore.getItem(sessionItem.getSessionId().toString());
+                        fraudResultItemStorageService.getResultItem(sessionItem.getSessionId());
 
                 if (fraudResultItem == null) {
                     LOGGER.info("No result found, waiting {}", DUPLICATE_CHECK_POLLING_INTERVAL_MS);

@@ -18,7 +18,9 @@ import uk.gov.di.ipv.cri.fraud.api.domain.check.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.check.PepCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyFraudGateway;
 import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyPepGateway;
+import uk.gov.di.ipv.cri.fraud.library.domain.CheckType;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
+import uk.gov.di.ipv.cri.fraud.library.service.ServiceFactory;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -28,10 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static uk.gov.di.ipv.cri.fraud.library.domain.CheckType.IDENTITY_THEFT_CHECK;
-import static uk.gov.di.ipv.cri.fraud.library.domain.CheckType.IMPERSONATION_RISK_CHECK;
-import static uk.gov.di.ipv.cri.fraud.library.domain.CheckType.MORTALITY_CHECK;
-import static uk.gov.di.ipv.cri.fraud.library.domain.CheckType.SYNTHETIC_IDENTITY_CHECK;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.FRAUD_CHECK_CI_PREFIX;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.FRAUD_CHECK_REQUEST_FAILED;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.FRAUD_CHECK_REQUEST_SUCCEEDED;
@@ -52,44 +50,47 @@ public class IdentityVerificationService {
             "FraudCheckResult had no error message.";
     private static final String ERROR_PEP_CHECK_RESULT_NO_ERR_MSG =
             "PepCheckResult had no error message.";
-    private final ThirdPartyFraudGateway thirdPartyGateway;
-    private final ThirdPartyPepGateway thirdPartyPepGateway;
-
-    private final PersonIdentityValidator personIdentityValidator;
-    private final ContraindicationMapper contraindicationMapper;
-    private final IdentityScoreCalculator identityScoreCalculator;
-    private final ActivityHistoryScoreCalculator activityHistoryScoreCalculator;
-    private final FraudCheckConfigurationService fraudCheckConfigurationService;
-    private final TokenRequestService tokenRequestService;
-    private final AuditService auditService;
-
-    private final EventProbe eventProbe;
 
     private final ObjectMapper objectMapper;
 
-    IdentityVerificationService(
-            ThirdPartyFraudGateway thirdPartyGateway,
-            ThirdPartyPepGateway thirdPartyPepGateway,
-            PersonIdentityValidator personIdentityValidator,
-            ContraindicationMapper contraindicationMapper,
-            IdentityScoreCalculator identityScoreCalculator,
-            ActivityHistoryScoreCalculator activityHistoryScoreCalculator,
-            AuditService auditService,
-            FraudCheckConfigurationService fraudCheckConfigurationService,
-            EventProbe eventProbe,
-            TokenRequestService tokenRequestService) {
-        this.thirdPartyGateway = thirdPartyGateway;
-        this.thirdPartyPepGateway = thirdPartyPepGateway;
-        this.personIdentityValidator = personIdentityValidator;
-        this.contraindicationMapper = contraindicationMapper;
-        this.identityScoreCalculator = identityScoreCalculator;
-        this.activityHistoryScoreCalculator = activityHistoryScoreCalculator;
-        this.auditService = auditService;
-        this.fraudCheckConfigurationService = fraudCheckConfigurationService;
-        this.eventProbe = eventProbe;
-        this.tokenRequestService = tokenRequestService;
+    private final EventProbe eventProbe;
+    private final AuditService auditService;
 
-        this.objectMapper = new ObjectMapper();
+    private final TokenRequestService tokenRequestService;
+    private final ThirdPartyFraudGateway thirdPartyFraudGateway;
+    private final ThirdPartyPepGateway thirdPartyPepGateway;
+
+    private final PersonIdentityValidator personIdentityValidator;
+    private final ContraIndicatorMapper contraindicationMapper;
+    private final IdentityScoreCalculator identityScoreCalculator;
+    private final ActivityHistoryScoreCalculator activityHistoryScoreCalculator;
+    private final FraudCheckConfigurationService fraudCheckConfigurationService;
+
+    public IdentityVerificationService(
+            ServiceFactory serviceFactory,
+            ThirdPartyAPIServiceFactory thirdPartyAPIServiceFactory,
+            PersonIdentityValidator personIdentityValidator,
+            ContraIndicatorMapper contraindicationMapper,
+            ActivityHistoryScoreCalculator activityHistoryScoreCalculator,
+            FraudCheckConfigurationService fraudCheckConfigurationService) {
+
+        this.eventProbe = serviceFactory.getEventProbe();
+        this.auditService = serviceFactory.getAuditService();
+        this.objectMapper = serviceFactory.getObjectMapper();
+
+        this.tokenRequestService = thirdPartyAPIServiceFactory.getTokenRequestService();
+        this.thirdPartyFraudGateway = thirdPartyAPIServiceFactory.getThirdPartyFraudGateway();
+        this.thirdPartyPepGateway = thirdPartyAPIServiceFactory.getThirdPartyPepGateway();
+
+        this.personIdentityValidator = personIdentityValidator;
+
+        this.contraindicationMapper = contraindicationMapper;
+
+        this.identityScoreCalculator = new IdentityScoreCalculator(fraudCheckConfigurationService);
+
+        this.activityHistoryScoreCalculator = activityHistoryScoreCalculator;
+
+        this.fraudCheckConfigurationService = fraudCheckConfigurationService;
     }
 
     public IdentityVerificationResult verifyIdentity(
@@ -124,7 +125,7 @@ public class IdentityVerificationService {
                 fraudIdentityVerificationResult.isSuccess()
                         && fraudIdentityVerificationResult.getChecksFailed().isEmpty();
 
-        if (pepValidToPerform && fraudCheckConfigurationService.getPepEnabled()) {
+        if (pepValidToPerform) {
             pepIdentityVerificationResult =
                     pepCheckStep(
                             personIdentity,
@@ -199,15 +200,15 @@ public class IdentityVerificationService {
         // Requests split into two try blocks to differentiate tech failures in fraud from pep
         FraudCheckResult fraudCheckResult;
         try {
-            fraudCheckResult = thirdPartyGateway.performFraudCheck(personIdentity, token);
+            fraudCheckResult = thirdPartyFraudGateway.performFraudCheck(personIdentity, token);
         } catch (Exception e) {
             LOGGER.error(ERROR_MSG_CONTEXT, e);
             eventProbe.counterMetric(FRAUD_CHECK_REQUEST_FAILED);
 
             String errorMessage = e.getMessage();
 
-            if (e instanceof OAuthErrorResponseException) {
-                errorMessage = ((OAuthErrorResponseException) e).getErrorReason();
+            if (e instanceof OAuthErrorResponseException oAuthErrorResponseException) {
+                errorMessage = oAuthErrorResponseException.getErrorReason();
             }
 
             identityVerificationResult.setError(ERROR_MSG_CONTEXT + ": " + errorMessage);
@@ -280,7 +281,7 @@ public class IdentityVerificationService {
                 activityHistoryScoreCalculator.calculateActivityHistoryScore(
                         fraudCheckResult.getOldestRecordDateInMonths());
 
-        LOGGER.info("Activity history score {}", String.valueOf(activityHistoryScore));
+        LOGGER.info("Activity history score {}", activityHistoryScore);
 
         // For deciding if a pepCheck should be done
         int decisionScore = Integer.parseInt(fraudCheckResult.getDecisionScore());
@@ -300,12 +301,17 @@ public class IdentityVerificationService {
                 fraudIdentityCheckScore);
         eventProbe.counterMetric(FRAUD_CHECK_REQUEST_SUCCEEDED);
 
+        if (activityHistoryScore > 0) {
+            checksSucceeded.add(CheckType.ACTIVITY_HISTORY_CHECK.toString());
+        }
+        // else add ACTIVITY_HISTORY_CHECK to checksFailed
+
         if (decisionScore <= fraudCheckConfigurationService.getNoFileFoundThreshold()) {
 
             // Fraud Checks that have failed if decisionScore <= NoFileFoundThreshold
-            checksFailed.add(MORTALITY_CHECK.toString());
-            checksFailed.add(IDENTITY_THEFT_CHECK.toString());
-            checksFailed.add(SYNTHETIC_IDENTITY_CHECK.toString());
+            checksFailed.add(CheckType.MORTALITY_CHECK.toString());
+            checksFailed.add(CheckType.IDENTITY_THEFT_CHECK.toString());
+            checksFailed.add(CheckType.SYNTHETIC_IDENTITY_CHECK.toString());
 
             LOGGER.info(
                     "User was file not found with decision score {} so PEP check will be skipped",
@@ -324,9 +330,9 @@ public class IdentityVerificationService {
                     "fraudIdentityCheckScore {} so PEP check will be skipped",
                     fraudIdentityCheckScore);
 
-            checksFailed.add(MORTALITY_CHECK.toString());
-            checksFailed.add(IDENTITY_THEFT_CHECK.toString());
-            checksFailed.add(SYNTHETIC_IDENTITY_CHECK.toString());
+            checksFailed.add(CheckType.MORTALITY_CHECK.toString());
+            checksFailed.add(CheckType.IDENTITY_THEFT_CHECK.toString());
+            checksFailed.add(CheckType.SYNTHETIC_IDENTITY_CHECK.toString());
 
             identityVerificationResult.setChecksFailed(checksFailed);
 
@@ -335,9 +341,9 @@ public class IdentityVerificationService {
 
         // Fraud Checks that have succeeded if decisionScore > NoFileFoundThreshold and score
         // currently 1
-        checksSucceeded.add(MORTALITY_CHECK.toString());
-        checksSucceeded.add(IDENTITY_THEFT_CHECK.toString());
-        checksSucceeded.add(SYNTHETIC_IDENTITY_CHECK.toString());
+        checksSucceeded.add(CheckType.MORTALITY_CHECK.toString());
+        checksSucceeded.add(CheckType.IDENTITY_THEFT_CHECK.toString());
+        checksSucceeded.add(CheckType.SYNTHETIC_IDENTITY_CHECK.toString());
 
         identityVerificationResult.setChecksSucceeded(checksSucceeded);
 
@@ -382,7 +388,7 @@ public class IdentityVerificationService {
 
             // IPR is present if a PEP check has been performed successfully irrelevant of
             // result
-            checksSucceeded.add(IMPERSONATION_RISK_CHECK.toString());
+            checksSucceeded.add(CheckType.IMPERSONATION_RISK_CHECK.toString());
             identityVerificationResult.setPepTransactionId(pepCheckResult.getTransactionId());
 
             String stringPepContraindications = String.join(", ", pepContraindications);
@@ -405,7 +411,7 @@ public class IdentityVerificationService {
         }
 
         // IPR is set as failed if the PEP check has been attempted but failed
-        checksFailed.add(IMPERSONATION_RISK_CHECK.toString());
+        checksFailed.add(CheckType.IMPERSONATION_RISK_CHECK.toString());
         identityVerificationResult.setChecksFailed(checksFailed);
 
         LOGGER.warn("Pep check failed");
@@ -471,7 +477,6 @@ public class IdentityVerificationService {
         if (null != fraudCheckResult.getOldestRecordDateInMonths()) {
             oldestRecordDate = dateNow.minusMonths(fraudCheckResult.getOldestRecordDateInMonths());
         }
-        String activityFrom = oldestRecordDate.withDayOfMonth(1).format(DateTimeFormatter.ISO_DATE);
-        return activityFrom;
+        return oldestRecordDate.withDayOfMonth(1).format(DateTimeFormatter.ISO_DATE);
     }
 }
