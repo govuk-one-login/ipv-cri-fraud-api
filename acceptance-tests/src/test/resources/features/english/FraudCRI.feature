@@ -10,21 +10,6 @@ Feature: Fraud CRI
     And JSON payload should contain JTI field
     And The test is complete and I close the driver
 
-#  To be removed after the test is moved to the front repo
-  @build-fraud @staging-fraud @integration-fraud @stub @uat
-  Scenario: Beta Banner Reject Analysis
-    Given I navigate to the IPV Core Stub
-    And I click the Fraud CRI for the testEnvironment
-    Then I search for user number 12 in the ThirdParty table
-    When I view the Beta banner
-    When the beta banner reads This is a new service – your feedback (opens in new tab) will help us to improve it.
-    And I select Reject analytics cookies button
-    Then I see the Reject Analysis sentence You've rejected additional cookies. You can change your cookie settings at any time.
-    Then  I select the link change your cookie settings
-    Then I check the page to change cookie preferences opens
-    And The test is complete and I close the driver
-
-  @build-fraud @staging-fraud @integration-fraud @stub @uat
   Scenario: User Journey Unhappy Path (STUB)
     Given I navigate to the IPV Core Stub
     And I click the Fraud CRI for the testEnvironment

@@ -35,38 +35,6 @@ public class FraudStepDefs extends FraudPageObject {
         searchForUATUser(number);
     }
 
-    @Given("I view the Beta banner")
-    public void iViewTheBetaBanner() {
-        betaBanner();
-    }
-
-    @Then("^the beta banner reads (.*)$")
-    public void betaBannerContainsText(String expectedText) {
-        betaBannerSentence(expectedText);
-    }
-
-    @And("^I select (.*) button$")
-    public void selectRejectAnalysisCookie(String rejectAnalyticsBtn) {
-        rejectAnalysisCookie(rejectAnalyticsBtn);
-    }
-
-    @Then("^I see the Reject Analysis sentence (.*)$")
-    public void
-            iSeeTheSenetenceYouVeRejectedAdditionalCookiesYouCanChangeYourCookieSettingsAtAnyTime(
-                    String rejectanalysisSentence) {
-        rejectCookieSentence(rejectanalysisSentence);
-    }
-
-    @And("^I select the link (.*)$")
-    public void iSelectTheLinkChangeYourCookieSettings(String changeCookieLink) {
-        AssertChangeCookieLink(changeCookieLink);
-    }
-
-    @Then("^I check the page to change cookie preferences opens$")
-    public void iCheckThePageToChangeCookiePreferencesOpens() {
-        AssertcookiePreferencePage();
-    }
-
     @And("^I navigate to the verifiable issuer to check for a (.*) response from thirdParty")
     public void navigateToVerifiableIssuer(String validOrInvalid) {
         navigateToResponse(validOrInvalid);
