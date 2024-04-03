@@ -20,6 +20,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.TestStrategyClientId;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.TokenResponse;
 import uk.gov.di.ipv.cri.fraud.api.persistence.item.TokenItem;
 import uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse;
@@ -144,7 +145,7 @@ class TokenRequestServiceTest {
                         eq("Token")))
                 .thenReturn(new HTTPReply(200, null, testTokenResponseString));
 
-        String tokenValue = tokenRequestService.requestToken(false);
+        String tokenValue = tokenRequestService.requestToken(false, TestStrategyClientId.NO_CHANGE);
 
         // (POST) Token
         InOrder inOrderMockHttpRetryerSequence = inOrder(mockHttpRetryer);
@@ -194,7 +195,9 @@ class TokenRequestServiceTest {
         OAuthErrorResponseException thrownException =
                 assertThrows(
                         OAuthErrorResponseException.class,
-                        () -> tokenRequestService.requestToken(true),
+                        () ->
+                                tokenRequestService.requestToken(
+                                        true, TestStrategyClientId.NO_CHANGE),
                         "Expected OAuthErrorResponseException");
 
         // (Post) Token
@@ -243,7 +246,9 @@ class TokenRequestServiceTest {
         OAuthErrorResponseException thrownException =
                 assertThrows(
                         OAuthErrorResponseException.class,
-                        () -> tokenRequestService.requestToken(true),
+                        () ->
+                                tokenRequestService.requestToken(
+                                        true, TestStrategyClientId.NO_CHANGE),
                         "Expected OAuthErrorResponseException");
 
         // (Post) Token
@@ -297,7 +302,9 @@ class TokenRequestServiceTest {
         OAuthErrorResponseException thrownException =
                 assertThrows(
                         OAuthErrorResponseException.class,
-                        () -> tokenRequestService.requestToken(true),
+                        () ->
+                                tokenRequestService.requestToken(
+                                        true, TestStrategyClientId.NO_CHANGE),
                         "Expected OAuthErrorResponseException");
 
         // (Post) Token
@@ -347,7 +354,9 @@ class TokenRequestServiceTest {
         OAuthErrorResponseException thrownException =
                 assertThrows(
                         OAuthErrorResponseException.class,
-                        () -> tokenRequestService.requestToken(true),
+                        () ->
+                                tokenRequestService.requestToken(
+                                        true, TestStrategyClientId.NO_CHANGE),
                         "Expected OAuthErrorResponseException");
 
         // (Post) Token
@@ -406,14 +415,16 @@ class TokenRequestServiceTest {
                 .thenReturn(new HTTPReply(200, null, testTokenResponseString));
         // Token put capture
         doNothing().when(mockTokenTable).putItem(dynamoPutItemTokenItemCaptor.capture());
-        String tokenResponseOne = tokenRequestService.requestToken(false);
+        String tokenResponseOne =
+                tokenRequestService.requestToken(false, TestStrategyClientId.NO_CHANGE);
         assertEquals(TEST_TOKEN_VALID_VALUE, tokenResponseOne);
 
         // Request two
         TokenItem testTokenFromDynamo = dynamoPutItemTokenItemCaptor.getValue();
         // Captured token get
         when(mockTokenTable.getItem(TOKEN_ITEM_KEY)).thenReturn(testTokenFromDynamo);
-        String tokenResponseTwo = tokenRequestService.requestToken(false);
+        String tokenResponseTwo =
+                tokenRequestService.requestToken(false, TestStrategyClientId.NO_CHANGE);
 
         assertEquals(tokenResponseOne, tokenResponseTwo);
 
@@ -470,7 +481,8 @@ class TokenRequestServiceTest {
                 .thenReturn(new HTTPReply(200, null, testTokenResponseString));
         // Token put capture
         doNothing().when(mockTokenTable).putItem(dynamoPutItemTokenItemCaptor.capture());
-        String tokenResponseOne = tokenRequestService.requestToken(false);
+        String tokenResponseOne =
+                tokenRequestService.requestToken(false, TestStrategyClientId.NO_CHANGE);
         assertEquals(TEST_TOKEN_VALID_VALUE, tokenResponseOne);
 
         // Request two
@@ -481,7 +493,8 @@ class TokenRequestServiceTest {
 
         // Captured token get
         when(mockTokenTable.getItem(TOKEN_ITEM_KEY)).thenReturn(testTokenFromDynamo);
-        String tokenResponseTwo = tokenRequestService.requestToken(false);
+        String tokenResponseTwo =
+                tokenRequestService.requestToken(false, TestStrategyClientId.NO_CHANGE);
 
         assertEquals(tokenResponseOne, tokenResponseTwo);
 
@@ -551,7 +564,9 @@ class TokenRequestServiceTest {
         OAuthErrorResponseException thrownException =
                 assertThrows(
                         OAuthErrorResponseException.class,
-                        () -> tokenRequestService.requestToken(true),
+                        () ->
+                                tokenRequestService.requestToken(
+                                        true, TestStrategyClientId.NO_CHANGE),
                         "Expected OAuthErrorResponseException");
 
         // (POST) Token
@@ -615,7 +630,9 @@ class TokenRequestServiceTest {
         OAuthErrorResponseException thrownException =
                 assertThrows(
                         OAuthErrorResponseException.class,
-                        () -> tokenRequestService.requestToken(true),
+                        () ->
+                                tokenRequestService.requestToken(
+                                        true, TestStrategyClientId.NO_CHANGE),
                         "Expected OAuthErrorResponseException");
 
         // (POST) Token
@@ -678,7 +695,9 @@ class TokenRequestServiceTest {
         OAuthErrorResponseException thrownException =
                 assertThrows(
                         OAuthErrorResponseException.class,
-                        () -> tokenRequestService.requestToken(true),
+                        () ->
+                                tokenRequestService.requestToken(
+                                        true, TestStrategyClientId.NO_CHANGE),
                         "Expected OAuthErrorResponseException");
 
         // (POST) Token

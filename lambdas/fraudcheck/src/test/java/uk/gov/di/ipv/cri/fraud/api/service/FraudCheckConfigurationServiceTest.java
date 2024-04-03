@@ -1,5 +1,6 @@
 package uk.gov.di.ipv.cri.fraud.api.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -10,7 +11,7 @@ import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
-import java.net.URI;
+import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 
@@ -34,7 +35,7 @@ class FraudCheckConfigurationServiceTest {
     @Mock private ParameterStoreService mockParameterStoreService;
 
     @Test
-    void shouldInitialiseConfigFieldsWhenValidInputProvided() {
+    void shouldInitialiseConfigFieldsWhenValidInputProvided() throws JsonProcessingException {
         environmentVariables.set("ENVIRONMENT", ENVIRONMENT);
         environmentVariables.set("AWS_REGION", AWS_REGION);
         environmentVariables.set("PARAMETER_PREFIX", PARAMETER_PREFIX);
@@ -59,6 +60,15 @@ class FraudCheckConfigurationServiceTest {
         String crosscoreV2TenantIdValue = "crosscoreV2TenantId";
         String crosscoreV2TokenIssuerValue = "crosscoreV2TokenIssuer";
 
+        // TestDataStrategy
+        String stubExperianEndpointValue = "http://localhostStub";
+        String UatExperianEndpointValue = "http://localhostUat";
+        String LiveExperianEndpointValue = "http://localhostLive";
+
+        String stubTokenEndpointValue = "http://localhostStub";
+        String UatTokenEndpointValue = "http://localhostUat";
+        String LiveTokenEndpointValue = "http://localhostLive";
+
         // CRI Params
         when(mockParameterStoreService.getParameterValue(
                         ParameterPrefix.OVERRIDE,
@@ -73,31 +83,65 @@ class FraudCheckConfigurationServiceTest {
                         FraudCheckConfigurationService.NO_FILE_FOUND_THRESHOLD_PARAMETER_KEY))
                 .thenReturn(String.valueOf(noFileFoundThresholdValue));
 
+        String testStrategyRawEndpointValue =
+                """
+                {
+                    "STUB": "http://localhostStub",
+                    "UAT": "http://localhostUat",
+                    "LIVE": "http://localhostLive"
+                }
+                """;
+        String testStrategyTokenEndpointValue =
+                """
+                {
+                    "STUB": "http://localhostStub",
+                    "UAT": "http://localhostUat",
+                    "LIVE": "http://localhostLive"
+                }
+                """;
+
         // Crosscore2
         Map<String, String> cc2TestParamMap =
-                Map.of(
-                        CrosscoreV2Configuration.TOKEN_END_POINT_PARAMETER_KEY,
-                        tokenEndpointValue,
-                        CrosscoreV2Configuration.TOKEN_USER_DOMAIN_PARAMETER_KEY,
-                        tokenUserDomainValue,
-                        CrosscoreV2Configuration.TOKEN_USERNAME_PARAMETER_KEY,
-                        tokenUserNameValue,
-                        CrosscoreV2Configuration.TOKEN_PASSWORD_PARAMETER_KEY,
-                        tokenPasswordValue,
-                        CrosscoreV2Configuration.TOKEN_CLIENT_ID_PARAMETER_KEY,
-                        tokenClientIdValue,
-                        CrosscoreV2Configuration.TOKEN_CLIENT_SECRET_PARAMETER_KEY,
-                        tokenClientSecretValue,
-                        CrosscoreV2Configuration.TOKEN_ISSUER_PARAMETER_KEY,
-                        crosscoreV2TokenIssuerValue,
-                        CrosscoreV2Configuration.CC2_ENDPOINT_PARAMETER_KEY,
-                        crosscoreV2EndpointUrlValue,
-                        CrosscoreV2Configuration.CC2_TENANT_ID_PARAMETER_KEY,
-                        crosscoreV2TenantIdValue);
+                Map.ofEntries(
+                        new AbstractMap.SimpleEntry<String, String>(
+                                CrosscoreV2Configuration.TOKEN_END_POINT_PARAMETER_KEY,
+                                tokenEndpointValue),
+                        new AbstractMap.SimpleEntry<String, String>(
+                                CrosscoreV2Configuration.TOKEN_USER_DOMAIN_PARAMETER_KEY,
+                                tokenUserDomainValue),
+                        new AbstractMap.SimpleEntry<String, String>(
+                                CrosscoreV2Configuration.TOKEN_USERNAME_PARAMETER_KEY,
+                                tokenUserNameValue),
+                        new AbstractMap.SimpleEntry<String, String>(
+                                CrosscoreV2Configuration.TOKEN_PASSWORD_PARAMETER_KEY,
+                                tokenPasswordValue),
+                        new AbstractMap.SimpleEntry<String, String>(
+                                CrosscoreV2Configuration.TOKEN_CLIENT_ID_PARAMETER_KEY,
+                                tokenClientIdValue),
+                        new AbstractMap.SimpleEntry<String, String>(
+                                CrosscoreV2Configuration.TOKEN_CLIENT_SECRET_PARAMETER_KEY,
+                                tokenClientSecretValue),
+                        new AbstractMap.SimpleEntry<String, String>(
+                                CrosscoreV2Configuration.TOKEN_ISSUER_PARAMETER_KEY,
+                                crosscoreV2TokenIssuerValue),
+                        new AbstractMap.SimpleEntry<String, String>(
+                                CrosscoreV2Configuration.CC2_ENDPOINT_PARAMETER_KEY,
+                                crosscoreV2EndpointUrlValue),
+                        new AbstractMap.SimpleEntry<String, String>(
+                                CrosscoreV2Configuration.CC2_TENANT_ID_PARAMETER_KEY,
+                                crosscoreV2TenantIdValue),
+                        new AbstractMap.SimpleEntry<String, String>(
+                                CrosscoreV2Configuration.CC2_TEST_STRATEGY_ENDPOINT_PARAMETER_KEY,
+                                testStrategyRawEndpointValue),
+                        new AbstractMap.SimpleEntry<String, String>(
+                                CrosscoreV2Configuration
+                                        .TEST_STRATEGY_TOKEN_END_POINT_PARAMETER_KEY,
+                                testStrategyTokenEndpointValue));
 
         when(mockParameterStoreService.getAllParametersFromPath(
                         ParameterPrefix.OVERRIDE, CrosscoreV2Configuration.CC2_PARAMETER_PATH))
                 .thenReturn(cc2TestParamMap);
+        // when(mockParameterStoreService.getAllParametersFromPath())
 
         when(mockParameterStoreService.getParameterValue(
                         ParameterPrefix.STACK,
@@ -147,7 +191,7 @@ class FraudCheckConfigurationServiceTest {
                 fraudCheckConfigurationService.getCrosscoreV2Configuration().getTokenIssuer());
         // NOTE URI's
         assertEquals(
-                URI.create(crosscoreV2EndpointUrlValue),
+                crosscoreV2EndpointUrlValue,
                 fraudCheckConfigurationService.getCrosscoreV2Configuration().getEndpointUri());
         assertEquals(
                 crosscoreV2TenantIdValue,

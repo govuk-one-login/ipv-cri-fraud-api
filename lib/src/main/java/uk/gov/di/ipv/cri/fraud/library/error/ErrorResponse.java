@@ -40,6 +40,9 @@ public enum ErrorResponse {
     TOKEN_ENDPOINT_RETURNED_JWT_WITH_UNEXPECTED_VALUES_IN_RESPONSE(
             4005, "token endpoint returned unexpected values in JWT"),
 
+    TEST_DATA_STRATEGY_COULD_NOT_MAP_CLIENTID_TO_THIRD_PARTY_ROUTE(
+            4006, "could not map EndpointUri from TestDataStrategy logic"),
+
     FINAL_ERROR(-1, "Final Error");
 
     private final int code;

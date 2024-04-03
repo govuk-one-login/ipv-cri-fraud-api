@@ -20,6 +20,7 @@ import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.check.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.TestStrategyClientId;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.IdentityVerificationResponse;
 import uk.gov.di.ipv.cri.fraud.api.service.CrosscoreV2Configuration;
 import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckConfigurationService;
@@ -94,6 +95,7 @@ class ThirdPartyFraudGatewayTest {
         when(fraudCheckConfigurationService.getCrosscoreV2Configuration())
                 .thenReturn(mockCrosscoreV2Configuration);
         when(mockCrosscoreV2Configuration.getTenantId()).thenReturn("12345");
+        when(mockCrosscoreV2Configuration.getEndpointUri()).thenReturn("http://localhost");
         when(mockRequestMapper.mapPersonIdentity(personIdentity, "12345"))
                 .thenReturn(testApiRequest);
 
@@ -114,7 +116,8 @@ class ThirdPartyFraudGatewayTest {
                 .thenReturn(testFraudCheckResult);
 
         FraudCheckResult actualFraudCheckResult =
-                thirdPartyFraudGateway.performFraudCheck(personIdentity, TEST_ACCESS_TOKEN);
+                thirdPartyFraudGateway.performFraudCheck(
+                        personIdentity, TEST_ACCESS_TOKEN, TestStrategyClientId.NO_CHANGE);
 
         InOrder inOrderMockEventProbe = inOrder(mockEventProbe);
         inOrderMockEventProbe
@@ -161,6 +164,7 @@ class ThirdPartyFraudGatewayTest {
         when(fraudCheckConfigurationService.getCrosscoreV2Configuration())
                 .thenReturn(mockCrosscoreV2Configuration);
         when(mockCrosscoreV2Configuration.getTenantId()).thenReturn("12345");
+        when(mockCrosscoreV2Configuration.getEndpointUri()).thenReturn("http://localhost");
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
         ArgumentCaptor<HttpEntityEnclosingRequestBase> httpRequestCaptor =
@@ -188,7 +192,9 @@ class ThirdPartyFraudGatewayTest {
                         OAuthErrorResponseException.class,
                         () ->
                                 thirdPartyFraudGateway.performFraudCheck(
-                                        personIdentity, TEST_ACCESS_TOKEN),
+                                        personIdentity,
+                                        TEST_ACCESS_TOKEN,
+                                        TestStrategyClientId.NO_CHANGE),
                         "Expected OAuthErrorResponseException");
 
         assertEquals(expectedReturnedException.getStatusCode(), thrownException.getStatusCode());
@@ -240,6 +246,7 @@ class ThirdPartyFraudGatewayTest {
         when(fraudCheckConfigurationService.getCrosscoreV2Configuration())
                 .thenReturn(mockCrosscoreV2Configuration);
         when(mockCrosscoreV2Configuration.getTenantId()).thenReturn("12345");
+        when(mockCrosscoreV2Configuration.getEndpointUri()).thenReturn("http://localhost");
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
 
@@ -253,7 +260,8 @@ class ThirdPartyFraudGatewayTest {
                 .thenReturn(new HTTPReply(errorStatus, null, TEST_API_RESPONSE_BODY));
 
         FraudCheckResult actualFraudCheckResult =
-                thirdPartyFraudGateway.performFraudCheck(personIdentity, TEST_ACCESS_TOKEN);
+                thirdPartyFraudGateway.performFraudCheck(
+                        personIdentity, TEST_ACCESS_TOKEN, TestStrategyClientId.NO_CHANGE);
 
         InOrder inOrderMockEventProbe = inOrder(mockEventProbe);
         inOrderMockEventProbe

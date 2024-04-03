@@ -63,7 +63,7 @@ public class ParameterStoreService {
                 path,
                 parametersPath);
 
-        return ssmProvider.getMultiple(parametersPath);
+        return ssmProvider.recursive().getMultiple(parametersPath);
     }
 
     // Encrypted

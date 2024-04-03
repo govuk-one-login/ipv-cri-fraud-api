@@ -13,6 +13,7 @@ import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.check.PepCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PEPRequest;
+import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.TestStrategyClientId;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.PEPResponse;
 import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.PepCheckHttpRetryStatusConfig;
@@ -24,6 +25,7 @@ import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryer;
 import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
 
 import java.io.IOException;
+import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -95,7 +97,8 @@ public class ThirdPartyPepGateway {
                         PEP_HTTP_RESPONSE_TIMEOUT_MS);
     }
 
-    public PepCheckResult performPepCheck(PersonIdentity personIdentity, String token)
+    public PepCheckResult performPepCheck(
+            PersonIdentity personIdentity, String token, TestStrategyClientId thirdPartyRouting)
             throws OAuthErrorResponseException {
         LOGGER.info("Mapping person to {} request", REQUEST_NAME);
 
@@ -121,7 +124,7 @@ public class ThirdPartyPepGateway {
         }
 
         LOGGER.debug("{} Request {}", REQUEST_NAME, requestBody);
-        HttpPost postRequest = httpRequestBuilder(requestBody, token);
+        HttpPost postRequest = httpRequestBuilder(requestBody, token, thirdPartyRouting);
 
         // Enforce connection timeout values
         postRequest.setConfig(pepCheckRequestConfig);
@@ -160,12 +163,9 @@ public class ThirdPartyPepGateway {
         LOGGER.info("{} latency {}", REQUEST_NAME, latency);
     }
 
-    private HttpPost httpRequestBuilder(String requestBody, String token) {
-        HttpPost request =
-                new HttpPost(
-                        fraudCheckConfigurationService
-                                .getCrosscoreV2Configuration()
-                                .getEndpointUri());
+    private HttpPost httpRequestBuilder(
+            String requestBody, String token, TestStrategyClientId thirdPartyRouting) {
+        HttpPost request = new HttpPost(selectEndpointURI(thirdPartyRouting));
         request.addHeader("Content-Type", APPLICATION_JSON_HEADER);
         request.addHeader("Accept", APPLICATION_JSON_HEADER);
         request.addHeader("Authorization", "Bearer " + token);
@@ -215,5 +215,52 @@ public class ThirdPartyPepGateway {
 
             return pepCheckResult;
         }
+    }
+
+    private URI selectEndpointURI(TestStrategyClientId thirdPartyRouting) {
+        URI requestUri = null;
+        switch (thirdPartyRouting) {
+            case STUB:
+                requestUri =
+                        URI.create(
+                                fraudCheckConfigurationService
+                                        .getCrosscoreV2Configuration()
+                                        .getEndpointURIs()
+                                        .get("STUB"));
+                break;
+            case UAT:
+                requestUri =
+                        URI.create(
+                                fraudCheckConfigurationService
+                                        .getCrosscoreV2Configuration()
+                                        .getEndpointURIs()
+                                        .get("UAT"));
+                break;
+            case LIVE:
+                requestUri =
+                        URI.create(
+                                fraudCheckConfigurationService
+                                        .getCrosscoreV2Configuration()
+                                        .getEndpointURIs()
+                                        .get("LIVE"));
+                break;
+            case NO_CHANGE:
+                requestUri =
+                        URI.create(
+                                fraudCheckConfigurationService
+                                        .getCrosscoreV2Configuration()
+                                        .getEndpointUri());
+                break;
+            default:
+                LOGGER.warn(
+                        "could not select valid PepRequestUri falling back to environment default");
+                requestUri =
+                        URI.create(
+                                fraudCheckConfigurationService
+                                        .getCrosscoreV2Configuration()
+                                        .getEndpointUri());
+                break;
+        }
+        return requestUri;
     }
 }

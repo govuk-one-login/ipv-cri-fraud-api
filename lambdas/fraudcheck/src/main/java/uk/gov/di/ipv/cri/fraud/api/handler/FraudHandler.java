@@ -4,6 +4,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.oauth2.sdk.OAuth2Error;
 import org.apache.http.HttpException;
 import org.apache.logging.log4j.LogManager;
@@ -86,7 +87,7 @@ public class FraudHandler
     private boolean functionInitMetricCaptured = false;
 
     @ExcludeFromGeneratedCoverageReport
-    public FraudHandler() throws HttpException {
+    public FraudHandler() throws HttpException, JsonProcessingException {
         ServiceFactory serviceFactory = new ServiceFactory();
 
         FraudCheckConfigurationService fraudCheckConfigurationServiceNotYetAssigned =
@@ -157,7 +158,7 @@ public class FraudHandler
     }
 
     private FraudCheckConfigurationService createFraudCheckConfigurationService(
-            ServiceFactory serviceFactory) {
+            ServiceFactory serviceFactory) throws JsonProcessingException {
 
         ParameterStoreService parameterStoreService = serviceFactory.getParameterStoreService();
 

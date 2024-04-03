@@ -1,5 +1,6 @@
 package uk.gov.di.ipv.cri.fraud.api.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import uk.gov.di.ipv.cri.fraud.library.service.ParameterStoreService;
 import uk.gov.di.ipv.cri.fraud.library.service.parameterstore.ParameterPrefix;
 
@@ -19,7 +20,8 @@ public class FraudCheckConfigurationService {
 
     private final CrosscoreV2Configuration crosscoreV2Configuration;
 
-    public FraudCheckConfigurationService(ParameterStoreService parameterStoreService) {
+    public FraudCheckConfigurationService(ParameterStoreService parameterStoreService)
+            throws JsonProcessingException {
         // ****************************  Environment Parameters ****************************
 
         // None
