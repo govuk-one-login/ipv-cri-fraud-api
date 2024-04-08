@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
@@ -20,7 +21,6 @@ import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.check.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.TestStrategyClientId;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.IdentityVerificationResponse;
 import uk.gov.di.ipv.cri.fraud.api.service.CrosscoreV2Configuration;
 import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckConfigurationService;
@@ -29,6 +29,7 @@ import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 import uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryer;
+import uk.gov.di.ipv.cri.fraud.library.strategy.Strategy;
 import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
 
 import java.io.IOException;
@@ -83,8 +84,10 @@ class ThirdPartyFraudGatewayTest {
                         mockEventProbe);
     }
 
-    @Test
-    void shouldInvokeExperianCrosscoreV2Api() throws IOException, OAuthErrorResponseException {
+    @ParameterizedTest
+    @EnumSource(Strategy.class)
+    void shouldInvokeExperianCrosscoreV2ApiForClientId(Strategy strategy)
+            throws IOException, OAuthErrorResponseException {
         final String testRequestBody = "serialisedCrossCoreApiRequest";
         final IdentityVerificationRequest testApiRequest = new IdentityVerificationRequest();
 
@@ -92,10 +95,25 @@ class ThirdPartyFraudGatewayTest {
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
         IdentityVerificationResponse testResponse = new IdentityVerificationResponse();
         FraudCheckResult testFraudCheckResult = new FraudCheckResult();
+
         when(fraudCheckConfigurationService.getCrosscoreV2Configuration())
                 .thenReturn(mockCrosscoreV2Configuration);
         when(mockCrosscoreV2Configuration.getTenantId()).thenReturn("12345");
-        when(mockCrosscoreV2Configuration.getEndpointUri()).thenReturn("http://localhost");
+
+        if (strategy == Strategy.NO_CHANGE) {
+            when(mockCrosscoreV2Configuration.getEndpointUri()).thenReturn("http://localhost");
+        } else {
+            when(mockCrosscoreV2Configuration.getEndpointURIs())
+                    .thenReturn(
+                            Map.of(
+                                    "STUB",
+                                    "http://stub",
+                                    "UAT",
+                                    "http://uat",
+                                    "LIVE",
+                                    "http://live"));
+        }
+
         when(mockRequestMapper.mapPersonIdentity(personIdentity, "12345"))
                 .thenReturn(testApiRequest);
 
@@ -117,7 +135,7 @@ class ThirdPartyFraudGatewayTest {
 
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(
-                        personIdentity, TEST_ACCESS_TOKEN, TestStrategyClientId.NO_CHANGE);
+                        personIdentity, TEST_ACCESS_TOKEN, strategy);
 
         InOrder inOrderMockEventProbe = inOrder(mockEventProbe);
         inOrderMockEventProbe
@@ -192,9 +210,7 @@ class ThirdPartyFraudGatewayTest {
                         OAuthErrorResponseException.class,
                         () ->
                                 thirdPartyFraudGateway.performFraudCheck(
-                                        personIdentity,
-                                        TEST_ACCESS_TOKEN,
-                                        TestStrategyClientId.NO_CHANGE),
+                                        personIdentity, TEST_ACCESS_TOKEN, Strategy.NO_CHANGE),
                         "Expected OAuthErrorResponseException");
 
         assertEquals(expectedReturnedException.getStatusCode(), thrownException.getStatusCode());
@@ -261,7 +277,7 @@ class ThirdPartyFraudGatewayTest {
 
         FraudCheckResult actualFraudCheckResult =
                 thirdPartyFraudGateway.performFraudCheck(
-                        personIdentity, TEST_ACCESS_TOKEN, TestStrategyClientId.NO_CHANGE);
+                        personIdentity, TEST_ACCESS_TOKEN, Strategy.NO_CHANGE);
 
         InOrder inOrderMockEventProbe = inOrder(mockEventProbe);
         inOrderMockEventProbe

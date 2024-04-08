@@ -18,7 +18,6 @@ import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.check.PepCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PEPRequest;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.TestStrategyClientId;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.PEPResponse;
 import uk.gov.di.ipv.cri.fraud.api.service.CrosscoreV2Configuration;
 import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckConfigurationService;
@@ -26,6 +25,7 @@ import uk.gov.di.ipv.cri.fraud.api.service.PepCheckHttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryer;
+import uk.gov.di.ipv.cri.fraud.library.strategy.Strategy;
 import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
 
 import java.io.IOException;
@@ -175,7 +175,7 @@ class ThirdPartyFraudGatewayComponentTest {
 
         PepCheckResult actualPepCheckResult =
                 thirdPartyPepGateway.performPepCheck(
-                        personIdentity, "testAccessTokenValue", TestStrategyClientId.NO_CHANGE);
+                        personIdentity, "testAccessTokenValue", Strategy.NO_CHANGE);
 
         InOrder inOrderMockEventProbe = inOrder(mockEventProbe);
         inOrderMockEventProbe

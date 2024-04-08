@@ -13,7 +13,6 @@ import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.check.PepCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PEPRequest;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.TestStrategyClientId;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.PEPResponse;
 import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckConfigurationService;
 import uk.gov.di.ipv.cri.fraud.api.service.PepCheckHttpRetryStatusConfig;
@@ -22,6 +21,7 @@ import uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryer;
+import uk.gov.di.ipv.cri.fraud.library.strategy.Strategy;
 import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
 
 import java.io.IOException;
@@ -98,7 +98,7 @@ public class ThirdPartyPepGateway {
     }
 
     public PepCheckResult performPepCheck(
-            PersonIdentity personIdentity, String token, TestStrategyClientId thirdPartyRouting)
+            PersonIdentity personIdentity, String token, Strategy strategy)
             throws OAuthErrorResponseException {
         LOGGER.info("Mapping person to {} request", REQUEST_NAME);
 
@@ -124,7 +124,7 @@ public class ThirdPartyPepGateway {
         }
 
         LOGGER.debug("{} Request {}", REQUEST_NAME, requestBody);
-        HttpPost postRequest = httpRequestBuilder(requestBody, token, thirdPartyRouting);
+        HttpPost postRequest = httpRequestBuilder(requestBody, token, strategy);
 
         // Enforce connection timeout values
         postRequest.setConfig(pepCheckRequestConfig);
@@ -163,9 +163,8 @@ public class ThirdPartyPepGateway {
         LOGGER.info("{} latency {}", REQUEST_NAME, latency);
     }
 
-    private HttpPost httpRequestBuilder(
-            String requestBody, String token, TestStrategyClientId thirdPartyRouting) {
-        HttpPost request = new HttpPost(selectEndpointURI(thirdPartyRouting));
+    private HttpPost httpRequestBuilder(String requestBody, String token, Strategy strategy) {
+        HttpPost request = new HttpPost(selectRequestURI(strategy));
         request.addHeader("Content-Type", APPLICATION_JSON_HEADER);
         request.addHeader("Accept", APPLICATION_JSON_HEADER);
         request.addHeader("Authorization", "Bearer " + token);
@@ -217,50 +216,16 @@ public class ThirdPartyPepGateway {
         }
     }
 
-    private URI selectEndpointURI(TestStrategyClientId thirdPartyRouting) {
-        URI requestUri = null;
-        switch (thirdPartyRouting) {
-            case STUB:
-                requestUri =
-                        URI.create(
-                                fraudCheckConfigurationService
-                                        .getCrosscoreV2Configuration()
-                                        .getEndpointURIs()
-                                        .get("STUB"));
-                break;
-            case UAT:
-                requestUri =
-                        URI.create(
-                                fraudCheckConfigurationService
-                                        .getCrosscoreV2Configuration()
-                                        .getEndpointURIs()
-                                        .get("UAT"));
-                break;
-            case LIVE:
-                requestUri =
-                        URI.create(
-                                fraudCheckConfigurationService
-                                        .getCrosscoreV2Configuration()
-                                        .getEndpointURIs()
-                                        .get("LIVE"));
-                break;
-            case NO_CHANGE:
-                requestUri =
-                        URI.create(
-                                fraudCheckConfigurationService
-                                        .getCrosscoreV2Configuration()
-                                        .getEndpointUri());
-                break;
-            default:
-                LOGGER.warn(
-                        "could not select valid PepRequestUri falling back to environment default");
-                requestUri =
-                        URI.create(
-                                fraudCheckConfigurationService
-                                        .getCrosscoreV2Configuration()
-                                        .getEndpointUri());
-                break;
+    private URI selectRequestURI(Strategy strategy) {
+        if (strategy == Strategy.NO_CHANGE) {
+            return URI.create(
+                    fraudCheckConfigurationService.getCrosscoreV2Configuration().getEndpointUri());
+        } else {
+            return URI.create(
+                    fraudCheckConfigurationService
+                            .getCrosscoreV2Configuration()
+                            .getEndpointURIs()
+                            .get(strategy.name()));
         }
-        return requestUri;
     }
 }

@@ -96,8 +96,6 @@ public class CrosscoreV2Configuration {
 
     private Map<String, String> constructParameterMap(String parameterValue)
             throws JsonProcessingException {
-        Map<String, String> parameterValueMap = objectMapper.readValue(parameterValue, Map.class);
-
-        return parameterValueMap;
+        return objectMapper.readValue(parameterValue, Map.class);
     }
 }

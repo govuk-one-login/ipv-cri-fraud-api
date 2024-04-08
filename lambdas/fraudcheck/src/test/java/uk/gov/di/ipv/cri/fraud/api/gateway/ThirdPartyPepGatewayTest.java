@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
@@ -20,7 +21,6 @@ import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.domain.check.PepCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PEPRequest;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.TestStrategyClientId;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.PEPResponse;
 import uk.gov.di.ipv.cri.fraud.api.service.CrosscoreV2Configuration;
 import uk.gov.di.ipv.cri.fraud.api.service.FraudCheckConfigurationService;
@@ -29,6 +29,7 @@ import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 import uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryer;
+import uk.gov.di.ipv.cri.fraud.library.strategy.Strategy;
 import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
 
 import java.io.IOException;
@@ -92,8 +93,10 @@ class ThirdPartyPepGatewayTest {
                         mockEventProbe);
     }
 
-    @Test
-    void shouldInvokeCrosscoreV2PepApi() throws IOException, OAuthErrorResponseException {
+    @ParameterizedTest
+    @EnumSource(Strategy.class)
+    void shouldInvokeCrosscoreV2PepApi(Strategy strategy)
+            throws IOException, OAuthErrorResponseException {
         final String testRequestBody = "serialisedPepApiRequest";
         final PEPRequest testApiRequest = new PEPRequest();
 
@@ -104,7 +107,20 @@ class ThirdPartyPepGatewayTest {
         when(fraudCheckConfigurationService.getCrosscoreV2Configuration())
                 .thenReturn(mockCrosscoreV2Configuration);
         when(mockCrosscoreV2Configuration.getTenantId()).thenReturn("12345");
-        when(mockCrosscoreV2Configuration.getEndpointUri()).thenReturn("http://localhost");
+
+        if (strategy == Strategy.NO_CHANGE) {
+            when(mockCrosscoreV2Configuration.getEndpointUri()).thenReturn("http://localhost");
+        } else {
+            when(mockCrosscoreV2Configuration.getEndpointURIs())
+                    .thenReturn(
+                            Map.of(
+                                    "STUB",
+                                    "http://stub",
+                                    "UAT",
+                                    "http://uat",
+                                    "LIVE",
+                                    "http://live"));
+        }
         when(mockRequestMapper.mapPEPPersonIdentity(personIdentity, "12345"))
                 .thenReturn(testApiRequest);
 
@@ -125,8 +141,7 @@ class ThirdPartyPepGatewayTest {
                 .thenReturn(testPepCheckResult);
 
         PepCheckResult actualPepCheckResult =
-                thirdPartyPepGateway.performPepCheck(
-                        personIdentity, TEST_ACCESS_TOKEN, TestStrategyClientId.NO_CHANGE);
+                thirdPartyPepGateway.performPepCheck(personIdentity, TEST_ACCESS_TOKEN, strategy);
 
         InOrder inOrderMockEventProbe = inOrder(mockEventProbe);
         inOrderMockEventProbe
@@ -202,9 +217,7 @@ class ThirdPartyPepGatewayTest {
                         OAuthErrorResponseException.class,
                         () ->
                                 thirdPartyPepGateway.performPepCheck(
-                                        personIdentity,
-                                        TEST_ACCESS_TOKEN,
-                                        TestStrategyClientId.NO_CHANGE),
+                                        personIdentity, TEST_ACCESS_TOKEN, Strategy.NO_CHANGE),
                         "Expected OAuthErrorResponseException");
 
         assertEquals(expectedReturnedException.getStatusCode(), thrownException.getStatusCode());
@@ -272,7 +285,7 @@ class ThirdPartyPepGatewayTest {
 
         PepCheckResult actualPepCheckResult =
                 thirdPartyPepGateway.performPepCheck(
-                        personIdentity, TEST_ACCESS_TOKEN, TestStrategyClientId.NO_CHANGE);
+                        personIdentity, TEST_ACCESS_TOKEN, Strategy.NO_CHANGE);
 
         InOrder inOrderMockEventProbe = inOrder(mockEventProbe);
         inOrderMockEventProbe

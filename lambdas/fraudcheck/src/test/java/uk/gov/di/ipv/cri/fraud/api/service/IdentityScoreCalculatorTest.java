@@ -5,6 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.di.ipv.cri.fraud.api.domain.check.FraudCheckResult;
+import uk.gov.di.ipv.cri.fraud.library.strategy.Strategy;
 
 import java.util.List;
 
@@ -26,13 +27,14 @@ class IdentityScoreCalculatorTest {
         fraudCheckResult.setTransactionId("123456789");
 
         when(mockFraudCheckConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("U001"));
-        when(mockFraudCheckConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
+        when(mockFraudCheckConfigurationService.getNoFileFoundThreshold(Strategy.NO_CHANGE))
+                .thenReturn(35);
         this.identityScoreCalculator =
                 new IdentityScoreCalculator(mockFraudCheckConfigurationService);
 
         int identityScore =
                 identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(
-                        fraudCheckResult, true);
+                        fraudCheckResult, true, Strategy.NO_CHANGE);
         identityScore =
                 identityScoreCalculator.calculateIdentityScoreAfterPEPCheck(identityScore, true);
 
@@ -48,13 +50,13 @@ class IdentityScoreCalculatorTest {
         fraudCheckResult.setTransactionId("123456789");
 
         when(mockFraudCheckConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("U001"));
-        when(mockFraudCheckConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
+
         this.identityScoreCalculator =
                 new IdentityScoreCalculator(mockFraudCheckConfigurationService);
 
         int identityScore =
                 identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(
-                        fraudCheckResult, true);
+                        fraudCheckResult, true, Strategy.NO_CHANGE);
         identityScore =
                 identityScoreCalculator.calculateIdentityScoreAfterPEPCheck(identityScore, true);
         assertEquals(0, identityScore);
@@ -69,13 +71,14 @@ class IdentityScoreCalculatorTest {
         fraudCheckResult.setTransactionId("123456789");
 
         when(mockFraudCheckConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("U001"));
-        when(mockFraudCheckConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
+        when(mockFraudCheckConfigurationService.getNoFileFoundThreshold(Strategy.NO_CHANGE))
+                .thenReturn(35);
         this.identityScoreCalculator =
                 new IdentityScoreCalculator(mockFraudCheckConfigurationService);
 
         int identityScore =
                 identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(
-                        fraudCheckResult, true);
+                        fraudCheckResult, true, Strategy.NO_CHANGE);
         identityScore =
                 identityScoreCalculator.calculateIdentityScoreAfterPEPCheck(identityScore, false);
         assertEquals(1, identityScore);
@@ -90,13 +93,13 @@ class IdentityScoreCalculatorTest {
         fraudCheckResult.setTransactionId("123456789");
 
         when(mockFraudCheckConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("U001"));
-        when(mockFraudCheckConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
+
         this.identityScoreCalculator =
                 new IdentityScoreCalculator(mockFraudCheckConfigurationService);
 
         int identityScore =
                 identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(
-                        fraudCheckResult, false);
+                        fraudCheckResult, false, Strategy.NO_CHANGE);
         identityScore =
                 identityScoreCalculator.calculateIdentityScoreAfterPEPCheck(identityScore, false);
         assertEquals(0, identityScore);
@@ -111,13 +114,13 @@ class IdentityScoreCalculatorTest {
         fraudCheckResult.setTransactionId("123456789");
 
         when(mockFraudCheckConfigurationService.getZeroScoreUcodes()).thenReturn(List.of("U001"));
-        when(mockFraudCheckConfigurationService.getNoFileFoundThreshold()).thenReturn(35);
+
         this.identityScoreCalculator =
                 new IdentityScoreCalculator(mockFraudCheckConfigurationService);
 
         int identityScore =
                 identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(
-                        fraudCheckResult, false);
+                        fraudCheckResult, false, Strategy.NO_CHANGE);
         identityScore =
                 identityScoreCalculator.calculateIdentityScoreAfterPEPCheck(identityScore, true);
         assertEquals(0, identityScore);

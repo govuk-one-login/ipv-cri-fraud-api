@@ -1,12 +1,14 @@
 package uk.gov.di.ipv.cri.fraud.api.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.di.ipv.cri.fraud.library.service.ParameterStoreService;
 import uk.gov.di.ipv.cri.fraud.library.service.parameterstore.ParameterPrefix;
+import uk.gov.di.ipv.cri.fraud.library.strategy.Strategy;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
@@ -150,7 +152,7 @@ class FraudCheckConfigurationServiceTest {
 
         // Creation
         FraudCheckConfigurationService fraudCheckConfigurationService =
-                new FraudCheckConfigurationService(mockParameterStoreService);
+                new FraudCheckConfigurationService(mockParameterStoreService, new ObjectMapper());
 
         assertNotNull(fraudCheckConfigurationService);
 
@@ -161,7 +163,7 @@ class FraudCheckConfigurationServiceTest {
         assertEquals(zeroScoreUcodesListValue, fraudCheckConfigurationService.getZeroScoreUcodes());
         assertEquals(
                 noFileFoundThresholdValue,
-                fraudCheckConfigurationService.getNoFileFoundThreshold());
+                fraudCheckConfigurationService.getNoFileFoundThreshold(Strategy.NO_CHANGE));
 
         // CC2
         verify(mockParameterStoreService)

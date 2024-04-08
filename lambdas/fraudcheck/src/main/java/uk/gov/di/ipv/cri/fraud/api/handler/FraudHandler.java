@@ -5,6 +5,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.oauth2.sdk.OAuth2Error;
 import org.apache.http.HttpException;
 import org.apache.logging.log4j.LogManager;
@@ -161,8 +162,9 @@ public class FraudHandler
             ServiceFactory serviceFactory) throws JsonProcessingException {
 
         ParameterStoreService parameterStoreService = serviceFactory.getParameterStoreService();
+        ObjectMapper objectMapper = serviceFactory.getObjectMapper();
 
-        return new FraudCheckConfigurationService(parameterStoreService);
+        return new FraudCheckConfigurationService(parameterStoreService, objectMapper);
     }
 
     @Override

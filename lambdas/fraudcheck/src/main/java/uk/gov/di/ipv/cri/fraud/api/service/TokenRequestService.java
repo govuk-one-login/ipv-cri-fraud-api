@@ -13,7 +13,6 @@ import software.amazon.awssdk.http.HttpStatusCode;
 import uk.gov.di.ipv.cri.common.library.persistence.DataStore;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.RequestHeaderKeys;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.TestStrategyClientId;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.TokenRequestPayload;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.response.TokenResponse;
 import uk.gov.di.ipv.cri.fraud.api.persistence.item.TokenItem;
@@ -24,6 +23,7 @@ import uk.gov.di.ipv.cri.fraud.library.exception.TokenExpiryWindowException;
 import uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric;
 import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryer;
+import uk.gov.di.ipv.cri.fraud.library.strategy.Strategy;
 import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
 
 import java.io.IOException;
@@ -105,8 +105,7 @@ public class TokenRequestService {
         this.httpRetryStatusConfig = new TokenHttpRetryStatusConfig();
     }
 
-    public String requestToken(
-            boolean alwaysRequestNewToken, TestStrategyClientId thirdPartyRouting)
+    public String requestToken(boolean alwaysRequestNewToken, Strategy strategy)
             throws OAuthErrorResponseException {
         LOGGER.info("Checking Table {} for existing cached token", tokenTableName);
 
@@ -132,7 +131,7 @@ public class TokenRequestService {
         // Request an Access Token
         if (newTokenRequest) {
             try {
-                TokenResponse newTokenResponse = performNewTokenRequest(thirdPartyRouting);
+                TokenResponse newTokenResponse = performNewTokenRequest(strategy);
                 LOGGER.debug("Saving Token {}", newTokenResponse.getAccessToken());
 
                 tokenItem = new TokenItem(newTokenResponse.getAccessToken());
@@ -169,9 +168,9 @@ public class TokenRequestService {
         return tokenItem.getTokenValue();
     }
 
-    private TokenResponse performNewTokenRequest(TestStrategyClientId thirdPartyRouting)
+    private TokenResponse performNewTokenRequest(Strategy strategy)
             throws OAuthErrorResponseException {
-        URI requestURI = selectRequestURI(thirdPartyRouting);
+        URI requestURI = selectRequestURI(strategy);
 
         final String correlationId = UUID.randomUUID().toString();
         LOGGER.info("{} Correlation Id {}", REQUEST_NAME, correlationId);
@@ -331,30 +330,12 @@ public class TokenRequestService {
                 Instant.ofEpochSecond(ttlSeconds).atZone(ZoneId.systemDefault()).toLocalDateTime());
     }
 
-    private URI selectRequestURI(TestStrategyClientId thirdPartyRouting) {
-        URI requestUri = null;
-        switch (thirdPartyRouting) {
-            case STUB:
-                requestUri =
-                        URI.create(crosscoreV2Configuration.getTokenEndpointURIs().get("STUB"));
-                break;
-            case UAT:
-                requestUri = URI.create(crosscoreV2Configuration.getTokenEndpointURIs().get("UAT"));
-                break;
-            case LIVE:
-                requestUri =
-                        URI.create(crosscoreV2Configuration.getTokenEndpointURIs().get("LIVE"));
-                break;
-            case NO_CHANGE:
-                requestUri = URI.create(crosscoreV2Configuration.getTokenEndpoint());
-                break;
-            default:
-                LOGGER.warn(
-                        "could not select valid tokenRequestUri falling back to environment default");
-                requestUri = URI.create(crosscoreV2Configuration.getTokenEndpoint());
-                break;
+    private URI selectRequestURI(Strategy strategy) {
+        if (strategy == Strategy.NO_CHANGE) {
+            return URI.create(crosscoreV2Configuration.getTokenEndpoint());
+        } else {
+            return URI.create(crosscoreV2Configuration.getTokenEndpointURIs().get(strategy.name()));
         }
-        return requestUri;
     }
 
     public boolean isTokenNearExpiration(TokenItem tokenItem, long expiryWindow) {

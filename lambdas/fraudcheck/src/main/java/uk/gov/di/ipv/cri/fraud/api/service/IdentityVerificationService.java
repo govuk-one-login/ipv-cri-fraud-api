@@ -18,10 +18,10 @@ import uk.gov.di.ipv.cri.fraud.api.domain.check.FraudCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.domain.check.PepCheckResult;
 import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyFraudGateway;
 import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyPepGateway;
-import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.TestStrategyClientId;
 import uk.gov.di.ipv.cri.fraud.library.domain.CheckType;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 import uk.gov.di.ipv.cri.fraud.library.service.ServiceFactory;
+import uk.gov.di.ipv.cri.fraud.library.strategy.Strategy;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -51,19 +51,6 @@ public class IdentityVerificationService {
             "FraudCheckResult had no error message.";
     private static final String ERROR_PEP_CHECK_RESULT_NO_ERR_MSG =
             "PepCheckResult had no error message.";
-
-    // Below Values pertain to all the possible clientIDs that can be passed to the CRI from
-    // different versions of ipvCore/stubs
-    // One set of clientIds used in the configuration of stubs that route CRIs to 3rd parties
-    // (UAT/LIVE)
-    // + One set of clientIds for the configuration of stubs that route CRIs to internally managed
-    // stubbed 3rd parties
-    private static final String UAT_3rdPARTY_CLIENTID_BUILD = "ipv-core-stub-aws-build_3rdparty";
-    private static final String UAT_3rdPARTY_CLIENTID_PROD = "ipv-core-stub-aws-prod_3rdparty";
-    private static final String STUB_CLIENTID_BUILD = "ipv-core-stub-aws-build";
-    private static final String STUB_CLIENTID_PROD = "ipv-core-stub-aws-prod";
-    private static final String LIVE_CLIENTID = "ipv-core";
-    private static final String LIVE_CLIENTID_PRE_PROD = "ipv-core-stub-pre-prod-aws-build";
 
     private final ObjectMapper objectMapper;
 
@@ -129,41 +116,14 @@ public class IdentityVerificationService {
         LOGGER.info("PersonIdentity validated");
         eventProbe.counterMetric(PERSON_DETAILS_VALIDATION_PASS);
 
-        TestStrategyClientId thirdPartyRouting = TestStrategyClientId.NO_CHANGE;
+        String clientId = sessionItem.getClientId();
+        Strategy strategy = Strategy.fromClientIdString(sessionItem.getClientId());
 
-        String testStrategyClientId = sessionItem.getClientId();
-        switch (testStrategyClientId) {
-            case STUB_CLIENTID_PROD:
-                thirdPartyRouting = TestStrategyClientId.STUB;
-            case STUB_CLIENTID_BUILD:
-                thirdPartyRouting = TestStrategyClientId.STUB;
-                break;
-            case UAT_3rdPARTY_CLIENTID_BUILD:
-                thirdPartyRouting = TestStrategyClientId.UAT;
-            case UAT_3rdPARTY_CLIENTID_PROD:
-                thirdPartyRouting = TestStrategyClientId.UAT;
-                break;
-            case LIVE_CLIENTID:
-                thirdPartyRouting = TestStrategyClientId.LIVE;
-            case LIVE_CLIENTID_PRE_PROD:
-                thirdPartyRouting = TestStrategyClientId.LIVE;
-                break;
-            default:
-                // thirdPartyRouting is noChange by default (falls back to default Routing if
-                // ClientId is not recognised)
-                LOGGER.warn(
-                        "Unknown client id {} defaulting to pre test strategy params",
-                        testStrategyClientId);
-                thirdPartyRouting = TestStrategyClientId.NO_CHANGE;
-        }
-        LOGGER.info(
-                "IPV Core Client Id {}, Routing set to {}",
-                testStrategyClientId,
-                thirdPartyRouting);
+        LOGGER.info("IPV Core Client Id {}, Routing set to {}", clientId, strategy);
 
-        String token = tokenRequestService.requestToken(false, thirdPartyRouting);
+        String token = tokenRequestService.requestToken(false, strategy);
         IdentityVerificationResult fraudIdentityVerificationResult =
-                fraudCheckStep(personIdentity, token, thirdPartyRouting);
+                fraudCheckStep(personIdentity, token, strategy);
         IdentityVerificationResult pepIdentityVerificationResult = new IdentityVerificationResult();
 
         boolean pepValidToPerform =
@@ -176,7 +136,7 @@ public class IdentityVerificationService {
                             personIdentity,
                             fraudIdentityVerificationResult.getIdentityCheckScore(),
                             token,
-                            thirdPartyRouting);
+                            strategy);
         }
 
         int identityCheckScore =
@@ -241,15 +201,14 @@ public class IdentityVerificationService {
     }
 
     public IdentityVerificationResult fraudCheckStep(
-            PersonIdentity personIdentity, String token, TestStrategyClientId thirdPartyRouting)
+            PersonIdentity personIdentity, String token, Strategy strategy)
             throws JsonProcessingException {
         IdentityVerificationResult identityVerificationResult = new IdentityVerificationResult();
         // Requests split into two try blocks to differentiate tech failures in fraud from pep
         FraudCheckResult fraudCheckResult;
         try {
             fraudCheckResult =
-                    thirdPartyFraudGateway.performFraudCheck(
-                            personIdentity, token, thirdPartyRouting);
+                    thirdPartyFraudGateway.performFraudCheck(personIdentity, token, strategy);
         } catch (Exception e) {
             LOGGER.error(ERROR_MSG_CONTEXT, e);
             eventProbe.counterMetric(FRAUD_CHECK_REQUEST_FAILED);
@@ -325,7 +284,7 @@ public class IdentityVerificationService {
 
         int fraudIdentityCheckScore =
                 identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(
-                        fraudCheckResult, true);
+                        fraudCheckResult, true, strategy);
         int activityHistoryScore =
                 activityHistoryScoreCalculator.calculateActivityHistoryScore(
                         fraudCheckResult.getOldestRecordDateInMonths());
@@ -355,7 +314,7 @@ public class IdentityVerificationService {
         }
         // else add ACTIVITY_HISTORY_CHECK to checksFailed
 
-        if (decisionScore <= fraudCheckConfigurationService.getNoFileFoundThreshold()) {
+        if (decisionScore <= fraudCheckConfigurationService.getNoFileFoundThreshold(strategy)) {
 
             // Fraud Checks that have failed if decisionScore <= NoFileFoundThreshold
             checksFailed.add(CheckType.MORTALITY_CHECK.toString());
@@ -401,10 +360,7 @@ public class IdentityVerificationService {
     }
 
     public IdentityVerificationResult pepCheckStep(
-            PersonIdentity personIdentity,
-            int currentScore,
-            String token,
-            TestStrategyClientId thirdPartyRouting)
+            PersonIdentity personIdentity, int currentScore, String token, Strategy strategy)
             throws JsonProcessingException {
 
         IdentityVerificationResult identityVerificationResult = new IdentityVerificationResult();
@@ -414,8 +370,7 @@ public class IdentityVerificationService {
         PepCheckResult pepCheckResult = null;
 
         try {
-            pepCheckResult =
-                    thirdPartyPepGateway.performPepCheck(personIdentity, token, thirdPartyRouting);
+            pepCheckResult = thirdPartyPepGateway.performPepCheck(personIdentity, token, strategy);
         } catch (Exception e) {
             // Pep check can completely fail and result returned based on fraud check alone
             LOGGER.error(ERROR_MSG_CONTEXT, e);
