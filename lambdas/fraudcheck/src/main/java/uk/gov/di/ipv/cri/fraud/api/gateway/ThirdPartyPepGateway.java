@@ -21,9 +21,11 @@ import uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryer;
+import uk.gov.di.ipv.cri.fraud.library.strategy.Strategy;
 import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
 
 import java.io.IOException;
+import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -95,7 +97,8 @@ public class ThirdPartyPepGateway {
                         PEP_HTTP_RESPONSE_TIMEOUT_MS);
     }
 
-    public PepCheckResult performPepCheck(PersonIdentity personIdentity, String token)
+    public PepCheckResult performPepCheck(
+            PersonIdentity personIdentity, String token, Strategy strategy)
             throws OAuthErrorResponseException {
         LOGGER.info("Mapping person to {} request", REQUEST_NAME);
 
@@ -121,7 +124,7 @@ public class ThirdPartyPepGateway {
         }
 
         LOGGER.debug("{} Request {}", REQUEST_NAME, requestBody);
-        HttpPost postRequest = httpRequestBuilder(requestBody, token);
+        HttpPost postRequest = httpRequestBuilder(requestBody, token, strategy);
 
         // Enforce connection timeout values
         postRequest.setConfig(pepCheckRequestConfig);
@@ -160,12 +163,8 @@ public class ThirdPartyPepGateway {
         LOGGER.info("{} latency {}", REQUEST_NAME, latency);
     }
 
-    private HttpPost httpRequestBuilder(String requestBody, String token) {
-        HttpPost request =
-                new HttpPost(
-                        fraudCheckConfigurationService
-                                .getCrosscoreV2Configuration()
-                                .getEndpointUri());
+    private HttpPost httpRequestBuilder(String requestBody, String token, Strategy strategy) {
+        HttpPost request = new HttpPost(selectRequestURI(strategy));
         request.addHeader("Content-Type", APPLICATION_JSON_HEADER);
         request.addHeader("Accept", APPLICATION_JSON_HEADER);
         request.addHeader("Authorization", "Bearer " + token);
@@ -214,6 +213,19 @@ public class ThirdPartyPepGateway {
                     ERROR_PEP_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE.getMessage());
 
             return pepCheckResult;
+        }
+    }
+
+    private URI selectRequestURI(Strategy strategy) {
+        if (strategy == Strategy.NO_CHANGE) {
+            return URI.create(
+                    fraudCheckConfigurationService.getCrosscoreV2Configuration().getEndpointUri());
+        } else {
+            return URI.create(
+                    fraudCheckConfigurationService
+                            .getCrosscoreV2Configuration()
+                            .getEndpointURIs()
+                            .get(strategy.name()));
         }
     }
 }

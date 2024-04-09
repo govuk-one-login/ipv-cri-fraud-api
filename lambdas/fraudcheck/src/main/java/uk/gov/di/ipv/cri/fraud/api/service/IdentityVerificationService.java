@@ -21,6 +21,7 @@ import uk.gov.di.ipv.cri.fraud.api.gateway.ThirdPartyPepGateway;
 import uk.gov.di.ipv.cri.fraud.library.domain.CheckType;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 import uk.gov.di.ipv.cri.fraud.library.service.ServiceFactory;
+import uk.gov.di.ipv.cri.fraud.library.strategy.Strategy;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -115,10 +116,14 @@ public class IdentityVerificationService {
         LOGGER.info("PersonIdentity validated");
         eventProbe.counterMetric(PERSON_DETAILS_VALIDATION_PASS);
 
-        String token = tokenRequestService.requestToken(false);
+        String clientId = sessionItem.getClientId();
+        Strategy strategy = Strategy.fromClientIdString(sessionItem.getClientId());
 
+        LOGGER.info("IPV Core Client Id {}, Routing set to {}", clientId, strategy);
+
+        String token = tokenRequestService.requestToken(false, strategy);
         IdentityVerificationResult fraudIdentityVerificationResult =
-                fraudCheckStep(personIdentity, token);
+                fraudCheckStep(personIdentity, token, strategy);
         IdentityVerificationResult pepIdentityVerificationResult = new IdentityVerificationResult();
 
         boolean pepValidToPerform =
@@ -130,7 +135,8 @@ public class IdentityVerificationService {
                     pepCheckStep(
                             personIdentity,
                             fraudIdentityVerificationResult.getIdentityCheckScore(),
-                            token);
+                            token,
+                            strategy);
         }
 
         int identityCheckScore =
@@ -194,13 +200,15 @@ public class IdentityVerificationService {
         return identityVerificationResult;
     }
 
-    public IdentityVerificationResult fraudCheckStep(PersonIdentity personIdentity, String token)
+    public IdentityVerificationResult fraudCheckStep(
+            PersonIdentity personIdentity, String token, Strategy strategy)
             throws JsonProcessingException {
         IdentityVerificationResult identityVerificationResult = new IdentityVerificationResult();
         // Requests split into two try blocks to differentiate tech failures in fraud from pep
         FraudCheckResult fraudCheckResult;
         try {
-            fraudCheckResult = thirdPartyFraudGateway.performFraudCheck(personIdentity, token);
+            fraudCheckResult =
+                    thirdPartyFraudGateway.performFraudCheck(personIdentity, token, strategy);
         } catch (Exception e) {
             LOGGER.error(ERROR_MSG_CONTEXT, e);
             eventProbe.counterMetric(FRAUD_CHECK_REQUEST_FAILED);
@@ -276,7 +284,7 @@ public class IdentityVerificationService {
 
         int fraudIdentityCheckScore =
                 identityScoreCalculator.calculateIdentityScoreAfterFraudCheck(
-                        fraudCheckResult, true);
+                        fraudCheckResult, true, strategy);
         int activityHistoryScore =
                 activityHistoryScoreCalculator.calculateActivityHistoryScore(
                         fraudCheckResult.getOldestRecordDateInMonths());
@@ -306,7 +314,7 @@ public class IdentityVerificationService {
         }
         // else add ACTIVITY_HISTORY_CHECK to checksFailed
 
-        if (decisionScore <= fraudCheckConfigurationService.getNoFileFoundThreshold()) {
+        if (decisionScore <= fraudCheckConfigurationService.getNoFileFoundThreshold(strategy)) {
 
             // Fraud Checks that have failed if decisionScore <= NoFileFoundThreshold
             checksFailed.add(CheckType.MORTALITY_CHECK.toString());
@@ -352,7 +360,7 @@ public class IdentityVerificationService {
     }
 
     public IdentityVerificationResult pepCheckStep(
-            PersonIdentity personIdentity, int currentScore, String token)
+            PersonIdentity personIdentity, int currentScore, String token, Strategy strategy)
             throws JsonProcessingException {
 
         IdentityVerificationResult identityVerificationResult = new IdentityVerificationResult();
@@ -362,7 +370,7 @@ public class IdentityVerificationService {
         PepCheckResult pepCheckResult = null;
 
         try {
-            pepCheckResult = thirdPartyPepGateway.performPepCheck(personIdentity, token);
+            pepCheckResult = thirdPartyPepGateway.performPepCheck(personIdentity, token, strategy);
         } catch (Exception e) {
             // Pep check can completely fail and result returned based on fraud check alone
             LOGGER.error(ERROR_MSG_CONTEXT, e);

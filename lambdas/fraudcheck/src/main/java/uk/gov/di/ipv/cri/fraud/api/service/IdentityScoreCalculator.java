@@ -3,6 +3,7 @@ package uk.gov.di.ipv.cri.fraud.api.service;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.gov.di.ipv.cri.fraud.api.domain.check.FraudCheckResult;
+import uk.gov.di.ipv.cri.fraud.library.strategy.Strategy;
 
 import java.util.Arrays;
 import java.util.List;
@@ -10,16 +11,17 @@ import java.util.List;
 public class IdentityScoreCalculator {
 
     private static final Logger LOGGER = LogManager.getLogger();
+
+    private FraudCheckConfigurationService fraudCheckConfigurationService;
     private List<String> zeroScoreUcodes;
-    private Integer noFileFoundThreshold = 0;
 
     public IdentityScoreCalculator(FraudCheckConfigurationService fraudCheckConfigurationService) {
         zeroScoreUcodes = fraudCheckConfigurationService.getZeroScoreUcodes();
-        noFileFoundThreshold = fraudCheckConfigurationService.getNoFileFoundThreshold();
+        this.fraudCheckConfigurationService = fraudCheckConfigurationService;
     }
 
     public int calculateIdentityScoreAfterFraudCheck(
-            FraudCheckResult fraudCheckResult, boolean checkSuccess) {
+            FraudCheckResult fraudCheckResult, boolean checkSuccess, Strategy strategy) {
 
         if (checkSuccess) {
             Integer decisionScore = Integer.valueOf(fraudCheckResult.getDecisionScore());
@@ -32,7 +34,7 @@ public class IdentityScoreCalculator {
                 }
             }
 
-            if (decisionScore <= noFileFoundThreshold) {
+            if (decisionScore <= fraudCheckConfigurationService.getNoFileFoundThreshold(strategy)) {
                 LOGGER.info(
                         "Decision score was below the file found threshold they cannot score higher than one");
                 return 1;

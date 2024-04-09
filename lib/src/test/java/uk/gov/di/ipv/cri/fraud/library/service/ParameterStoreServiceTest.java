@@ -90,12 +90,14 @@ class ParameterStoreServiceTest {
         String testPath = "TESTPATH/SUBPATH";
         String fullPath = String.format("/%s/%s", prefixToTest.getPrefixValue(), testPath);
 
+        when(mockSSMProvider.recursive()).thenReturn(mockSSMProvider);
         when(mockSSMProvider.getMultiple(fullPath)).thenReturn(testParameterMap);
 
         assertEquals(
                 testParameterMap,
                 parameterStoreService.getAllParametersFromPath(prefixToTest, testPath));
 
+        verify(mockSSMProvider).recursive();
         verify(mockSSMProvider).getMultiple(fullPath);
     }
 

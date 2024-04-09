@@ -23,6 +23,7 @@ import uk.gov.di.ipv.cri.fraud.library.exception.TokenExpiryWindowException;
 import uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric;
 import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryer;
+import uk.gov.di.ipv.cri.fraud.library.strategy.Strategy;
 import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
 
 import java.io.IOException;
@@ -46,7 +47,6 @@ public class TokenRequestService {
 
     private final String clientSecret;
     private final String clientId;
-    private final URI requestURI;
     private final String username;
     private final String password;
     private final String userDomain;
@@ -92,7 +92,6 @@ public class TokenRequestService {
 
         this.clientSecret = crosscoreV2Configuration.getClientSecret();
         this.clientId = crosscoreV2Configuration.getClientId();
-        this.requestURI = URI.create(crosscoreV2Configuration.getTokenEndpoint());
         this.username = crosscoreV2Configuration.getUsername();
         this.password = crosscoreV2Configuration.getPassword();
         this.userDomain = crosscoreV2Configuration.getUserDomain();
@@ -106,7 +105,8 @@ public class TokenRequestService {
         this.httpRetryStatusConfig = new TokenHttpRetryStatusConfig();
     }
 
-    public String requestToken(boolean alwaysRequestNewToken) throws OAuthErrorResponseException {
+    public String requestToken(boolean alwaysRequestNewToken, Strategy strategy)
+            throws OAuthErrorResponseException {
         LOGGER.info("Checking Table {} for existing cached token", tokenTableName);
 
         TokenItem tokenItem = getTokenItemFromTable();
@@ -131,7 +131,7 @@ public class TokenRequestService {
         // Request an Access Token
         if (newTokenRequest) {
             try {
-                TokenResponse newTokenResponse = performNewTokenRequest();
+                TokenResponse newTokenResponse = performNewTokenRequest(strategy);
                 LOGGER.debug("Saving Token {}", newTokenResponse.getAccessToken());
 
                 tokenItem = new TokenItem(newTokenResponse.getAccessToken());
@@ -168,7 +168,9 @@ public class TokenRequestService {
         return tokenItem.getTokenValue();
     }
 
-    private TokenResponse performNewTokenRequest() throws OAuthErrorResponseException {
+    private TokenResponse performNewTokenRequest(Strategy strategy)
+            throws OAuthErrorResponseException {
+        URI requestURI = selectRequestURI(strategy);
 
         final String correlationId = UUID.randomUUID().toString();
         LOGGER.info("{} Correlation Id {}", REQUEST_NAME, correlationId);
@@ -326,6 +328,14 @@ public class TokenRequestService {
         LOGGER.info(
                 "Token cached - expires {} UTC",
                 Instant.ofEpochSecond(ttlSeconds).atZone(ZoneId.systemDefault()).toLocalDateTime());
+    }
+
+    private URI selectRequestURI(Strategy strategy) {
+        if (strategy == Strategy.NO_CHANGE) {
+            return URI.create(crosscoreV2Configuration.getTokenEndpoint());
+        } else {
+            return URI.create(crosscoreV2Configuration.getTokenEndpointURIs().get(strategy.name()));
+        }
     }
 
     public boolean isTokenNearExpiration(TokenItem tokenItem, long expiryWindow) {

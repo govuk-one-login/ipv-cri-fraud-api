@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
@@ -28,6 +29,7 @@ import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 import uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryer;
+import uk.gov.di.ipv.cri.fraud.library.strategy.Strategy;
 import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
 
 import java.io.IOException;
@@ -82,8 +84,10 @@ class ThirdPartyFraudGatewayTest {
                         mockEventProbe);
     }
 
-    @Test
-    void shouldInvokeExperianCrosscoreV2Api() throws IOException, OAuthErrorResponseException {
+    @ParameterizedTest
+    @EnumSource(Strategy.class)
+    void shouldInvokeExperianCrosscoreV2ApiForClientId(Strategy strategy)
+            throws IOException, OAuthErrorResponseException {
         final String testRequestBody = "serialisedCrossCoreApiRequest";
         final IdentityVerificationRequest testApiRequest = new IdentityVerificationRequest();
 
@@ -91,9 +95,25 @@ class ThirdPartyFraudGatewayTest {
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
         IdentityVerificationResponse testResponse = new IdentityVerificationResponse();
         FraudCheckResult testFraudCheckResult = new FraudCheckResult();
+
         when(fraudCheckConfigurationService.getCrosscoreV2Configuration())
                 .thenReturn(mockCrosscoreV2Configuration);
         when(mockCrosscoreV2Configuration.getTenantId()).thenReturn("12345");
+
+        if (strategy == Strategy.NO_CHANGE) {
+            when(mockCrosscoreV2Configuration.getEndpointUri()).thenReturn("http://localhost");
+        } else {
+            when(mockCrosscoreV2Configuration.getEndpointURIs())
+                    .thenReturn(
+                            Map.of(
+                                    "STUB",
+                                    "http://stub",
+                                    "UAT",
+                                    "http://uat",
+                                    "LIVE",
+                                    "http://live"));
+        }
+
         when(mockRequestMapper.mapPersonIdentity(personIdentity, "12345"))
                 .thenReturn(testApiRequest);
 
@@ -114,7 +134,8 @@ class ThirdPartyFraudGatewayTest {
                 .thenReturn(testFraudCheckResult);
 
         FraudCheckResult actualFraudCheckResult =
-                thirdPartyFraudGateway.performFraudCheck(personIdentity, TEST_ACCESS_TOKEN);
+                thirdPartyFraudGateway.performFraudCheck(
+                        personIdentity, TEST_ACCESS_TOKEN, strategy);
 
         InOrder inOrderMockEventProbe = inOrder(mockEventProbe);
         inOrderMockEventProbe
@@ -161,6 +182,7 @@ class ThirdPartyFraudGatewayTest {
         when(fraudCheckConfigurationService.getCrosscoreV2Configuration())
                 .thenReturn(mockCrosscoreV2Configuration);
         when(mockCrosscoreV2Configuration.getTenantId()).thenReturn("12345");
+        when(mockCrosscoreV2Configuration.getEndpointUri()).thenReturn("http://localhost");
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
         ArgumentCaptor<HttpEntityEnclosingRequestBase> httpRequestCaptor =
@@ -188,7 +210,7 @@ class ThirdPartyFraudGatewayTest {
                         OAuthErrorResponseException.class,
                         () ->
                                 thirdPartyFraudGateway.performFraudCheck(
-                                        personIdentity, TEST_ACCESS_TOKEN),
+                                        personIdentity, TEST_ACCESS_TOKEN, Strategy.NO_CHANGE),
                         "Expected OAuthErrorResponseException");
 
         assertEquals(expectedReturnedException.getStatusCode(), thrownException.getStatusCode());
@@ -240,6 +262,7 @@ class ThirdPartyFraudGatewayTest {
         when(fraudCheckConfigurationService.getCrosscoreV2Configuration())
                 .thenReturn(mockCrosscoreV2Configuration);
         when(mockCrosscoreV2Configuration.getTenantId()).thenReturn("12345");
+        when(mockCrosscoreV2Configuration.getEndpointUri()).thenReturn("http://localhost");
 
         when(this.mockObjectMapper.writeValueAsString(testApiRequest)).thenReturn(testRequestBody);
 
@@ -253,7 +276,8 @@ class ThirdPartyFraudGatewayTest {
                 .thenReturn(new HTTPReply(errorStatus, null, TEST_API_RESPONSE_BODY));
 
         FraudCheckResult actualFraudCheckResult =
-                thirdPartyFraudGateway.performFraudCheck(personIdentity, TEST_ACCESS_TOKEN);
+                thirdPartyFraudGateway.performFraudCheck(
+                        personIdentity, TEST_ACCESS_TOKEN, Strategy.NO_CHANGE);
 
         InOrder inOrderMockEventProbe = inOrder(mockEventProbe);
         inOrderMockEventProbe
