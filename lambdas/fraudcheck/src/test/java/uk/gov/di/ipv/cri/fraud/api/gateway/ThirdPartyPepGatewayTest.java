@@ -35,6 +35,7 @@ import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -98,7 +99,8 @@ class ThirdPartyPepGatewayTest {
     void shouldInvokeCrosscoreV2PepApi(Strategy strategy)
             throws IOException, OAuthErrorResponseException {
         final String testRequestBody = "serialisedPepApiRequest";
-        final PEPRequest testApiRequest = new PEPRequest();
+
+        final PEPRequest testApiRequest = createMockAPIRequest();
 
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
@@ -179,7 +181,8 @@ class ThirdPartyPepGatewayTest {
     void shouldReturnOAuthErrorResponseExceptionIfThirdPartyApiReturnsInvalidCrosscoreV2Response()
             throws IOException, OAuthErrorResponseException {
         final String testRequestBody = "serialisedCrossCoreApiRequest";
-        final PEPRequest testApiRequest = new PEPRequest();
+
+        final PEPRequest testApiRequest = createMockAPIRequest();
 
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
@@ -260,7 +263,8 @@ class ThirdPartyPepGatewayTest {
     void thirdPartyApiReturnsErrorOnHTTP300CrosscoreV2Response(int errorStatus)
             throws IOException, OAuthErrorResponseException {
         final String testRequestBody = "serialisedCrossCoreApiRequest";
-        final PEPRequest testApiRequest = new PEPRequest();
+
+        final PEPRequest testApiRequest = createMockAPIRequest();
 
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
@@ -318,6 +322,16 @@ class ThirdPartyPepGatewayTest {
         assertEquals(EXPECTED_ERROR, actualPepCheckResult.getErrorMessage());
         assertEquals(HttpPost.class, httpRequestCaptor.getValue().getClass());
         assertHeaders(httpRequestCaptor, true);
+    }
+
+    private PEPRequest createMockAPIRequest() {
+        final uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Header testApiHeader =
+                new uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Header();
+        testApiHeader.setClientReferenceId(UUID.randomUUID().toString());
+        final PEPRequest testApiRequest = new PEPRequest();
+        testApiRequest.setHeader(testApiHeader);
+
+        return testApiRequest;
     }
 
     private void assertHeaders(

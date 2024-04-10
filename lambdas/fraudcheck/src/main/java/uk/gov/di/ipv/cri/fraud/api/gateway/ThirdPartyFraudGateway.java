@@ -135,7 +135,10 @@ public class ThirdPartyFraudGateway {
         Instant startCheck = clock.instant();
 
         final HTTPReply httpReply;
-        LOGGER.info("Submitting {} request", REQUEST_NAME);
+        LOGGER.info(
+                "Submitting {} request... ClientReferenceId {}",
+                REQUEST_NAME,
+                apiRequest.getHeader().getClientReferenceId());
         try {
             httpReply =
                     httpRetryer.sendHTTPRequestRetryIfAllowed(
