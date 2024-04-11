@@ -173,7 +173,7 @@ public class TokenRequestService {
         URI requestURI = selectRequestURI(strategy);
 
         final String correlationId = UUID.randomUUID().toString();
-        LOGGER.info("{} Correlation Id {}", REQUEST_NAME, correlationId);
+        LOGGER.info("{} CorrelationId {}", REQUEST_NAME, correlationId);
 
         // Token Request is posted as if via a form
         final HttpPost request = new HttpPost();

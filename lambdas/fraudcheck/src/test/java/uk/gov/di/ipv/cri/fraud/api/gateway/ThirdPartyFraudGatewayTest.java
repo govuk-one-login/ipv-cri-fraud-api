@@ -35,6 +35,7 @@ import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -89,7 +90,8 @@ class ThirdPartyFraudGatewayTest {
     void shouldInvokeExperianCrosscoreV2ApiForClientId(Strategy strategy)
             throws IOException, OAuthErrorResponseException {
         final String testRequestBody = "serialisedCrossCoreApiRequest";
-        final IdentityVerificationRequest testApiRequest = new IdentityVerificationRequest();
+
+        IdentityVerificationRequest testApiRequest = createMockAPIRequest();
 
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
@@ -172,7 +174,8 @@ class ThirdPartyFraudGatewayTest {
     void shouldReturnOAuthErrorResponseExceptionIfThirdPartyApiReturnsInvalidCrosscoreV2Response()
             throws IOException, OAuthErrorResponseException {
         final String testRequestBody = "serialisedCrossCoreApiRequest";
-        final IdentityVerificationRequest testApiRequest = new IdentityVerificationRequest();
+
+        IdentityVerificationRequest testApiRequest = createMockAPIRequest();
 
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
@@ -253,7 +256,8 @@ class ThirdPartyFraudGatewayTest {
     void thirdPartyApiReturnsErrorOnUnexpectedHTTPStatusCrosscoreV2Response(int errorStatus)
             throws IOException, OAuthErrorResponseException {
         final String testRequestBody = "serialisedCrossCoreApiRequest";
-        final IdentityVerificationRequest testApiRequest = new IdentityVerificationRequest();
+
+        IdentityVerificationRequest testApiRequest = createMockAPIRequest();
 
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
@@ -310,6 +314,16 @@ class ThirdPartyFraudGatewayTest {
         assertEquals(EXPECTED_ERROR, actualFraudCheckResult.getErrorMessage());
         assertEquals(HttpPost.class, httpRequestCaptor.getValue().getClass());
         assertHeaders(httpRequestCaptor);
+    }
+
+    private IdentityVerificationRequest createMockAPIRequest() {
+        final uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Header testApiHeader =
+                new uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Header();
+        testApiHeader.setClientReferenceId(UUID.randomUUID().toString());
+        final IdentityVerificationRequest testApiRequest = new IdentityVerificationRequest();
+        testApiRequest.setHeader(testApiHeader);
+
+        return testApiRequest;
     }
 
     private void assertHeaders(ArgumentCaptor<HttpEntityEnclosingRequestBase> httpRequestCaptor) {

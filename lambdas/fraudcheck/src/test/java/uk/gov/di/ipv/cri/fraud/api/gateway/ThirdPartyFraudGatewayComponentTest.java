@@ -31,6 +31,7 @@ import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -77,7 +78,11 @@ class ThirdPartyFraudGatewayComponentTest {
     @Test
     void testCrosscoreV2PepsResponseBodyCanBeDeserialized()
             throws IOException, OAuthErrorResponseException {
+        final uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Header testApiHeader =
+                new uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Header();
+        testApiHeader.setClientReferenceId(UUID.randomUUID().toString());
         final PEPRequest testApiRequest = new PEPRequest();
+        testApiRequest.setHeader(testApiHeader);
 
         PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentity(AddressType.CURRENT);
