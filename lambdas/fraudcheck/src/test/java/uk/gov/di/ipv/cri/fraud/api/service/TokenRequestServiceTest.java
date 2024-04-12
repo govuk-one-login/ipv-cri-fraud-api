@@ -98,7 +98,8 @@ class TokenRequestServiceTest {
     private TokenRequestService tokenRequestService;
 
     @Mock DynamoDbTable<TokenItem> mockTokenTable; // To mock the internals of Datastore
-    private final Key TOKEN_ITEM_KEY = Key.builder().partitionValue(TOKEN_ITEM_ID).build();
+    private final Key TOKEN_ITEM_KEY =
+            Key.builder().partitionValue(Strategy.NO_CHANGE.name() + TOKEN_ITEM_ID).build();
 
     @BeforeEach
     void setUp() {

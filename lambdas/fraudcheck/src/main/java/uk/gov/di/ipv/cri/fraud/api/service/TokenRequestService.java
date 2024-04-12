@@ -109,7 +109,7 @@ public class TokenRequestService {
             throws OAuthErrorResponseException {
         LOGGER.info("Checking Table {} for existing cached token", tokenTableName);
 
-        TokenItem tokenItem = getTokenItemFromTable();
+        TokenItem tokenItem = getTokenItemFromTable(strategy);
 
         boolean existingCachedToken = tokenItem != null;
         boolean tokenTtlHasExpired =
@@ -136,7 +136,7 @@ public class TokenRequestService {
 
                 tokenItem = new TokenItem(newTokenResponse.getAccessToken());
 
-                saveTokenItem(tokenItem);
+                saveTokenItem(tokenItem, strategy);
             } catch (Exception exception) {
                 LOGGER.error(
                         "Failed to generate new token. Continuing to use existing token ",
@@ -311,13 +311,14 @@ public class TokenRequestService {
         }
     }
 
-    private TokenItem getTokenItemFromTable() {
-        return dataStore.getItem(TOKEN_ITEM_ID);
+    private TokenItem getTokenItemFromTable(Strategy strategy) {
+        return dataStore.getItem(strategy.name() + TOKEN_ITEM_ID);
     }
 
-    private void saveTokenItem(TokenItem tokenItem) {
-        // id=TOKEN_ITEM_ID as same TokenItem is always used
-        tokenItem.setId(TOKEN_ITEM_ID);
+    private void saveTokenItem(TokenItem tokenItem, Strategy strategy) {
+        // id=<TestStrategyRoute>TOKEN_ITEM_ID as same TokenItem used is dependent on 3rd party
+        // route
+        tokenItem.setId(strategy.name() + TOKEN_ITEM_ID);
 
         long ttlSeconds = Instant.now().plusSeconds(TOKEN_ITEM_TTL_SECS).getEpochSecond();
 
