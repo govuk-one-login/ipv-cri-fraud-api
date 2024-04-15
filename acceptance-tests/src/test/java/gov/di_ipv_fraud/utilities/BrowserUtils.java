@@ -421,7 +421,7 @@ public class BrowserUtils {
         }
 
         String currentURL = Driver.get().getCurrentUrl();
-        String newURL = currentURL + "/?lang=" + languageCode;
+        String newURL = currentURL + "/?lng=" + languageCode;
         Driver.get().get(newURL);
     }
 
