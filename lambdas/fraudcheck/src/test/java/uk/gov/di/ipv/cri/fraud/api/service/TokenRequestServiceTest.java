@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -52,6 +53,7 @@ import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetri
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.TOKEN_REQUEST_SEND_ERROR;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.TOKEN_REQUEST_SEND_OK;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.TOKEN_RESPONSE_FAILED_TO_GENERATE_NEW_TOKEN_METRIC;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.TOKEN_RESPONSE_LATENCY;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.TOKEN_RESPONSE_TYPE_EXPECTED_HTTP_STATUS;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.TOKEN_RESPONSE_TYPE_INVALID;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.TOKEN_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS;
@@ -165,6 +167,9 @@ class TokenRequestServiceTest {
                 .counterMetric(TOKEN_REQUEST_SEND_OK.withEndpointPrefix());
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
+                .counterMetric(eq(TOKEN_RESPONSE_LATENCY.withEndpointPrefix()), anyDouble());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
                 .counterMetric(TOKEN_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
@@ -211,6 +216,9 @@ class TokenRequestServiceTest {
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
                 .counterMetric(TOKEN_REQUEST_CREATED.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(eq(TOKEN_RESPONSE_LATENCY.withEndpointPrefix()), anyDouble());
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
                 .counterMetric(
@@ -263,6 +271,9 @@ class TokenRequestServiceTest {
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
                 .counterMetric(TOKEN_REQUEST_SEND_OK.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(eq(TOKEN_RESPONSE_LATENCY.withEndpointPrefix()), anyDouble());
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
                 .counterMetric(TOKEN_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS.withEndpointPrefix());
@@ -319,6 +330,9 @@ class TokenRequestServiceTest {
                 .counterMetric(TOKEN_REQUEST_SEND_OK.withEndpointPrefix());
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
+                .counterMetric(eq(TOKEN_RESPONSE_LATENCY.withEndpointPrefix()), anyDouble());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
                 .counterMetric(TOKEN_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS.withEndpointPrefix());
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
@@ -367,6 +381,9 @@ class TokenRequestServiceTest {
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
                 .counterMetric(TOKEN_REQUEST_SEND_OK.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(eq(TOKEN_RESPONSE_LATENCY.withEndpointPrefix()), anyDouble());
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
                 .counterMetric(TOKEN_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
@@ -435,6 +452,9 @@ class TokenRequestServiceTest {
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe, times(1))
                 .counterMetric(TOKEN_REQUEST_SEND_OK.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(eq(TOKEN_RESPONSE_LATENCY.withEndpointPrefix()), anyDouble());
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe, times(1))
                 .counterMetric(TOKEN_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
@@ -506,6 +526,9 @@ class TokenRequestServiceTest {
                 .counterMetric(TOKEN_REQUEST_SEND_OK.withEndpointPrefix());
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe, times(1))
+                .counterMetric(eq(TOKEN_RESPONSE_LATENCY.withEndpointPrefix()), anyDouble());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe, times(1))
                 .counterMetric(TOKEN_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe, times(1))
@@ -517,6 +540,9 @@ class TokenRequestServiceTest {
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe, times(1))
                 .counterMetric(TOKEN_REQUEST_SEND_OK.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe, times(1))
+                .counterMetric(eq(TOKEN_RESPONSE_LATENCY.withEndpointPrefix()), anyDouble());
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe, times(1))
                 .counterMetric(TOKEN_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
@@ -571,6 +597,9 @@ class TokenRequestServiceTest {
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
                 .counterMetric(TOKEN_REQUEST_SEND_OK.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(eq(TOKEN_RESPONSE_LATENCY.withEndpointPrefix()), anyDouble());
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
                 .counterMetric(TOKEN_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
@@ -637,6 +666,9 @@ class TokenRequestServiceTest {
                 .counterMetric(TOKEN_REQUEST_SEND_OK.withEndpointPrefix());
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
+                .counterMetric(eq(TOKEN_RESPONSE_LATENCY.withEndpointPrefix()), anyDouble());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
                 .counterMetric(TOKEN_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
@@ -698,6 +730,9 @@ class TokenRequestServiceTest {
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
                 .counterMetric(TOKEN_REQUEST_SEND_OK.withEndpointPrefix());
+        inOrderMockEventProbeSequence
+                .verify(mockEventProbe)
+                .counterMetric(eq(TOKEN_RESPONSE_LATENCY.withEndpointPrefix()), anyDouble());
         inOrderMockEventProbeSequence
                 .verify(mockEventProbe)
                 .counterMetric(TOKEN_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());

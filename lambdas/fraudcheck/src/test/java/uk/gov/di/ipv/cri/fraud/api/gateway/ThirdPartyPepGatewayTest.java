@@ -50,13 +50,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse.ERROR_PEP_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_REQUEST_CREATED;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_REQUEST_SEND_OK;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_RESPONSE_TYPE_EXPECTED_HTTP_STATUS;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_RESPONSE_TYPE_INVALID;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_RESPONSE_TYPE_VALID;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.THIRD_PARTY_PEP_RESPONSE_LATENCY;
 
 @ExtendWith(MockitoExtension.class)
 class ThirdPartyPepGatewayTest {
@@ -154,7 +154,8 @@ class ThirdPartyPepGatewayTest {
                 .counterMetric(PEP_REQUEST_SEND_OK.withEndpointPrefix());
         inOrderMockEventProbe
                 .verify(mockEventProbe)
-                .counterMetric(eq(THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS), anyDouble());
+                .counterMetric(
+                        eq(THIRD_PARTY_PEP_RESPONSE_LATENCY.toString().toLowerCase()), anyDouble());
         inOrderMockEventProbe
                 .verify(mockEventProbe)
                 .counterMetric(PEP_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
@@ -235,7 +236,8 @@ class ThirdPartyPepGatewayTest {
                 .counterMetric(PEP_REQUEST_SEND_OK.withEndpointPrefix());
         inOrderMockEventProbe
                 .verify(mockEventProbe)
-                .counterMetric(eq(THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS), anyDouble());
+                .counterMetric(
+                        eq(THIRD_PARTY_PEP_RESPONSE_LATENCY.toString().toLowerCase()), anyDouble());
         inOrderMockEventProbe
                 .verify(mockEventProbe)
                 .counterMetric(PEP_RESPONSE_TYPE_EXPECTED_HTTP_STATUS.withEndpointPrefix());
@@ -300,7 +302,8 @@ class ThirdPartyPepGatewayTest {
                 .counterMetric(PEP_REQUEST_SEND_OK.withEndpointPrefix());
         inOrderMockEventProbe
                 .verify(mockEventProbe)
-                .counterMetric(eq(THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS), anyDouble());
+                .counterMetric(
+                        eq(THIRD_PARTY_PEP_RESPONSE_LATENCY.toString().toLowerCase()), anyDouble());
         inOrderMockEventProbe
                 .verify(mockEventProbe)
                 .counterMetric(PEP_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS.withEndpointPrefix());
