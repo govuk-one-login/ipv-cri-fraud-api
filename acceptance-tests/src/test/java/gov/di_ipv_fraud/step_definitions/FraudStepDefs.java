@@ -2,6 +2,7 @@ package gov.di_ipv_fraud.step_definitions;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import gov.di_ipv_fraud.pages.FraudPageObject;
+import gov.di_ipv_fraud.utilities.BrowserUtils;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -38,6 +39,13 @@ public class FraudStepDefs extends FraudPageObject {
     @And("^I navigate to the verifiable issuer to check for a (.*) response from thirdParty")
     public void navigateToVerifiableIssuer(String validOrInvalid) {
         navigateToResponse(validOrInvalid);
+    }
+
+    @And("^User clicks Parhau")
+    public void userClicksParhau() {
+        checkYourDetailsContinueWales.click();
+        BrowserUtils.waitForVisibility(viewResponse, 5);
+        viewResponse.click();
     }
 
     @Then("^I navigate to (.*) and assert I have been directed correctly$")
@@ -196,5 +204,15 @@ public class FraudStepDefs extends FraudPageObject {
     @And("^JSON payload should contain JTI field$")
     public void jsonPayloadShouldContainJtiField() throws IOException {
         assertJtiIsPresentAndNotNull();
+    }
+
+    @Given("User clicks on language toggle and switches to Welsh")
+    public void userClickOnLanguageToggle() {
+        languageToggle.click();
+    }
+
+    @Given("User clicks language toggle and switches to English")
+    public void userClickOnLanguageToggleWales() {
+        languageToggleWales.click();
     }
 }
