@@ -27,7 +27,7 @@ public class SleepHelper {
         long startTime = System.currentTimeMillis();
         long futureTime = startTime + waitDuration;
 
-        LOGGER.info("busyWaitWithExponentialBackOff start time : {}", startTime);
+        LOGGER.debug("busyWaitWithExponentialBackOff start time : {}", startTime);
 
         while (System.currentTimeMillis() < futureTime) {
             // Intended
@@ -36,7 +36,7 @@ public class SleepHelper {
         long endTime = System.currentTimeMillis();
         long timeWaited = (endTime - startTime);
 
-        LOGGER.info("busyWaitWithExponentialBackOff end time : {}", endTime);
+        LOGGER.debug("busyWaitWithExponentialBackOff end time : {}", endTime);
 
         return timeWaited;
     }
@@ -48,7 +48,7 @@ public class SleepHelper {
         long startTime = System.currentTimeMillis();
         long futureTime = startTime + waitDuration;
 
-        LOGGER.info("busyWaitMilliseconds start time : {}", startTime);
+        LOGGER.debug("busyWaitMilliseconds start time : {}", startTime);
 
         while (System.currentTimeMillis() < futureTime) {
             // Intended
@@ -57,7 +57,7 @@ public class SleepHelper {
         long endTime = System.currentTimeMillis();
         long timeWaited = (endTime - startTime);
 
-        LOGGER.info("busyWaitMilliseconds end time : {}", endTime);
+        LOGGER.debug("busyWaitMilliseconds end time : {}", endTime);
 
         return timeWaited;
     }

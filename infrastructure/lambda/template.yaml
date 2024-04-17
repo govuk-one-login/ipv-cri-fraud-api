@@ -607,11 +607,103 @@ Resources:
       FunctionName: !GetAtt IssueCredentialFunction.Arn
       Principal: apigateway.amazonaws.com
 
+  ####################################################################
+  #                                                                  #
+  # Dynamo Test Function                                             #
+  #                                                                  #
+  ####################################################################
+
+  DynamoTestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 600
+      MemorySize: 4096
+      CodeUri: ../../lambdas/dynamodbtest
+      Handler: uk.gov.di.ipv.cri.fraud.dynamotest.handler.DynamoDBRWTestHandler::handleRequest
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-dynamodbtest"
+          ENVIRONMENT: !Ref Environment
+          DynamoDBTestTableName: !Select [1, !Split ['/', !GetAtt DynamoDBTestTable.Arn]]
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSXrayWriteOnlyAccess
+        - DynamoDBWritePolicy:
+            TableName: !Select [1, !Split ['/', !GetAtt DynamoDBTestTable.Arn]]
+        - DynamoDBReadPolicy:
+            TableName: !Select [1, !Split ['/', !GetAtt DynamoDBTestTable.Arn]]
+
+  DynamoTestFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: DynamoDBTestTable
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${DynamoTestFunction}"
+      RetentionInDays: 30
+
+  DynamoTestFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt DynamoTestFunction.Arn
+      Principal: apigateway.amazonaws.com
+
 ####################################################################
 #                                                                  #
 # Database Tables                                                  #
 #                                                                  #
 ####################################################################
+
+  DynamoDBTestTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      TableName: !Sub "db-test-session-table-${AWS::StackName}"
+      BillingMode: "PAY_PER_REQUEST"
+      AttributeDefinitions:
+        - AttributeName: "sessionId"
+          AttributeType: "S"
+        - AttributeName: "authorizationCode"
+          AttributeType: "S"
+        - AttributeName: "accessToken"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "sessionId"
+          KeyType: "HASH"
+      GlobalSecondaryIndexes:
+        - IndexName: "db-test-authorizationCode-index"
+          KeySchema:
+            - AttributeName: "authorizationCode"
+              KeyType: "HASH"
+          Projection:
+            NonKeyAttributes:
+              - "sessionId"
+              - "redirectUri"
+              - "clientId"
+            ProjectionType: "INCLUDE"
+        - IndexName: "db-test-access-token-index"
+          KeySchema:
+            - AttributeName: "accessToken"
+              KeyType: "HASH"
+          Projection:
+            NonKeyAttributes:
+              - "sessionId"
+              - "subject"
+            ProjectionType: "INCLUDE"
+        - IndexName: "access-token-index-with-event-data"
+          KeySchema:
+            - AttributeName: "accessToken"
+              KeyType: "HASH"
+          Projection:
+            NonKeyAttributes:
+              - "sessionId"
+              - "subject"
+              - "persistentSessionId"
+              - "clientSessionId"
+              - "clientIpAddress"
+              - "clientId"
+            ProjectionType: "INCLUDE"
+      TimeToLiveSpecification:
+        AttributeName: expiryDate
+        Enabled: true
 
   FraudTable:
     Type: "AWS::DynamoDB::Table" # enable encryption with customer managed kms key. Will need new kms key

@@ -4,4 +4,5 @@ include "lib",
 		"lambdas",
 		"lambdas:fraudcheck",
 		"lambdas:issuecredential",
+		"lambdas:dynamodbtest",
 		"acceptance-tests"
