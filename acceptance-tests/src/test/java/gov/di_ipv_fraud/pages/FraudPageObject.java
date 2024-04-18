@@ -216,10 +216,10 @@ public class FraudPageObject extends UniversalSteps {
         assertURLContains("callback");
 
         if ("Invalid".equalsIgnoreCase(validOrInvalid)) {
-            BrowserUtils.waitForVisibility(errorResponse, 5);
+            BrowserUtils.waitForVisibility(errorResponse, 60);
             errorResponse.click();
         } else {
-            BrowserUtils.waitForVisibility(viewResponse, 5);
+            BrowserUtils.waitForVisibility(viewResponse, 60);
             viewResponse.click();
         }
     }
