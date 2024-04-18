@@ -58,6 +58,9 @@ public class FraudPageObject extends UniversalSteps {
     @FindBy(xpath = "//*[@id=\"main-content\"]/div/div/form/button")
     public WebElement checkYourDetailsContinue;
 
+    @FindBy(xpath = "/html/body/div[2]/main/div/div/form/button")
+    public WebElement checkYourDetailsContinueWales;
+
     @FindBy(xpath = "//*[@id=\"main-content\"]/div/details/summary/span")
     public WebElement viewResponse;
 
@@ -150,6 +153,12 @@ public class FraudPageObject extends UniversalSteps {
 
     @FindBy(id = "SecondaryUKAddress.validUntilYear")
     public WebElement secondAddresssvalidToYearField;
+
+    @FindBy(xpath = "/html/body/div[2]/nav/ul/li[2]/a")
+    public WebElement languageToggle;
+
+    @FindBy(xpath = "/html/body/div[2]/nav/ul/li[1]/a")
+    public WebElement languageToggleWales;
 
     public FraudPageObject() {
         this.configurationService = new ConfigurationService(System.getenv("ENVIRONMENT"));

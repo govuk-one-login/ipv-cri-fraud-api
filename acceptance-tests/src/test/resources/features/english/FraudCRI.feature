@@ -344,3 +344,13 @@ Feature: Fraud CRI
     Examples:
       | name                    | dob              | ci   | score  |
       | ALBERT NO_FILE_35       | 05/10/1943       |      | 1      |
+
+  @build-fraud @stub
+  Scenario: Language Toggle Validation
+    Given I navigate to the IPV Core Stub
+    And I click the Fraud CRI for the testEnvironment
+    Then I search for user number 12 in the ThirdParty table
+    Then User clicks on language toggle and switches to Welsh
+    And User clicks Parhau
+    And JSON payload should contain JTI field
+    And The test is complete and I close the driver
