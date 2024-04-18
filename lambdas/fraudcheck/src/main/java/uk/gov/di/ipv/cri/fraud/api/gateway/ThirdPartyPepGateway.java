@@ -23,17 +23,14 @@ import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryer;
 import uk.gov.di.ipv.cri.fraud.library.strategy.Strategy;
 import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
+import uk.gov.di.ipv.cri.fraud.library.util.StopWatch;
 
 import java.io.IOException;
 import java.net.URI;
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Objects;
 
 import static uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse.ERROR_PEP_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE;
 import static uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse.FAILED_TO_CREATE_API_REQUEST_FOR_PEP_CHECK;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_REQUEST_CREATED;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_REQUEST_SEND_ERROR;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_REQUEST_SEND_OK;
@@ -41,6 +38,7 @@ import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetri
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_RESPONSE_TYPE_INVALID;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.PEP_RESPONSE_TYPE_VALID;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.THIRD_PARTY_PEP_RESPONSE_LATENCY;
 
 public class ThirdPartyPepGateway {
 
@@ -55,7 +53,6 @@ public class ThirdPartyPepGateway {
     private final IdentityVerificationResponseMapper responseMapper;
     private final ObjectMapper objectMapper;
     private final EventProbe eventProbe;
-    private final Clock clock;
 
     // HTTP
     private final HttpRetryStatusConfig pepHttpRetryStatusConfig;
@@ -66,6 +63,8 @@ public class ThirdPartyPepGateway {
     private static final int CONNECTION_ESTABLISHMENT_TIMEOUT_MS = 5000;
     public static final int PEP_HTTP_RESPONSE_TIMEOUT_MS = 20000;
     private final RequestConfig pepCheckRequestConfig;
+
+    private final StopWatch stopWatch;
 
     public ThirdPartyPepGateway(
             HttpRetryer httpRetryer,
@@ -86,7 +85,6 @@ public class ThirdPartyPepGateway {
         this.objectMapper = objectMapper;
         this.fraudCheckConfigurationService = fraudCheckConfigurationService;
         this.eventProbe = eventProbe;
-        this.clock = Clock.systemUTC();
 
         this.pepHttpRetryStatusConfig = new PepCheckHttpRetryStatusConfig();
 
@@ -95,6 +93,8 @@ public class ThirdPartyPepGateway {
                         POOL_REQUEST_TIMEOUT_MS,
                         CONNECTION_ESTABLISHMENT_TIMEOUT_MS,
                         PEP_HTTP_RESPONSE_TIMEOUT_MS);
+
+        this.stopWatch = new StopWatch();
     }
 
     public PepCheckResult performPepCheck(
@@ -131,13 +131,12 @@ public class ThirdPartyPepGateway {
 
         eventProbe.counterMetric(PEP_REQUEST_CREATED.withEndpointPrefix());
 
-        Instant startCheck = clock.instant();
-
         final HTTPReply httpReply;
         LOGGER.info(
                 "Submitting {} request... ClientReferenceId {}",
                 REQUEST_NAME,
                 apiRequest.getHeader().getClientReferenceId());
+        stopWatch.start();
         try {
             httpReply =
                     httpRetryer.sendHTTPRequestRetryIfAllowed(
@@ -148,21 +147,22 @@ public class ThirdPartyPepGateway {
             LOGGER.error("IOException executing {} http request {}", REQUEST_NAME, e.getMessage());
             eventProbe.counterMetric(PEP_REQUEST_SEND_ERROR.withEndpointPrefix());
 
-            captureAndLogRequestLatency(startCheck);
+            captureAndLogRequestLatency();
 
             throw new OAuthErrorResponseException(
                     HttpStatusCode.INTERNAL_SERVER_ERROR,
                     ErrorResponse.ERROR_SENDING_PEP_CHECK_REQUEST);
         }
 
-        captureAndLogRequestLatency(startCheck);
+        captureAndLogRequestLatency();
 
         return pepCheckResponseHandler(httpReply);
     }
 
-    private void captureAndLogRequestLatency(Instant startCheck) {
-        long latency = Duration.between(startCheck, clock.instant()).toMillis();
-        eventProbe.counterMetric(THIRD_PARTY_PEP_RESPONSE_LATENCY_MILLIS, latency);
+    private void captureAndLogRequestLatency() {
+        long latency = stopWatch.stop();
+        eventProbe.counterMetric(
+                THIRD_PARTY_PEP_RESPONSE_LATENCY.toString().toLowerCase(), stopWatch.stop());
         LOGGER.info("{} latency {}", REQUEST_NAME, latency);
     }
 

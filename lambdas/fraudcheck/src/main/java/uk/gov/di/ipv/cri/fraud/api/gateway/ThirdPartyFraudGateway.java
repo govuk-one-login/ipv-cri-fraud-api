@@ -23,18 +23,15 @@ import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryer;
 import uk.gov.di.ipv.cri.fraud.library.strategy.Strategy;
 import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
+import uk.gov.di.ipv.cri.fraud.library.util.StopWatch;
 
 import java.io.IOException;
 import java.net.URI;
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Objects;
 
 import static uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse.ERROR_FRAUD_CHECK_RETURNED_UNEXPECTED_HTTP_STATUS_CODE;
 import static uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse.ERROR_SENDING_FRAUD_CHECK_REQUEST;
 import static uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse.FAILED_TO_CREATE_API_REQUEST_FOR_FRAUD_CHECK;
-import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.THIRD_PARTY_FRAUD_RESPONSE_LATENCY_MILLIS;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_REQUEST_CREATED;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_REQUEST_SEND_ERROR;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_REQUEST_SEND_OK;
@@ -42,6 +39,7 @@ import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetri
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_RESPONSE_TYPE_INVALID;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_RESPONSE_TYPE_UNEXPECTED_HTTP_STATUS;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.FRAUD_RESPONSE_TYPE_VALID;
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.THIRD_PARTY_FRAUD_RESPONSE_LATENCY;
 
 public class ThirdPartyFraudGateway {
 
@@ -56,7 +54,6 @@ public class ThirdPartyFraudGateway {
     private final IdentityVerificationResponseMapper responseMapper;
     private final ObjectMapper objectMapper;
     private final EventProbe eventProbe;
-    private final Clock clock;
 
     // HTTP
     private final HttpRetryStatusConfig fraudHttpRetryStatusConfig;
@@ -67,6 +64,8 @@ public class ThirdPartyFraudGateway {
     private static final int CONNECTION_ESTABLISHMENT_TIMEOUT_MS = 5000;
     public static final int FRAUD_HTTP_RESPONSE_TIMEOUT_MS = 5000;
     private final RequestConfig fraudCheckRequestConfig;
+
+    private final StopWatch stopWatch;
 
     public ThirdPartyFraudGateway(
             HttpRetryer httpRetryer,
@@ -87,7 +86,6 @@ public class ThirdPartyFraudGateway {
         this.objectMapper = objectMapper;
         this.fraudCheckConfigurationService = fraudCheckConfigurationService;
         this.eventProbe = eventProbe;
-        this.clock = Clock.systemUTC();
 
         this.fraudHttpRetryStatusConfig = new FraudCheckHttpRetryStatusConfig();
 
@@ -96,6 +94,8 @@ public class ThirdPartyFraudGateway {
                         POOL_REQUEST_TIMEOUT_MS,
                         CONNECTION_ESTABLISHMENT_TIMEOUT_MS,
                         FRAUD_HTTP_RESPONSE_TIMEOUT_MS);
+
+        this.stopWatch = new StopWatch();
     }
 
     public FraudCheckResult performFraudCheck(
@@ -132,13 +132,12 @@ public class ThirdPartyFraudGateway {
 
         eventProbe.counterMetric(FRAUD_REQUEST_CREATED.withEndpointPrefix());
 
-        Instant startCheck = clock.instant();
-
         final HTTPReply httpReply;
         LOGGER.info(
                 "Submitting {} request... ClientReferenceId {}",
                 REQUEST_NAME,
                 apiRequest.getHeader().getClientReferenceId());
+        stopWatch.start();
         try {
             httpReply =
                     httpRetryer.sendHTTPRequestRetryIfAllowed(
@@ -149,20 +148,21 @@ public class ThirdPartyFraudGateway {
             LOGGER.error("IOException executing {} http request {}", REQUEST_NAME, e.getMessage());
             eventProbe.counterMetric(FRAUD_REQUEST_SEND_ERROR.withEndpointPrefix());
 
-            captureAndLogRequestLatency(startCheck);
+            captureAndLogRequestLatency();
 
             throw new OAuthErrorResponseException(
                     HttpStatusCode.INTERNAL_SERVER_ERROR, ERROR_SENDING_FRAUD_CHECK_REQUEST);
         }
 
-        captureAndLogRequestLatency(startCheck);
+        captureAndLogRequestLatency();
 
         return fraudCheckResponseHandler(httpReply);
     }
 
-    private void captureAndLogRequestLatency(Instant startCheck) {
-        long latency = Duration.between(startCheck, clock.instant()).toMillis();
-        eventProbe.counterMetric(THIRD_PARTY_FRAUD_RESPONSE_LATENCY_MILLIS, latency);
+    private void captureAndLogRequestLatency() {
+        long latency = stopWatch.stop();
+        eventProbe.counterMetric(
+                THIRD_PARTY_FRAUD_RESPONSE_LATENCY.toString().toLowerCase(), stopWatch.stop());
         LOGGER.info("{} latency {}", REQUEST_NAME, latency);
     }
 

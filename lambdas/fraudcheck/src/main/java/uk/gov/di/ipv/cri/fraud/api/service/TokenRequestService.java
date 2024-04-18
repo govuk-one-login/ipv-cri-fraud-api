@@ -25,6 +25,7 @@ import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryStatusConfig;
 import uk.gov.di.ipv.cri.fraud.library.service.HttpRetryer;
 import uk.gov.di.ipv.cri.fraud.library.strategy.Strategy;
 import uk.gov.di.ipv.cri.fraud.library.util.HTTPReply;
+import uk.gov.di.ipv.cri.fraud.library.util.StopWatch;
 
 import java.io.IOException;
 import java.net.URI;
@@ -33,6 +34,8 @@ import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+
+import static uk.gov.di.ipv.cri.fraud.library.metrics.ThirdPartyAPIEndpointMetric.TOKEN_RESPONSE_LATENCY;
 
 public class TokenRequestService {
 
@@ -76,6 +79,8 @@ public class TokenRequestService {
     public static final String INVALID_EXPIRY_WINDOW_ERROR_MESSAGE =
             "Token expiry window not valid";
 
+    private final StopWatch stopWatch;
+
     public TokenRequestService(
             CrosscoreV2Configuration crosscoreV2Configuration,
             DynamoDbEnhancedClient dynamoDbEnhancedClient,
@@ -103,6 +108,8 @@ public class TokenRequestService {
         this.eventProbe = eventProbe;
 
         this.httpRetryStatusConfig = new TokenHttpRetryStatusConfig();
+
+        this.stopWatch = new StopWatch();
     }
 
     public String requestToken(boolean alwaysRequestNewToken, Strategy strategy)
@@ -224,6 +231,7 @@ public class TokenRequestService {
         String requestURIString = requestURI.toString();
         LOGGER.debug("{} request endpoint is {}", REQUEST_NAME, requestURIString);
         LOGGER.info("Submitting {} request to third party...", REQUEST_NAME);
+        stopWatch.start();
         try {
             httpReply =
                     httpRetryer.sendHTTPRequestRetryIfAllowed(
@@ -231,6 +239,8 @@ public class TokenRequestService {
             eventProbe.counterMetric(
                     ThirdPartyAPIEndpointMetric.TOKEN_REQUEST_SEND_OK.withEndpointPrefix());
         } catch (IOException e) {
+            // No Response Latency
+            eventProbe.counterMetric(TOKEN_RESPONSE_LATENCY.withEndpointPrefix(), stopWatch.stop());
 
             LOGGER.error("IOException executing {} request - {}", REQUEST_NAME, e.getMessage());
 
@@ -242,6 +252,9 @@ public class TokenRequestService {
                     HttpStatusCode.INTERNAL_SERVER_ERROR,
                     ErrorResponse.ERROR_INVOKING_THIRD_PARTY_API_TOKEN_ENDPOINT);
         }
+
+        // Response Latency
+        eventProbe.counterMetric(TOKEN_RESPONSE_LATENCY.withEndpointPrefix(), stopWatch.stop());
 
         if (httpReply.statusCode == 200) {
             LOGGER.info("{} status code {}", REQUEST_NAME, httpReply.statusCode);
