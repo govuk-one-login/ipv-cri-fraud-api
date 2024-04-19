@@ -12,6 +12,7 @@ paths:
             type: string
             format: uuid
           required: true
+        - $ref: '#/components/parameters/AuditHeader'
       requestBody:
         content:
           application/json: {}
@@ -51,6 +52,8 @@ paths:
 
   /session:
     post:
+      parameters:
+        - $ref: '#/components/parameters/AuditHeader'
       requestBody:
         content:
           application/json:
@@ -97,6 +100,7 @@ paths:
             type: string
             format: uuid
           required: true
+        - $ref: '#/components/parameters/AuditHeader'
       responses:
         "200":
           description: "200 response"
@@ -125,6 +129,14 @@ paths:
         passthroughBehavior: "when_no_match"
 
 components:
+  parameters:
+    AuditHeader:
+      name: txma-audit-encoded
+      in: header
+      description: An encoded header sent by the FE containing info about request origin
+      required: false
+      schema:
+        type: string
   schemas:
     Authorization:
       required:
@@ -170,6 +182,7 @@ components:
       properties:
         session_id:
           type: "string"
+
 
 x-amazon-apigateway-request-validators:
   Validate both:
