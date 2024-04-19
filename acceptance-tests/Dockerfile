@@ -1,4 +1,4 @@
-FROM gradle:8.1.1-jdk17
+FROM gradle:8.4-jdk17
 # The following will allow you to test building the amd64 image on an arm64 mac
 # DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --tag 'fraud-ac-test-image' .
 

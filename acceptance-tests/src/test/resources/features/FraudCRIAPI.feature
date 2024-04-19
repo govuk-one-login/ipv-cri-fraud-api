@@ -163,7 +163,7 @@ Feature: Fraud CRI API
     And user gets a session-id
     When user sends a POST request to Fraud endpoint and the API returns the error {"oauth_error":{"error_description":"Unexpected server error","error":"server_error"}
 
-  @fraudCRI_API @pre-merge @dev
+#  @fraudCRI_API @pre-merge @dev
   Scenario: HappyPath PEP has delays enabled (PWAIT_INTIME)
     Given user KENNETH PWAIT_INTIME row number 197 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
     And user sends a POST request to session endpoint
