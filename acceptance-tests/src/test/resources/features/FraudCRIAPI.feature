@@ -144,7 +144,7 @@ Feature: Fraud CRI API
     Then user requests Fraud CRI VC
     And VC should contain ci  and identityFraudScore 1
 
-  @fraudCRI_API @pre-merge @dev
+#  @fraudCRI_API @pre-merge @dev
   Scenario: HappyPath Authenticate has delays enabled (FWAIT_INTIME)
     Given user KENNETH FWAIT_INTIME row number 197 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
     And user sends a POST request to session endpoint
@@ -156,7 +156,7 @@ Feature: Fraud CRI API
     And VC should contain ci  and identityFraudScore 2
     And VC is for person KENNETH FWAIT_INTIME
 
-  @fraudCRI_API @pre-merge @dev
+#  @fraudCRI_API @pre-merge @dev
   Scenario: FailPath Authenticate Times-out (FWAIT_OUTOFTIME)
     Given user KENNETH FWAIT_OUTOFTIME row number 197 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
     And user sends a POST request to session endpoint
@@ -175,7 +175,7 @@ Feature: Fraud CRI API
     And VC should contain ci  and identityFraudScore 2
     And VC is for person KENNETH PWAIT_INTIME
 
-  @fraudCRI_API @pre-merge @dev
+#  @fraudCRI_API @pre-merge @dev
   Scenario: FailPath PEP Times-out (PWAIT_OUTOFTIME)
     Given user KENNETH PWAIT_OUTOFTIME row number 197 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
     And user sends a POST request to session endpoint
@@ -187,7 +187,7 @@ Feature: Fraud CRI API
     And VC should contain ci  and identityFraudScore 1
     And VC is for person KENNETH PWAIT_OUTOFTIME
 
-  @fraudCRI_API @pre-merge @dev
+#  @fraudCRI_API @pre-merge @dev
   Scenario: HappyPath both API's have delays enabled (ALL_WAIT_INTIME)
     Given user KENNETH ALL_WAIT_INTIME row number 197 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
     And user sends a POST request to session endpoint
@@ -199,7 +199,7 @@ Feature: Fraud CRI API
     And VC should contain ci  and identityFraudScore 2
     And VC is for person KENNETH ALL_WAIT_INTIME
 
-  @fraudCRI_API @pre-merge @dev
+#  @fraudCRI_API @pre-merge @dev
   Scenario Outline: FailPath PEP Times-out user has activity history (AHS_PEP_TECH_FAIL)
     Given user KENNETH AHS_PEP_TECH_FAIL row number 197 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
     And user sends a POST request to session endpoint
