@@ -2,4 +2,4 @@
 # Enable sdkman_auto_env=true for automatic switching of java version
 # The default location of the configuration file is $HOME/.sdkman/etc/config
 java=17.0.9-amzn
-gradle=8.1.1
+gradle=8.4
