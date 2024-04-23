@@ -212,22 +212,6 @@ Mappings:
       integration: "https://review-f.integration.account.gov.uk"
       production: "https://review-f.account.gov.uk"
 
-  FraudCriPepEnabledMapping:
-    Environment:
-      dev: "true"
-      build: "true"
-      staging: "true"
-      integration: "true"
-      production: "true"
-
-  ActivityHistoryScoreInVcMapping:
-    Environment:
-      dev: "true"
-      build: "true"
-      staging: "true"
-      integration: "true"
-      production: "true"
-
   # Set as EnvVar on the CheckLambda
   # devEnvironmentOnlyEnhancedDebug changes CRI behaviour
   # Do not enable outside of Dev
@@ -488,7 +472,6 @@ Resources:
                   - "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${PREFIX}/testStrategy/noFileFoundThreshold"
                   - PREFIX: !If [UseParameterPrefix, !Ref ParameterPrefix , !Ref AWS::StackName]
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/FraudTableName"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/pepEnabled"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/CrosscoreV2/tokenTableName"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/SessionTableName"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/SessionTtl"
@@ -571,7 +554,6 @@ Resources:
               - !Sub
                 - "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${PREFIX}/contraindicationMappings"
                 - PREFIX: !If [UseParameterPrefix, !Ref ParameterPrefix , !Ref AWS::StackName]
-              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}/activityHistoryEnabled"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/verifiableCredentialKmsSigningKeyId"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/SessionTableName"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${CommonStackName}/verifiable-credential/issuer"
@@ -756,22 +738,6 @@ Resources:
       Type: String
       Value: !FindInMap [FraudCriAudienceMapping, Environment, !Ref 'Environment']
       Description: The fraud credential issuer (audience) identifier
-
-  FraudCriPepEnabledParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/pepEnabled"
-      Type: String
-      Value: !FindInMap [ FraudCriPepEnabledMapping, Environment, !Ref 'Environment' ]
-      Description: The fraud PEP enabled feature toggle
-
-  ParameterReleaseFlagsVcActivityHistory:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/activityHistoryEnabled"
-      Type: String
-      Value: !FindInMap [ ActivityHistoryScoreInVcMapping, Environment, !Ref 'Environment' ]
-      Description: Feature toggle to enable or disable activity history within the VC
 
   JwtTtlUnitParameter:
     Type: AWS::SSM::Parameter
