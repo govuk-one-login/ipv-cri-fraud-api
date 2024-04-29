@@ -50,7 +50,7 @@ jobs:
           sam build -t infrastructure/lambda/template.yaml -b out
 
       - name: Deploy SAM app
-        uses: govuk-one-login/devplatform-upload-action@v3.5
+        uses: govuk-one-login/devplatform-upload-action@v3.8
         with:
           artifact-bucket-name: "${{ secrets.FRAUD_DEV_CRI_V1_ARTIFACT_SOURCE_BUCKET_NAME }}"
           signing-profile-name: "${{ secrets.DEV_SIGNING_PROFILE_NAME }}"
