@@ -24,7 +24,7 @@ ext {
 		// Workaround until dependency resolution is fixed.
 		// ---------------------------------------------------------
 
-		cri_common_lib_version             : "1.5.6",
+		cri_common_lib_version             : "1.6.2",
 
 		// CRI_LIB aws
 		aws_sdk_version                    : "2.20.162",
