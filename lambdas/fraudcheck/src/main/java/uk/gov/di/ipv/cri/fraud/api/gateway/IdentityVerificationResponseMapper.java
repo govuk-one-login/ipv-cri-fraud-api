@@ -202,7 +202,7 @@ public class IdentityVerificationResponseMapper {
 
             fraudCheckResult.setThirdPartyFraudCodes(
                     fraudCodes.toArray(fraudCodes.toArray(String[]::new)));
-            fraudCheckResult.setDecisionScore(String.valueOf(decisionScore));
+            fraudCheckResult.setDecisionScore(decisionScore);
 
             eventProbe.counterMetric(THIRD_PARTY_FRAUD_RESPONSE_TYPE_INFO_VALIDATION_PASS);
         } else {
