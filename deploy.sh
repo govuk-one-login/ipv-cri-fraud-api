@@ -46,6 +46,7 @@ sam deploy --stack-name "$stack_name" \
    AuditEventNamePrefix=$audit_event_name_prefix \
    CommonStackName=fraud-common-cri-api-local \
    CriIdentifier=$cri_identifier \
+   CreateMockTxmaResourcesOverride=true \
    ParameterPrefix="fraud-cri-api-v1" \
    UseApiKey="' '" \
    DeploymentType="not-pipeline"

@@ -47,6 +47,10 @@ Parameters:
     Type: String
     Default: "true"
     Description: Value used to indicate if the public api should be protected by a api key.
+  CreateMockTxmaResourcesOverride:
+    Description: "Mock TXMA SQS Queue"
+    Type: String
+    Default: "false"
 
 Conditions:
   IsDeployedFromPipeline: !Equals
@@ -83,6 +87,11 @@ Conditions:
       - Fn::Equals:
           - !Ref ParameterPrefix
           - "none"
+  CreateMockTxmaResources:
+    Fn::And:
+      - !Equals [!Ref Environment, "dev"]
+      - !Equals [ !Ref CreateMockTxmaResourcesOverride, "true" ]
+
 Globals:
   Function:
     CodeSigningConfigArn: !If
@@ -126,7 +135,10 @@ Globals:
         JAVA_TOOL_OPTIONS: -XX:+TieredCompilation -XX:TieredStopAtLevel=1
         AWS_STACK_NAME: !Sub ${AWS::StackName}
         POWERTOOLS_LOG_LEVEL: INFO
-        SQS_AUDIT_EVENT_QUEUE_URL: !ImportValue AuditEventQueueUrl
+        SQS_AUDIT_EVENT_QUEUE_URL: !If
+          - CreateMockTxmaResources
+          - !GetAtt MockAuditEventQueue.QueueUrl
+          - Fn::ImportValue: AuditEventQueueUrl
         SQS_AUDIT_EVENT_PREFIX: !Ref AuditEventNamePrefix
         POWERTOOLS_METRICS_NAMESPACE: !Ref CriIdentifier
         COMMON_PARAMETER_NAME_PREFIX: !Ref CommonStackName
@@ -452,8 +464,10 @@ Resources:
             Action:
               - kms:Decrypt
               - kms:GenerateDataKey
-            Resource:
-              - !ImportValue AuditEventQueueEncryptionKeyArn
+            Resource: !If
+              - CreateMockTxmaResources
+              - !GetAtt MockAuditEventQueueEncryptionKey.Arn
+              - Fn::ImportValue: AuditEventQueueEncryptionKeyArn
         - Statement:
             - Effect: Allow
               Action:
@@ -489,7 +503,7 @@ Resources:
                   - "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${PREFIX}/CrosscoreV2"
                   - PREFIX: !If [UseParameterPrefix, !Ref ParameterPrefix , !Ref AWS::StackName]
         - SQSSendMessagePolicy:
-            QueueName: !ImportValue AuditEventQueueName
+            QueueName: !If [CreateMockTxmaResources, !GetAtt MockAuditEventQueue.QueueName, !ImportValue AuditEventQueueName]
 
   IdentityCheckingFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -542,7 +556,7 @@ Resources:
               - "kms:Sign"
             Resource: !ImportValue core-infrastructure-CriVcSigningKey1Arn
         - SQSSendMessagePolicy:
-            QueueName: !ImportValue AuditEventQueueName
+            QueueName: !If [CreateMockTxmaResources, !GetAtt MockAuditEventQueue.QueueName, !ImportValue AuditEventQueueName]
         - Statement:
             Effect: Allow
             Action:
@@ -565,8 +579,10 @@ Resources:
             Action:
               - kms:Decrypt
               - kms:GenerateDataKey
-            Resource:
-              - !ImportValue AuditEventQueueEncryptionKeyArn
+            Resource: !If
+              - CreateMockTxmaResources
+              - !GetAtt MockAuditEventQueueEncryptionKey.Arn
+              - Fn::ImportValue: AuditEventQueueEncryptionKeyArn
 
   IssueCredentialFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -588,6 +604,46 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt IssueCredentialFunction.Arn
       Principal: apigateway.amazonaws.com
+
+
+
+  #############################
+  # New consumer queue for testing TxMA header
+  #############################
+
+  MockAuditEventQueue:
+    Type: AWS::SQS::Queue
+    Condition: CreateMockTxmaResources
+    Properties:
+      MessageRetentionPeriod: 3600 # 1 hour
+      KmsMasterKeyId: !Ref MockAuditEventQueueEncryptionKeyAlias
+      RedriveAllowPolicy:
+        redrivePermission: denyAll
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt MockAuditEventDeadLetterQueue.Arn
+        maxReceiveCount: 10
+
+  MockAuditEventDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Condition: CreateMockTxmaResources
+    Properties:
+      MessageRetentionPeriod: 604800 # 7 days
+      KmsMasterKeyId: !Ref MockAuditEventQueueEncryptionKeyAlias
+
+  MockAuditEventQueueEncryptionKey:
+    Type: AWS::KMS::Key
+    Condition: CreateMockTxmaResources
+    Properties:
+      Description: Symmetric key used to encrypt audit messages at rest in SQS
+      EnableKeyRotation: true
+      KeySpec: SYMMETRIC_DEFAULT
+
+  MockAuditEventQueueEncryptionKeyAlias:
+    Type: AWS::KMS::Alias
+    Condition: CreateMockTxmaResources
+    Properties:
+      AliasName: !Sub alias/${AWS::StackName}/auditEventQueueEncryptionKey
+      TargetKeyId: !Ref MockAuditEventQueueEncryptionKey
 
 ####################################################################
 #                                                                  #
