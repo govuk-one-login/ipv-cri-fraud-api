@@ -13,7 +13,7 @@ public class IdentityVerificationResult {
     private String activityFrom;
     private String transactionId;
     private String pepTransactionId;
-    private String decisionScore;
+    private Integer decisionScore;
     private List<String> thirdPartyFraudCodes = new ArrayList<>();
 
     // These checks have specific meanings and appear in the VC
@@ -76,11 +76,11 @@ public class IdentityVerificationResult {
         this.pepTransactionId = pepTransactionId;
     }
 
-    public String getDecisionScore() {
+    public Integer getDecisionScore() {
         return decisionScore;
     }
 
-    public void setDecisionScore(String decisionScore) {
+    public void setDecisionScore(Integer decisionScore) {
         this.decisionScore = decisionScore;
     }
 

@@ -247,14 +247,13 @@ class IssueCredentialHandlerTest {
                                 AccessToken.parse(
                                         "Bearer dummyAccessToken", AccessTokenType.BEARER))
                         .getSessionId();
-        String sessionId = sessionUUID.toString();
 
         FraudResultItem resultItem = new FraudResultItem();
         resultItem.setTransactionId("dummyTxn"); // Crosscore Id
         resultItem.setPepTransactionId("dummyTxnFailed");
         resultItem.setActivityHistoryScore(1);
         resultItem.setIdentityFraudScore(1);
-        resultItem.setDecisionScore("30");
+        resultItem.setDecisionScore(30);
         resultItem.setActivityFrom("2013-12-01");
         resultItem.setCheckDetails(
                 List.of(
@@ -276,14 +275,13 @@ class IssueCredentialHandlerTest {
                                 AccessToken.parse(
                                         "Bearer dummyAccessToken", AccessTokenType.BEARER))
                         .getSessionId();
-        String sessionId = sessionUUID.toString();
 
         FraudResultItem resultItem = new FraudResultItem();
         resultItem.setTransactionId("dummyTxn"); // Crosscore Id
         resultItem.setPepTransactionId("dummyTxn");
         resultItem.setActivityHistoryScore(1);
         resultItem.setIdentityFraudScore(2);
-        resultItem.setDecisionScore("30");
+        resultItem.setDecisionScore(30);
         resultItem.setActivityFrom("2013-12-01");
         resultItem.setContraIndicators(List.of());
         resultItem.setCheckDetails(
@@ -332,7 +330,6 @@ class IssueCredentialHandlerTest {
                                 AccessToken.parse(
                                         "Bearer dummyAccessToken", AccessTokenType.BEARER))
                         .getSessionId();
-        String sessionId = sessionUUID.toString();
 
         FraudResultItem resultItem = new FraudResultItem();
         resultItem.setContraIndicators(List.of("CI1"));
@@ -340,7 +337,7 @@ class IssueCredentialHandlerTest {
         resultItem.setPepTransactionId("dummyTxn");
         resultItem.setActivityHistoryScore(1);
         resultItem.setIdentityFraudScore(2);
-        resultItem.setDecisionScore("30");
+        resultItem.setDecisionScore(30);
         resultItem.setActivityFrom("2013-12-01");
         resultItem.setCheckDetails(
                 List.of(

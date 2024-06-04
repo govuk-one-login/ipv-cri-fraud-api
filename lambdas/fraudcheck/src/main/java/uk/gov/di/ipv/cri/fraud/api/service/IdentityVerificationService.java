@@ -292,7 +292,7 @@ public class IdentityVerificationService {
         LOGGER.info("Activity history score {}", activityHistoryScore);
 
         // For deciding if a pepCheck should be done
-        int decisionScore = Integer.parseInt(fraudCheckResult.getDecisionScore());
+        Integer decisionScore = fraudCheckResult.getDecisionScore();
         identityVerificationResult.setDecisionScore(fraudCheckResult.getDecisionScore());
 
         LOGGER.info("IdentityCheckScore after Fraud {}", fraudIdentityCheckScore);

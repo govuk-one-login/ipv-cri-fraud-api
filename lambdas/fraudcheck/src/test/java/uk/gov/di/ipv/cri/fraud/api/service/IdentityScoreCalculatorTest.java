@@ -21,7 +21,7 @@ class IdentityScoreCalculatorTest {
     @Test
     void testSuccessInFraudAndSuccessInPepIsScoreOfTwo() {
         FraudCheckResult fraudCheckResult = new FraudCheckResult();
-        fraudCheckResult.setDecisionScore("40");
+        fraudCheckResult.setDecisionScore(40);
         fraudCheckResult.setThirdPartyFraudCodes(new String[] {});
         fraudCheckResult.setExecutedSuccessfully(true);
         fraudCheckResult.setTransactionId("123456789");
@@ -44,7 +44,7 @@ class IdentityScoreCalculatorTest {
     @Test
     void testSuccessInFraudAndSuccessInPepWithZeroScoreUcodeIsScoreOfZero() {
         FraudCheckResult fraudCheckResult = new FraudCheckResult();
-        fraudCheckResult.setDecisionScore("45");
+        fraudCheckResult.setDecisionScore(45);
         fraudCheckResult.setThirdPartyFraudCodes(new String[] {"U001"});
         fraudCheckResult.setExecutedSuccessfully(true);
         fraudCheckResult.setTransactionId("123456789");
@@ -65,7 +65,7 @@ class IdentityScoreCalculatorTest {
     @Test
     void testSuccessInFraudAndFailInPepIsScoreOfOne() {
         FraudCheckResult fraudCheckResult = new FraudCheckResult();
-        fraudCheckResult.setDecisionScore("45");
+        fraudCheckResult.setDecisionScore(45);
         fraudCheckResult.setThirdPartyFraudCodes(new String[] {});
         fraudCheckResult.setExecutedSuccessfully(true);
         fraudCheckResult.setTransactionId("123456789");
@@ -87,7 +87,7 @@ class IdentityScoreCalculatorTest {
     @Test
     void testFailInFraudAndFailInPepIsScoreOfZero() {
         FraudCheckResult fraudCheckResult = new FraudCheckResult();
-        fraudCheckResult.setDecisionScore("45");
+        fraudCheckResult.setDecisionScore(45);
         fraudCheckResult.setThirdPartyFraudCodes(new String[] {});
         fraudCheckResult.setExecutedSuccessfully(false);
         fraudCheckResult.setTransactionId("123456789");
@@ -108,7 +108,7 @@ class IdentityScoreCalculatorTest {
     @Test
     void testFailInFraudAndSuccessInPepIsScoreOfZero() {
         FraudCheckResult fraudCheckResult = new FraudCheckResult();
-        fraudCheckResult.setDecisionScore("45");
+        fraudCheckResult.setDecisionScore(45);
         fraudCheckResult.setThirdPartyFraudCodes(new String[] {});
         fraudCheckResult.setExecutedSuccessfully(false);
         fraudCheckResult.setTransactionId("123456789");

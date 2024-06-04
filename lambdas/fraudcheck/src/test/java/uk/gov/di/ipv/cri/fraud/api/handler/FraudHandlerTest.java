@@ -115,7 +115,7 @@ class FraudHandlerTest {
         testIdentityVerificationResult.setSuccess(true);
         testIdentityVerificationResult.setContraIndicators(List.of("A01"));
         testIdentityVerificationResult.setIdentityCheckScore(1);
-        testIdentityVerificationResult.setDecisionScore("90");
+        testIdentityVerificationResult.setDecisionScore(90);
         testIdentityVerificationResult.setChecksSucceeded(
                 List.of("check_one", "check_two", "check_three"));
         testIdentityVerificationResult.setChecksFailed(new ArrayList<>());
@@ -165,17 +165,15 @@ class FraudHandlerTest {
     }
 
     @Test
-    void handleResponseShouldReturnOkResponseWhenSessionAttemptGreaterThanOneAndResultFound()
-            throws IOException, SqsException {
+    void handleResponseShouldReturnOkResponseWhenSessionAttemptGreaterThanOneAndResultFound() {
         String testRequestBody = "request body";
-        PersonIdentity testPersonIdentity = TestDataCreator.createTestPersonIdentity();
 
         IdentityVerificationResult testIdentityVerificationResult =
                 new IdentityVerificationResult();
         testIdentityVerificationResult.setSuccess(true);
         testIdentityVerificationResult.setContraIndicators(List.of("A01"));
         testIdentityVerificationResult.setIdentityCheckScore(1);
-        testIdentityVerificationResult.setDecisionScore("90");
+        testIdentityVerificationResult.setDecisionScore(90);
         testIdentityVerificationResult.setChecksSucceeded(
                 List.of("check_one", "check_two", "check_three"));
         testIdentityVerificationResult.setChecksFailed(new ArrayList<>());
@@ -233,7 +231,7 @@ class FraudHandlerTest {
         testIdentityVerificationResult.setSuccess(true);
         testIdentityVerificationResult.setContraIndicators(List.of("A01"));
         testIdentityVerificationResult.setIdentityCheckScore(1);
-        testIdentityVerificationResult.setDecisionScore("90");
+        testIdentityVerificationResult.setDecisionScore(90);
         testIdentityVerificationResult.setChecksSucceeded(
                 List.of("check_one", "check_two", "check_three"));
         testIdentityVerificationResult.setChecksFailed(new ArrayList<>());

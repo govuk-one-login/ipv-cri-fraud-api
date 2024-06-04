@@ -136,7 +136,7 @@ class IdentityVerificationServiceTest {
 
         FraudCheckResult testFraudCheckResult = new FraudCheckResult();
         testFraudCheckResult.setExecutedSuccessfully(true);
-        testFraudCheckResult.setDecisionScore("35");
+        testFraudCheckResult.setDecisionScore(35);
 
         String[] thirdPartyFraudCodes = new String[] {"sample-f-code"};
         String[] mappedFraudCodes = new String[] {"mapped-f-code"};
@@ -206,7 +206,7 @@ class IdentityVerificationServiceTest {
 
         FraudCheckResult testFraudCheckResult = new FraudCheckResult();
         testFraudCheckResult.setExecutedSuccessfully(true);
-        testFraudCheckResult.setDecisionScore("60");
+        testFraudCheckResult.setDecisionScore(60);
         testFraudCheckResult.setOldestRecordDateInMonths(366);
 
         PepCheckResult testPEPCheckResult = new PepCheckResult();
@@ -338,7 +338,7 @@ class IdentityVerificationServiceTest {
 
         FraudCheckResult testFraudCheckResult = new FraudCheckResult();
         testFraudCheckResult.setExecutedSuccessfully(true);
-        testFraudCheckResult.setDecisionScore(String.valueOf(expectedDecisionScore));
+        testFraudCheckResult.setDecisionScore(expectedDecisionScore);
         String[] thirdPartyFraudCodes = new String[] {"sample-f-code"};
         String[] mappedFraudCodes = new String[] {"mapped-f-code"};
         testFraudCheckResult.setThirdPartyFraudCodes(thirdPartyFraudCodes);
@@ -528,7 +528,7 @@ class IdentityVerificationServiceTest {
 
         FraudCheckResult testFraudCheckResult = new FraudCheckResult();
         testFraudCheckResult.setExecutedSuccessfully(true);
-        testFraudCheckResult.setDecisionScore(String.valueOf(expectedDecisionScore));
+        testFraudCheckResult.setDecisionScore(expectedDecisionScore);
         String[] thirdPartyFraudCodes = new String[] {"sample-f-code"};
         String[] mappedFraudCodes = new String[] {"mapped-f-code"};
         testFraudCheckResult.setThirdPartyFraudCodes(thirdPartyFraudCodes);
@@ -536,9 +536,8 @@ class IdentityVerificationServiceTest {
 
         PepCheckResult testPEPCheckResult = new PepCheckResult();
         testPEPCheckResult.setExecutedSuccessfully(
-                errorType.equals("PEPExecutedSuccessfullyFalse") ? false : true);
+                !errorType.equals("PEPExecutedSuccessfullyFalse"));
         String[] thirdPartyPEPCodes = new String[] {"sample-p-code"};
-        String[] mappedPEPCodes = new String[] {"mapped-p-code"};
         testPEPCheckResult.setThirdPartyFraudCodes(thirdPartyPEPCodes);
 
         when(personIdentityValidator.validate(testPersonIdentity))

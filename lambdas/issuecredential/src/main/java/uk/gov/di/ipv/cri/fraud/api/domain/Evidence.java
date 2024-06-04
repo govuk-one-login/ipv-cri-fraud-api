@@ -26,7 +26,7 @@ public class Evidence {
     private List<String> ci;
 
     @JsonProperty("decisionScore")
-    private String decisionScore;
+    private Integer decisionScore;
 
     @JsonProperty("checkDetails")
     private List<Check> checkDetails;
@@ -66,11 +66,11 @@ public class Evidence {
         this.ci = ci;
     }
 
-    public String getDecisionScore() {
+    public Integer getDecisionScore() {
         return decisionScore;
     }
 
-    public void setDecisionScore(String decisionScore) {
+    public void setDecisionScore(Integer decisionScore) {
         this.decisionScore = decisionScore;
     }
 
