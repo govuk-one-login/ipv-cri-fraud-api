@@ -32,7 +32,7 @@ jobs:
       - name: Run Unit Tests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew --parallel test report -x jacocoTestReport -x spotlessApply -x spotlessCheck
+        run: ./gradlew --parallel test report jacocoTestReport -x spotlessApply -x spotlessCheck
       - name: Run SonarCloud Analysis
         if: ${{ github.actor != 'dependabot[bot]' }}
         env:
