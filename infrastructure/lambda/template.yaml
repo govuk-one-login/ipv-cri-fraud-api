@@ -55,10 +55,6 @@ Parameters:
     Description: "Link to the DL support manual"
     Type: String
     Default: 'https://govukverify.atlassian.net/wiki/spaces/FTFCRI/pages/3623583745/F2F+Support+Documentation'
-  # LambdaConcurrencyThreshold:
-  #   Description: "Threshold for Reserved concurrency running in non-DEV environments"
-  #   Type: Number
-  #   Default: 16  #80% of Lambda concurrency
 
 Conditions:
   IsDeployedFromPipeline: !Equals
@@ -1252,6 +1248,72 @@ Resources:
                   Value: !Sub "${AWS::StackName}-PublicFraudApi"
             Period: 60
             Stat: Maximum
+
+  LatencyFatalErrorMetricFilterPrivate:
+  Type: AWS::Logs::MetricFilter
+  Condition: "DeployAlarms"
+  Properties:
+    LogGroupName: !Sub "${CommonStackName}-PrivateFraudApiLogGroup"
+    FilterPattern: '{ $.level = "FATAL" || $.message = "Unhandled Exception:*" }'
+    MetricTransformations:
+      -
+        MetricValue: "1"
+        MetricNamespace: !Sub "${AWS::StackName}/LogMessages"
+        MetricName: "PrivateUKFraudApi-Fatalerror"
+
+LatencyFatalErrorMetricFilterPublic:
+  Type: AWS::Logs::MetricFilter
+  Condition: "DeployAlarms"
+  Properties:
+    LogGroupName: !Sub "${CommonStackName}-PublicFraudApiLogGroup"
+    FilterPattern: '{ $.level = "FATAL" || $.message = "Unhandled Exception:*" }'
+    MetricTransformations:
+      -
+        MetricValue: "1"
+        MetricNamespace: !Sub "${AWS::StackName}/LogMessages"
+        MetricName: "PublicFraudApi-Fatalerror"
+
+LatencyFatalErrorAlarm:
+  DependsOn:
+    - LatencyFatalErrorMetricFilterPrivate
+    - LatencyFatalErrorMetricFilterPublic
+  Type: AWS::CloudWatch::Alarm
+  Condition: "DeployAlarms"
+  Properties:
+    AlarmName: !Sub "${AWS::StackName}-ApiGateway-FatalErrorAlarm"
+    AlarmDescription: !Sub "Trigger an alarm when Fatal Error occurs in API Gateway. ${SupportManualURL}"
+    ActionsEnabled: true
+    OKActions:
+      - !ImportValue platform-alarm-topic-slack-warning-alert
+    AlarmActions:
+      - !ImportValue platform-alarm-topic-slack-warning-alert
+    InsufficientDataActions: [ ]
+    Metrics:
+      - Id: privFatalErrors
+        MetricStat:
+          Metric:
+            Namespace: !Sub "${AWS::StackName}/LogMessages"
+            MetricName: "PrivateFraudApi-Fatalerror"
+          Period: 60
+          Stat: Sum
+        ReturnData: false
+      - Id: pubFatalErrors
+        MetricStat:
+          Metric:
+            Namespace: !Sub "${AWS::StackName}/LogMessages"
+            MetricName: "PublicFraudApi-Fatalerror"
+          Period: 60
+          Stat: Sum
+        ReturnData: false
+      - Id: totalFatalErrors
+        Expression: "privFatalErrors + pubFatalErrors"
+        ReturnData: true
+    Period: 60
+    EvaluationPeriods: 1
+    DatapointsToAlarm: 1
+    Threshold: 1
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    TreatMissingData: notBreaching
 ################################# Common Lambda Authorization Alarms ##############################
   Authorization5XXApiGwErrorAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -1438,31 +1500,6 @@ Resources:
                   Value: GET
             Period: 60
             Stat: Sum
-
-  AuthorizationConcurrency80Alarm:
-    Type: AWS::CloudWatch::Alarm
-    Condition: "DeployAlarms"
-    Properties:
-      ActionsEnabled: true
-      AlarmActions:
-        - !ImportValue platform-alarm-topic-critical-alert
-      OKActions:
-        - !ImportValue platform-alarm-topic-critical-alert
-      InsufficientDataActions: []
-      AlarmDescription: !Sub "Trigger the alarm if over 80% of Authorization concurrency is used. ${SupportManualURL}"
-      AlarmName: !Sub "${AWS::StackName}-CAuthorizationFunction-concurrency"
-      MetricName: ConcurrentExecutions
-      Namespace: AWS/Lambda
-      Dimensions:
-        - Name: FunctionName
-          Value: !Sub "${CommonStackName}-AuthorizationFunction"
-      Statistic: Maximum
-      Period: 60 # This is the minimum value for the AWS Namespace
-      EvaluationPeriods: 1
-      DatapointsToAlarm: 1
-      Threshold: !Ref LambdaConcurrencyThreshold
-      ComparisonOperator: GreaterThanThreshold
-      TreatMissingData: notBreaching
 
   AuthorizationThrottleAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -1715,31 +1752,6 @@ Resources:
             Period: 60
             Stat: Sum
 
-  AccessTokenConcurrency80Alarm:
-    Type: AWS::CloudWatch::Alarm
-    Condition: "DeployAlarms"
-    Properties:
-      ActionsEnabled: true
-      AlarmActions:
-        - !ImportValue platform-alarm-topic-critical-alert
-      OKActions:
-        - !ImportValue platform-alarm-topic-critical-alert
-      InsufficientDataActions: []
-      AlarmDescription: !Sub "Trigger the alarm if over 80% of AccessToken concurrency is used. ${SupportManualURL}"
-      AlarmName: !Sub "${AWS::StackName}-AccessTokenFunction-concurrency"
-      MetricName: ConcurrentExecutions
-      Namespace: AWS/Lambda
-      Dimensions:
-        - Name: FunctionName
-          Value: !Sub "${CommonStackName}-AccessTokenFunction"
-      Statistic: Maximum
-      Period: 60 # This is the minimum value for the AWS Namespace
-      EvaluationPeriods: 1
-      DatapointsToAlarm: 1
-      Threshold: !Ref LambdaConcurrencyThreshold
-      ComparisonOperator: GreaterThanThreshold
-      TreatMissingData: notBreaching
-
   AccessTokenThrottleAlarm:
     Type: AWS::CloudWatch::Alarm
     Condition: "DeployAlarms"
@@ -1989,31 +2001,6 @@ Resources:
             Period: 60
             Stat: Sum
 
-  SessionConcurrency80Alarm:
-    Type: AWS::CloudWatch::Alarm
-    Condition: "DeployAlarms"
-    Properties:
-      ActionsEnabled: true
-      AlarmActions:
-        - !ImportValue platform-alarm-topic-critical-alert
-      OKActions:
-        - !ImportValue platform-alarm-topic-critical-alert
-      InsufficientDataActions: []
-      AlarmDescription: !Sub "Trigger the alarm if over 80% of Session concurrency is used. ${SupportManualURL}"
-      AlarmName: !Sub "${AWS::StackName}-SessionFunction-concurrency"
-      MetricName: ConcurrentExecutions
-      Namespace: AWS/Lambda
-      Dimensions:
-        - Name: FunctionName
-          Value: !Sub "${CommonStackName}-SessionFunction"
-      Statistic: Maximum
-      Period: 60 # This is the minimum value for the AWS Namespace
-      EvaluationPeriods: 1
-      DatapointsToAlarm: 1
-      Threshold: !Ref LambdaConcurrencyThreshold
-      ComparisonOperator: GreaterThanThreshold
-      TreatMissingData: notBreaching
-
   SessionThrottleAlarm:
     Type: AWS::CloudWatch::Alarm
     Condition: "DeployAlarms"
@@ -2262,31 +2249,6 @@ Resources:
                   Value: POST
             Period: 60
             Stat: Sum
-
-  IssueCredentialConcurrency80Alarm:
-    Type: AWS::CloudWatch::Alarm
-    Condition: "DeployAlarms"
-    Properties:
-      ActionsEnabled: true
-      AlarmActions:
-        - !ImportValue platform-alarm-topic-critical-alert
-      OKActions:
-        - !ImportValue platform-alarm-topic-critical-alert
-      InsufficientDataActions: []
-      AlarmDescription: !Sub "Trigger the alarm if over 80% of IssueCredential concurrency is used. ${SupportManualURL}"
-      AlarmName: !Sub "${AWS::StackName}-IssueCredentialFunction-concurrency"
-      MetricName: ConcurrentExecutions
-      Namespace: AWS/Lambda
-      Dimensions:
-        - Name: FunctionName
-          Value: !Ref IssueCredentialFunction
-      Statistic: Maximum
-      Period: 60 # This is the minimum value for the AWS Namespace
-      EvaluationPeriods: 1
-      DatapointsToAlarm: 1
-      Threshold: !Ref LambdaConcurrencyThreshold
-      ComparisonOperator: GreaterThanThreshold
-      TreatMissingData: notBreaching
 
   IssueCredentialThrottleAlarm:
     Type: AWS::CloudWatch::Alarm
