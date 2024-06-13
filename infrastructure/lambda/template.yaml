@@ -1060,6 +1060,9 @@ Resources:
           Label: errorThreshold
           ReturnData: true
           Expression: IF(invocations<10,0,errorPercentage)
+        - Id: invocations
+          ReturnData: false
+          Expression: invocationspriv + invocationspub
         - Id: invocationspriv
           ReturnData: false
           MetricStat:
@@ -1082,6 +1085,9 @@ Resources:
                   Value: !Sub "${AWS::StackName}-PublicFraudApi"
             Period: 60
             Stat: Sum
+        - Id: error
+          ReturnData: false
+          Expression: errorpriv + errorpub
         - Id: errorPercentage
           Label: errorPercentage
           ReturnData: false
@@ -1132,6 +1138,9 @@ Resources:
           Label: errorThreshold
           ReturnData: true
           Expression: IF(invocations<10,0,errorPercentage)
+        - Id: invocations
+          ReturnData: false
+          Expression: invocationspriv + invocationspub
         - Id: invocationspriv
           ReturnData: false
           MetricStat:
@@ -1154,6 +1163,9 @@ Resources:
                   Value: !Sub "${AWS::StackName}-PublicFraudApi"
             Period: 60
             Stat: Sum
+        - Id: error
+          ReturnData: false
+          Expression: errorpriv + errorpub
         - Id: errorPercentage
           Label: errorPercentage
           ReturnData: false
@@ -1204,6 +1216,12 @@ Resources:
           Label: safeLatency
           ReturnData: true
           Expression: IF(invocations<10,0,maxLatency)
+        - Id: invocations
+          ReturnData: false
+          Expression: invocationspriv + invocationspub
+        - Id: maxLatency
+          ReturnData: false
+          Expression: MAX([maxLatencypriv, maxLatencypub])
         - Id: invocationspriv
           ReturnData: false
           MetricStat:
@@ -1249,71 +1267,80 @@ Resources:
             Period: 60
             Stat: Maximum
 
-  LatencyFatalErrorMetricFilterPrivate:
-  Type: AWS::Logs::MetricFilter
-  Condition: "DeployAlarms"
-  Properties:
-    LogGroupName: !Sub "${CommonStackName}-PrivateFraudApiLogGroup"
-    FilterPattern: '{ $.level = "FATAL" || $.message = "Unhandled Exception:*" }'
-    MetricTransformations:
-      -
-        MetricValue: "1"
-        MetricNamespace: !Sub "${AWS::StackName}/LogMessages"
-        MetricName: "PrivateUKFraudApi-Fatalerror"
+  PublicFraudApiAccessLogGroupFatalErrorMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Condition: "DeployAlarms"
+    Properties:
+      LogGroupName: !Ref PublicFraudApiAccessLogGroup
+      FilterPattern: '{ $.level = "FATAL" || $.message = "Unhandled Exception:*" }'
+      MetricTransformations:
+        -
+          MetricValue: "1"
+          MetricNamespace: !Sub "${AWS::StackName}/LogMessages"
+          MetricName: "PublicFraudApi-Fatalerror"
 
-LatencyFatalErrorMetricFilterPublic:
-  Type: AWS::Logs::MetricFilter
-  Condition: "DeployAlarms"
-  Properties:
-    LogGroupName: !Sub "${CommonStackName}-PublicFraudApiLogGroup"
-    FilterPattern: '{ $.level = "FATAL" || $.message = "Unhandled Exception:*" }'
-    MetricTransformations:
-      -
-        MetricValue: "1"
-        MetricNamespace: !Sub "${AWS::StackName}/LogMessages"
-        MetricName: "PublicFraudApi-Fatalerror"
+  PublicFraudAPIGatewayFatalErrorAlarm:
+    DependsOn:
+      - "PublicFraudApiAccessLogGroupFatalErrorMetricFilter"
+    Type: AWS::CloudWatch::Alarm
+    Condition: "DeployAlarms"
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-PublicFraudApi-FatalErrorAlarm"
+      AlarmDescription: !Sub "Trigger an alarm when Fatal Error occurs in Public Fraud API. ${SupportManualURL}"
+      ActionsEnabled: true
+      OKActions:
+        - !ImportValue platform-alarm-topic-slack-warning-alert
+      AlarmActions:
+        - !ImportValue platform-alarm-topic-slack-warning-alert
+      InsufficientDataActions: [ ]
+      MetricName: PublicFraudApi-Fatalerror
+      Namespace: !Sub "${AWS::StackName}/LogMessages"
+      Statistic: Sum
+      Dimensions: [ ]
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
 
-LatencyFatalErrorAlarm:
-  DependsOn:
-    - LatencyFatalErrorMetricFilterPrivate
-    - LatencyFatalErrorMetricFilterPublic
-  Type: AWS::CloudWatch::Alarm
-  Condition: "DeployAlarms"
-  Properties:
-    AlarmName: !Sub "${AWS::StackName}-ApiGateway-FatalErrorAlarm"
-    AlarmDescription: !Sub "Trigger an alarm when Fatal Error occurs in API Gateway. ${SupportManualURL}"
-    ActionsEnabled: true
-    OKActions:
-      - !ImportValue platform-alarm-topic-slack-warning-alert
-    AlarmActions:
-      - !ImportValue platform-alarm-topic-slack-warning-alert
-    InsufficientDataActions: [ ]
-    Metrics:
-      - Id: privFatalErrors
-        MetricStat:
-          Metric:
-            Namespace: !Sub "${AWS::StackName}/LogMessages"
-            MetricName: "PrivateFraudApi-Fatalerror"
-          Period: 60
-          Stat: Sum
-        ReturnData: false
-      - Id: pubFatalErrors
-        MetricStat:
-          Metric:
-            Namespace: !Sub "${AWS::StackName}/LogMessages"
-            MetricName: "PublicFraudApi-Fatalerror"
-          Period: 60
-          Stat: Sum
-        ReturnData: false
-      - Id: totalFatalErrors
-        Expression: "privFatalErrors + pubFatalErrors"
-        ReturnData: true
-    Period: 60
-    EvaluationPeriods: 1
-    DatapointsToAlarm: 1
-    Threshold: 1
-    ComparisonOperator: GreaterThanOrEqualToThreshold
-    TreatMissingData: notBreaching
+  PrivateFraudApiAccessLogGroupFatalErrorMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Condition: "DeployAlarms"
+    Properties:
+      LogGroupName: !Ref PrivateFraudApiAccessLogGroup
+      FilterPattern: '{ $.level = "FATAL" || $.message = "Unhandled Exception:*" }'
+      MetricTransformations:
+        -
+          MetricValue: "1"
+          MetricNamespace: !Sub "${AWS::StackName}/LogMessages"
+          MetricName: "PrivateFraudApi-Fatalerror"
+
+  PrivateFraudAPIGatewayFatalErrorAlarm:
+    DependsOn:
+      - "PrivateFraudApiAccessLogGroupFatalErrorMetricFilter"
+    Type: AWS::CloudWatch::Alarm
+    Condition: "DeployAlarms"
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-PrivateFraudApi-FatalErrorAlarm"
+      AlarmDescription: !Sub "Trigger an alarm when Fatal Error occurs in Private Fraud API. ${SupportManualURL}"
+      ActionsEnabled: true
+      OKActions:
+        - !ImportValue platform-alarm-topic-slack-warning-alert
+      AlarmActions:
+        - !ImportValue platform-alarm-topic-slack-warning-alert
+      InsufficientDataActions: [ ]
+      MetricName: PrivateFraudApi-Fatalerror
+      Namespace: !Sub "${AWS::StackName}/LogMessages"
+      Statistic: Sum
+      Dimensions: [ ]
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
 ################################# Common Lambda Authorization Alarms ##############################
   Authorization5XXApiGwErrorAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -1530,7 +1557,7 @@ LatencyFatalErrorAlarm:
     Type: AWS::Logs::MetricFilter
     Condition: "DeployAlarms"
     Properties:
-      LogGroupName: !Sub "${CommonStackName}-AuthorizationFunctionLogGroup"
+      LogGroupName: !Sub "/aws/lambda/${CommonStackName}-AuthorizationFunction"
       FilterPattern: '{ $.level = "FATAL" || $.message = "Unhandled Exception:*" }'
       MetricTransformations:
         -
@@ -1781,7 +1808,7 @@ LatencyFatalErrorAlarm:
     Type: AWS::Logs::MetricFilter
     Condition: "DeployAlarms"
     Properties:
-      LogGroupName: !Sub "${CommonStackName}-AccessTokenFunctionLogGroup"
+      LogGroupName: !Sub "/aws/lambda/${CommonStackName}-AccessTokenFunction"
       FilterPattern: '{ $.level = "FATAL" || $.message = "Unhandled Exception:*" }'
       MetricTransformations:
         -
@@ -2030,7 +2057,7 @@ LatencyFatalErrorAlarm:
     Type: AWS::Logs::MetricFilter
     Condition: "DeployAlarms"
     Properties:
-      LogGroupName: !Sub "${CommonStackName}-SessionFunctionLogGroup"
+      LogGroupName: !Sub "/aws/lambda/${CommonStackName}-SessionFunction"
       FilterPattern: '{ $.level = "FATAL" || $.message = "Unhandled Exception:*" }'
       MetricTransformations:
         -
