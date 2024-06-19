@@ -8,6 +8,22 @@ on:
       - synchronize
 
 jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out repository code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Pre-commit github action
+      uses: pre-commit/action@v3.0.1
+      with:
+        extra_args: "detect-secrets --all-files"
+
   style-checks:
     runs-on: ubuntu-latest
     steps:
