@@ -1,0 +1,83 @@
+name: Check PR
+
+on: pull_request
+permissions: {}
+
+jobs:
+  pre-commit:
+    name: pre-commit
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    concurrency:
+      group: pre-commit-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
+    steps:
+      - name: Run pre-commit
+        uses: govuk-one-login/github-actions/code-quality/run-pre-commit@main
+        with:
+          all-files: true
+
+  java-build-check:
+    name: Run Java build check
+    uses: ./.github/workflows/run-java-build-check.yml
+
+  java-style-check:
+    name: Run Java style check
+    needs: java-build-check
+    uses: ./.github/workflows/run-java-style-check.yml
+
+  unit-tests:
+    name: Run Unit tests
+    needs: java-build-check
+    uses: ./.github/workflows/run-unit-tests.yml
+
+  sonar-scan:
+    name: Sonar Scan
+    needs: unit-tests
+    uses: ./.github/workflows/run-sonar-scan.yml
+    secrets:
+      github-token: ${{ secrets.github-token }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  pact-tests:
+    name: Run Pact tests
+    needs: java-build-check
+    uses: ./.github/workflows/run-pact-tests.yml
+    secrets:
+      github-token: ${{ secrets.github-token }}
+      PACT_BROKER_HOST: ${{ secrets.PACT_BROKER_HOST }}
+      PACT_BROKER_USERNAME: ${{ secrets.PACT_BROKER_USERNAME }}
+      PACT_BROKER_PASSWORD: ${{ secrets.PACT_BROKER_PASSWORD }}
+    permissions:
+      id-token: write
+      contents: read
+
+  pre-merge-integration-tests:
+    name: Run pre-merge integration tests
+    needs: java-build-check
+    uses: ./.github/workflows/run-pre-merge-integration-tests.yml
+    secrets:
+      AWS_PRE_MERGE_ROLE_ARN: ${{ secrets.AWS_PRE_MERGE_ROLE_ARN }}
+      PREMERGE_PARAMETER_PREFIX_STACK_NAME: ${{ secrets.PREMERGE_PARAMETER_PREFIX_STACK_NAME }}
+      PREMERGE_TEST_ENVIRONMENT: ${{ secrets.PREMERGE_TEST_ENVIRONMENT }}
+      API_KEY_FRAUD_DEV: ${{ secrets.API_KEY_FRAUD_DEV }}
+      CORE_STUB_URL: ${{ secrets.CORE_STUB_URL }}
+      CORE_STUB_USERNAME: ${{ secrets.CORE_STUB_USERNAME }}
+      CORE_STUB_PASSWORD: ${{ secrets.CORE_STUB_PASSWORD }}
+      ORCHESTRATOR_STUB_URL: ${{ secrets.ORCHESTRATOR_STUB_URL }}
+      AWS_PRE_MERGE_S3_BUCKET_NAME: ${{ secrets.AWS_PRE_MERGE_S3_BUCKET_NAME }}
+    permissions:
+      id-token: write
+      contents: read
+
+  deploy-preview-stack:
+    name: Preview Stack Deployment
+    needs: java-build-check
+    uses: ./.github/workflows/deploy-branch.yml
+    secrets:
+      AWS_PRE_MERGE_ROLE_ARN: ${{ secrets.AWS_PRE_MERGE_ROLE_ARN }}
+      PREMERGE_PARAMETER_PREFIX_STACK_NAME: ${{ secrets.PREMERGE_PARAMETER_PREFIX_STACK_NAME }}
+      AWS_PRE_MERGE_S3_BUCKET_NAME: ${{ secrets.AWS_PRE_MERGE_S3_BUCKET_NAME }}
+    permissions:
+      id-token: write
+      contents: read

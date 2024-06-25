@@ -1,0 +1,46 @@
+name: Java style check
+
+on:
+  workflow_call:
+
+concurrency:
+  group: java-style-check-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+permissions: {}
+
+jobs:
+  java-style-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+          submodules: true
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: zulu
+          cache: gradle
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: wrapper
+          cache-overwrite-existing: true
+      - name: Build Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .gradle/
+            */build/
+            */**/build/
+            !*/build/reports
+            !*/build/jacoco
+          key: ${{ runner.os }}-build-${{ github.sha }}
+      - name: Run Spotless
+        run: ./gradlew --no-daemon spotlessCheck
