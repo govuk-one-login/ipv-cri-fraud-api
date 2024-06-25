@@ -1,0 +1,92 @@
+name: Deploy Branch
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    secrets:
+      AWS_PRE_MERGE_ROLE_ARN: { required: true }
+      AWS_PRE_MERGE_S3_BUCKET_NAME: { required: true }
+      PREMERGE_PARAMETER_PREFIX_STACK_NAME: { required: true }
+    outputs:
+      stack-name:
+        description: The deployed stack name
+        value: ${{ jobs.deploy.outputs.stack-name }}
+      aws-region:
+        description: The region in which the stack was deployed
+        value: ${{ jobs.deploy.outputs.aws-region }}
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    name: Build SAM app
+    runs-on: ubuntu-latest
+    permissions: {}
+    concurrency:
+      group: build-development-${{ github.head_ref || github.ref_name }}
+    outputs:
+      sha_short: ${{ steps.vars.outputs.sha_short }}
+    steps:
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: zulu
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: wrapper
+          cache-overwrite-existing: true
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get stack name vars
+        id: vars
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - name: Build SAM application
+        uses: govuk-one-login/github-actions/sam/build-application@main
+        id: build
+        with:
+          template: infrastructure/lambda/template.yaml
+          cache-name: ipv-cri-fraud-api-${{ steps.vars.outputs.sha_short }}
+          pull-repository: true
+
+  deploy:
+    name: Deploy stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build
+    concurrency:
+      group: deploy-development-${{ github.head_ref || github.ref_name }}
+    environment:
+      name: development
+      url: ${{ steps.deploy.outputs.stack-url }}
+    outputs:
+      aws-region: ${{ steps.deploy.outputs.aws-region }}
+      stack-name: ${{ steps.deploy.outputs.stack-name }}
+    steps:
+      - name: Deploy stack
+        uses: govuk-one-login/github-actions/sam/deploy-stack@main
+        id: deploy
+        with:
+          sam-deployment-bucket: ${{ secrets.AWS_PRE_MERGE_S3_BUCKET_NAME }}
+          aws-role-arn: ${{ secrets.AWS_PRE_MERGE_ROLE_ARN }}
+          stack-name-prefix: preview-ipv-cri-fraud-api
+          cache-name: ipv-cri-fraud-api-${{ needs.build.outputs.sha_short}}
+          s3-prefix: preview
+          pull-repository: true
+          delete-failed-stack: true
+          tags: |
+            cri:component=ipv-cri-fraud-api
+            cri:stack-type=preview
+            cri:application=Lime
+            cri:deployment-source=github-actions
+          parameters: |
+            DeploymentType=pre-merge-integration
+            UseApiKey=" "
+            ParameterPrefix=${{ secrets.PREMERGE_PARAMETER_PREFIX_STACK_NAME }}
+            Environment=dev
+            CommonStackName=fraud-common-cri-api-local

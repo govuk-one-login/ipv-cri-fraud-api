@@ -1,12 +1,11 @@
-name: Post merge Sonar scan on main
+name: Sonar scan
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch: # deploy manually
-
+  workflow_call:
+    secrets:
+      github-token: { required: true }
+      SONAR_TOKEN: { required: true }
 jobs:
-  sonar-scan-main:
+  sonar-scan:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
@@ -34,13 +33,18 @@ jobs:
             !*/build/reports
             !*/build/jacoco
           key: ${{ runner.os }}-build-${{ github.sha }}
-      - name: Run Unit Tests
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew --parallel test report jacocoTestReport -x spotlessApply -x spotlessCheck
+      - name: Cache Unit Test Reports
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-unit-test-reports-${{ github.sha }}
+          path: |
+            */build/jacoco/
+            */build/reports/
+            */lambdas/**/build/reports/
+            */lib*/build/reports/
       - name: Run SonarCloud Analysis
         if: ${{ github.actor != 'dependabot[bot]' }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.github-token }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: ./gradlew sonar -x test -x spotlessApply -x spotlessCheck

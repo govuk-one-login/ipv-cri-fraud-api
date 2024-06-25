@@ -16,11 +16,12 @@ repos:
       files: .template\.yaml$
 
   - repo: https://github.com/bridgecrewio/checkov.git
-    rev: '3.2.133'
+    rev: '3.2.138'
     hooks:
     - id: checkov
       verbose: true
       args: [--soft-fail]
+      files: \.y(a)?ml$
 
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0

@@ -1,12 +1,20 @@
-name: Post merge Sonar scan on main
+name: Java build check
+
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch: # deploy manually
+  workflow_call:
+
+concurrency:
+  group: java-build-check-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+permissions: {}
 
 jobs:
-  sonar-scan-main:
+  java-build-check:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
@@ -34,13 +42,5 @@ jobs:
             !*/build/reports
             !*/build/jacoco
           key: ${{ runner.os }}-build-${{ github.sha }}
-      - name: Run Unit Tests
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew --parallel test report jacocoTestReport -x spotlessApply -x spotlessCheck
-      - name: Run SonarCloud Analysis
-        if: ${{ github.actor != 'dependabot[bot]' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./gradlew sonar -x test -x spotlessApply -x spotlessCheck
+      - name: Run Build
+        run: ./gradlew --parallel build -x test -x spotlessApply -x spotlessCheck
