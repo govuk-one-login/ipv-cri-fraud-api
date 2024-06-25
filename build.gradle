@@ -65,7 +65,7 @@ ext {
 
 		// Contract Tests
 		pact_provider_version              : "4.6.4",
-		slf4j_log4j12_version              : "2.0.12" // For contract test debug
+		slf4j_log4j12_version              : "2.0.13" // For contract test debug
 	]
 
 	// Sets the version used on the lambda + lib (ac tests have separate dependencies)
