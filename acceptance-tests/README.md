@@ -34,7 +34,7 @@ coreStubUrl \
 coreStubUsername \
 coreStubPassword \
 passportCriUrl  \
-orchestratorStubUrl 
+orchestratorStubUrl
 
 
 Speak to a member of the test team for these values

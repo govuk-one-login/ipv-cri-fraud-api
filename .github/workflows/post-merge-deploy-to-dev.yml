@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to Fraud dev
+    name: Deploy to dev
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -31,6 +31,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: wrapper
+          cache-overwrite-existing: true
 
       - name: Setup SAM CLI
         uses: aws-actions/setup-sam@v2
