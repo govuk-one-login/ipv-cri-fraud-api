@@ -27,6 +27,8 @@ hs_err_pid*
 
 # Ignore Gradle build output directory
 build
+lambdas/**/bin
+acceptance-tests/bin
 
 # aws sam deploy ignores
 .aws-sam
@@ -38,5 +40,6 @@ dist
 
 
 .idea
+.vscode
 
 *.toml
