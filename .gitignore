@@ -12,6 +12,7 @@
 
 # Package Files #
 *.jar
+!gradle/wrapper/gradle-wrapper.jar
 *.war
 *.nar
 *.ear
@@ -22,21 +23,28 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
-# Ignore Gradle project-specific cache directory
+.idea
 .gradle
+.DS_Store
+/build
+.vscode
+dist
 
 # Ignore Gradle build output directory
 build
+lambdas/**/bin
+acceptance-tests/bin
+
+# Ignore AWS SAM folder
+*/**/.aws-sam
 
 # aws sam deploy ignores
+infrastructure/lambda/samconfig.toml
 .aws-sam
+cf-template*
+template.zip
 
-# mac
-.DS_Store
-
-dist
-
-
-.idea
-
-*.toml
+# Ignore sub build folders
+integration/build
+lambdas/**/build
+lib/**/build

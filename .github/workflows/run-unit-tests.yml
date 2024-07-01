@@ -1,0 +1,74 @@
+name: Unit tests
+
+on:
+  workflow_call:
+    inputs:
+      coverage-report: { type: boolean, required: false, default: false }
+      coverage-artifact: { type: string, required: false, default: coverage }
+    outputs:
+      coverage-artifact:
+        value: ${{ inputs.coverage-artifact }}
+
+concurrency:
+  group: unit-tests-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+permissions: {}
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+          submodules: true
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: zulu
+          cache: gradle
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: wrapper
+          cache-overwrite-existing: true
+      - name: Build Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .gradle/
+            */build/
+            */**/build/
+            !*/build/reports
+            !*/build/jacoco
+          key: ${{ runner.os }}-build-${{ github.sha }}
+      - name: Run Unit Tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew --parallel test report jacocoTestReport -x spotlessApply -x spotlessCheck
+      - name: Upload Unit Test Reports
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: unit-test-reports
+          path: |
+            */build/jacoco/
+            */build/reports/
+            */lambdas/**/build/reports/
+            */lib*/build/reports/
+          retention-days: 5
+      - name: Cache Unit Test Reports
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-unit-test-reports-${{ github.sha }}
+          path: |
+            */build/jacoco/
+            */build/reports/
+            */lambdas/**/build/reports/
+            */lib*/build/reports/

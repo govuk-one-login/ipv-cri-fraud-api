@@ -1,0 +1,36 @@
+name: Delete preview deployment
+run-name: ${{ github.event.pull_request.title || format('Delete deployment [{0}]', github.head_ref || github.ref_name) }}
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [closed]
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency: deploy-development-${{ github.head_ref || github.ref_name }}
+
+jobs:
+  delete-stack:
+    name: Delete stack
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - name: Get stack name
+        uses: govuk-one-login/github-actions/beautify-branch-name@main
+        id: get-stack-name
+        with:
+          usage: Stack name
+          prefix: preview-ipv-cri-fraud-api
+          length-limit: 128
+          verbose: false
+
+      - name: Delete stack
+        uses: govuk-one-login/github-actions/sam/delete-stacks@main
+        with:
+          stack-names: ${{ steps.get-stack-name.outputs.pretty-branch-name }}
+          aws-role-arn: ${{ vars.AWS_PRE_MERGE_ROLE_ARN }}
+          verbose: true
