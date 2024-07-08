@@ -32,5 +32,5 @@ jobs:
         uses: govuk-one-login/github-actions/sam/delete-stacks@main
         with:
           stack-names: ${{ steps.get-stack-name.outputs.pretty-branch-name }}
-          aws-role-arn: ${{ vars.AWS_PRE_MERGE_ROLE_ARN }}
+          aws-role-arn: ${{ secrets.AWS_PRE_MERGE_ROLE_ARN }}
           verbose: true

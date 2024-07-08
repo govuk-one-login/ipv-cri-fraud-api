@@ -19,8 +19,7 @@ jobs:
 
   java-build-check:
     name: Run Java build check
-    #needs: pre-commit
-    # uncomment once pre-commits are all passing
+    needs: pre-commit
     uses: ./.github/workflows/run-java-build-check.yml
 
   java-style-check:

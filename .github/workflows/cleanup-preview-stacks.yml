@@ -22,7 +22,7 @@ jobs:
       - name: Assume AWS Role
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_PRE_MERGE_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_PRE_MERGE_ROLE_ARN }}
           aws-region: eu-west-2
 
       - name: Get stale preview stacks
