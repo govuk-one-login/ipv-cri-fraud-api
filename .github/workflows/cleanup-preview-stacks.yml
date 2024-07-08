@@ -1,0 +1,44 @@
+name: Clean up stale preview deployments
+run-name: Delete stale preview deployments
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Every weekday at 10am
+    - cron: "0 10 * * 1-5"
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency: cleanup-dev-${{ github.head_ref || github.ref_name }}
+
+jobs:
+  delete-stacks:
+    name: Delete stale stacks
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - name: Assume AWS Role
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PRE_MERGE_ROLE_ARN }}
+          aws-region: eu-west-2
+
+      - name: Get stale preview stacks
+        uses: govuk-one-login/github-actions/sam/get-stale-stacks@main
+        with:
+          threshold-days: 14
+          stack-name-filter: preview-ipv-cri-fraud-api
+          stack-tag-filters: |
+            cri:deployment-source=github-actions
+            cri:stack-type=preview
+          description: preview
+          env-var-name: STACKS
+
+      - name: Delete stacks
+        if: ${{ env.STACKS != null }}
+        uses: govuk-one-login/github-actions/sam/delete-stacks@main
+        with:
+          stack-names: ${{ env.STACKS }}
+          verbose: true

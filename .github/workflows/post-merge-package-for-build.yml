@@ -31,9 +31,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: wrapper
+          cache-overwrite-existing: true
 
-      - name: Setup SAM CLI
+      - name: Setup SAM
         uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
 
       - name: Assume temporary AWS role
         uses: aws-actions/configure-aws-credentials@v4

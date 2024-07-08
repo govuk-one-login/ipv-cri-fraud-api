@@ -141,7 +141,7 @@ task cucumber() {
 	}
 }
 
-task fraudCriSmokeBuild() {
+task smokeTestBuild() {
 	dependsOn assemble, compileTestJava
 	doLast {
 		javaexec {
@@ -162,7 +162,7 @@ task fraudCriSmokeBuild() {
 	}
 }
 
-task fraudCriSmokeStaging() {
+task smokeTestStaging() {
 	dependsOn assemble, compileTestJava
 	doLast {
 		javaexec {
