@@ -1,6 +1,13 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: "AWS::Serverless-2016-10-31"
 Description: "Digital Identity Fraud Credential Issuer API"
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W2031
+        - W1020
+        - E3020
 
 Parameters:
   CodeSigningConfigArn:
