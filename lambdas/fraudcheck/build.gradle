@@ -16,7 +16,6 @@ dependencies {
 			"com.nimbusds:nimbus-jose-jwt:${dependencyVersions.nimbusds_jwt_version}",
 			"com.amazonaws:aws-lambda-java-core:${dependencyVersions.aws_lambda_core_version}",
 			"com.amazonaws:aws-lambda-java-events:${dependencyVersions.aws_lambda_events_version}",
-			"software.amazon.cloudwatchlogs:aws-embedded-metrics:${dependencyVersions.aws_embedded_metrics_version}",
 			"software.amazon.awssdk:lambda:${dependencyVersions.aws_sdk_version}",
 			"software.amazon.awssdk:dynamodb-enhanced:${dependencyVersions.aws_sdk_version}",
 			"software.amazon.awssdk:sqs:${dependencyVersions.aws_sdk_version}",
