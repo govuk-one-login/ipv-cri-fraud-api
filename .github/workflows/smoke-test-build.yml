@@ -6,6 +6,10 @@ on:
     - cron: "0 5 * * 1-5"
   push:
 
+concurrency:
+  group: smoke-test-build
+  cancel-in-progress: false
+
 jobs:
   smoke:
     runs-on: ubuntu-latest
