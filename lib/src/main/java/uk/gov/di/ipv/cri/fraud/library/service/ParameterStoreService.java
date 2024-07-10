@@ -16,9 +16,9 @@ public class ParameterStoreService {
 
     private final SSMProvider ssmProvider;
 
-    public ParameterStoreService(ClientFactoryService clientFactoryService) {
+    public ParameterStoreService(SSMProvider ssmProvider) {
 
-        this.ssmProvider = clientFactoryService.getSSMProvider();
+        this.ssmProvider = ssmProvider;
     }
 
     public String getParameterValue(ParameterPrefix prefix, String parameterName) {

@@ -25,14 +25,14 @@ ext {
 		// Workaround until dependency resolution is fixed.
 		// ---------------------------------------------------------
 
-		cri_common_lib_version             : "1.6.2",
+		cri_common_lib_version             : "3.0.1",
 
-		// CRI_LIB aws
-		aws_sdk_version                    : "2.20.162",
-		aws_lambda_events_version          : "3.11.0",
+		// AWS SDK
+		aws_sdk_version                    : "2.26.16",
+		aws_lambda_events_version          : "3.11.6",
 
-		// CRI_LIB nimbus
-		nimbusds_oauth_version             : "11.2",
+		// Nimbus Oauth
+		nimbusds_oauth_version             : "11.4",
 		nimbusds_jwt_version               : "9.36",
 
 		// CRI_LIB powertools
@@ -46,8 +46,8 @@ ext {
 
 		// AWS  aws-lambda-java-libs see https://github.com/aws/aws-lambda-java-libs
 		aws_lambda_core_version            : "1.2.1",
-		// Object mapper
-		jackson_version                    : "2.17.1",
+		// Jackson Addons/ needs to track the aws sdk version of jackson
+		jackson_version                    : "2.15.2",
 		// Code weaving (lombok+powertools)
 		aspectjrt_version                  : "1.9.21",
 
@@ -65,7 +65,7 @@ ext {
 
 		// Contract Tests
 		pact_provider_version              : "4.6.4",
-		slf4j_log4j12_version              : "2.0.13" // For contract test debug
+		slf4j_log4j12_version              : "2.0.13", // For contract test debug
 	]
 
 	// Sets the version used on the lambda + lib (ac tests have separate dependencies)

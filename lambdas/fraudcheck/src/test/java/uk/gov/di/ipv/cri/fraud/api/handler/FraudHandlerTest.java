@@ -27,7 +27,6 @@ import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 import uk.gov.di.ipv.cri.fraud.library.config.ParameterStoreParameters;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
-import uk.gov.di.ipv.cri.fraud.library.service.ClientFactoryService;
 import uk.gov.di.ipv.cri.fraud.library.service.ParameterStoreService;
 import uk.gov.di.ipv.cri.fraud.library.service.ResultItemStorageService;
 import uk.gov.di.ipv.cri.fraud.library.service.ServiceFactory;
@@ -75,7 +74,6 @@ class FraudHandlerTest {
     @Mock private ResultItemStorageService<FraudResultItem> mockResultItemStorageService;
 
     @Mock private ParameterStoreService mockParameterStoreService;
-    @Mock private ClientFactoryService mockClientFactoryService;
 
     @Mock private Context context;
     private FraudHandler fraudHandler;

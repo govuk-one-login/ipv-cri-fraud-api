@@ -21,8 +21,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class DocumentCheckResultStorageServiceTest {
 
-    @Mock ClientFactoryService mockClientFactoryService;
-
     @Mock DynamoDbEnhancedClient mockDynamoDbEnhancedClient;
     @Mock DynamoDbTable<FraudResultItem> mockDynamoDbTable;
 
@@ -31,9 +29,6 @@ class DocumentCheckResultStorageServiceTest {
     @BeforeEach
     @java.lang.SuppressWarnings("java:S6068")
     void setUp() {
-        when(mockClientFactoryService.getDynamoDbEnhancedClient())
-                .thenReturn(mockDynamoDbEnhancedClient);
-
         // Ignore sonar eq is required for this (S6068)
         when(mockDynamoDbEnhancedClient.table(
                         eq("TestTable"), eq(TableSchema.fromBean(FraudResultItem.class))))
@@ -41,7 +36,7 @@ class DocumentCheckResultStorageServiceTest {
 
         resultItemStorageService =
                 new ResultItemStorageService<>(
-                        "TestTable", FraudResultItem.class, mockClientFactoryService);
+                        "TestTable", FraudResultItem.class, mockDynamoDbEnhancedClient);
     }
 
     @Test

@@ -10,6 +10,7 @@ import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
+import uk.gov.di.ipv.cri.common.library.util.ClientProviderFactory;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
@@ -26,7 +27,7 @@ class ServiceFactoryTest {
     @SystemStub private EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
     @Mock EventProbe mockEventProbe;
-    @Mock ClientFactoryService mockClientFactoryService;
+    @Mock ClientProviderFactory mockClientProviderFactory;
     @Mock ParameterStoreService mockParameterStoreService;
     @Mock SessionService mockSessionService;
     @Mock AuditService mockAuditService;
@@ -44,7 +45,7 @@ class ServiceFactoryTest {
         serviceFactory =
                 new ServiceFactory(
                         mockEventProbe,
-                        mockClientFactoryService,
+                        mockClientProviderFactory,
                         mockParameterStoreService,
                         mockSessionService,
                         mockAuditService,
@@ -73,12 +74,12 @@ class ServiceFactoryTest {
     }
 
     @Test
-    void shouldReturnClientFactoryService() {
-        ClientFactoryService clientFactoryService = serviceFactory.getClientFactoryService();
-        assertNotNull(clientFactoryService);
+    void shouldReturnClientProviderFactory() {
+        ClientProviderFactory clientProviderFactory = serviceFactory.getClientProviderFactory();
+        assertNotNull(clientProviderFactory);
 
-        ClientFactoryService clientFactoryService2 = serviceFactory.getClientFactoryService();
-        assertEquals(clientFactoryService, clientFactoryService2);
+        ClientProviderFactory clientProviderFactory2 = serviceFactory.getClientProviderFactory();
+        assertEquals(clientProviderFactory, clientProviderFactory2);
     }
 
     @Test
