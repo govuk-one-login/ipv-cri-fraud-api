@@ -28,7 +28,7 @@ ext {
 		cri_common_lib_version             : "3.0.1",
 
 		// AWS SDK
-		aws_sdk_version                    : "2.26.16",
+		aws_sdk_version                    : "2.26.19",
 		aws_lambda_events_version          : "3.11.6",
 
 		// Nimbus Oauth
