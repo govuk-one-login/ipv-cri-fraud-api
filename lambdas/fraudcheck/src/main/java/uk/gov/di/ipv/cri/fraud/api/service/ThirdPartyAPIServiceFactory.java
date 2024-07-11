@@ -39,7 +39,7 @@ public class ThirdPartyAPIServiceFactory {
                 new HttpRetryer(closeableHttpClient, eventProbe, MAX_HTTP_RETRIES);
 
         DynamoDbEnhancedClient dynamoDbEnhancedClient =
-                serviceFactory.getClientFactoryService().getDynamoDbEnhancedClient();
+                serviceFactory.getClientProviderFactory().getDynamoDbEnhancedClient();
 
         tokenRequestService =
                 new TokenRequestService(

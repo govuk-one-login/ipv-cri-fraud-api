@@ -8,6 +8,7 @@ import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.common.library.service.ConfigurationService;
 import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
 import uk.gov.di.ipv.cri.common.library.service.SessionService;
+import uk.gov.di.ipv.cri.common.library.util.ClientProviderFactory;
 import uk.gov.di.ipv.cri.common.library.util.EventProbe;
 import uk.gov.di.ipv.cri.fraud.library.config.ParameterStoreParameters;
 import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
@@ -20,7 +21,7 @@ public class ServiceFactory {
     private final ObjectMapper objectMapper;
     private final EventProbe eventProbe;
 
-    private final ClientFactoryService clientFactoryService;
+    private final ClientProviderFactory clientProviderFactory;
     private final ParameterStoreService parameterStoreService;
 
     private final AuditService auditService;
@@ -33,24 +34,35 @@ public class ServiceFactory {
     // Common-Lib
     private final ConfigurationService commonLibConfigurationService;
 
+    @ExcludeFromGeneratedCoverageReport
     public ServiceFactory() {
         this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         this.eventProbe = new EventProbe();
 
-        this.clientFactoryService = new ClientFactoryService();
-        this.parameterStoreService = new ParameterStoreService(clientFactoryService);
+        this.clientProviderFactory = new ClientProviderFactory();
+
+        this.parameterStoreService =
+                new ParameterStoreService(clientProviderFactory.getSSMProvider());
 
         this.commonLibConfigurationService =
-                new uk.gov.di.ipv.cri.common.library.service.ConfigurationService();
+                new uk.gov.di.ipv.cri.common.library.service.ConfigurationService(
+                        clientProviderFactory.getSSMProvider(),
+                        clientProviderFactory.getSecretsProvider());
 
-        this.sessionService = new SessionService();
+        this.sessionService =
+                new SessionService(
+                        commonLibConfigurationService,
+                        clientProviderFactory.getDynamoDbEnhancedClient());
         this.auditService =
                 new AuditService(
-                        clientFactoryService.getSqsClient(),
+                        clientProviderFactory.getSqsClient(),
                         commonLibConfigurationService,
                         objectMapper,
                         new AuditEventFactory(commonLibConfigurationService, Clock.systemUTC()));
-        this.personIdentityService = new PersonIdentityService();
+        this.personIdentityService =
+                new PersonIdentityService(
+                        commonLibConfigurationService,
+                        clientProviderFactory.getDynamoDbEnhancedClient());
 
         final String resultItemTableName =
                 parameterStoreService.getParameterValue(
@@ -58,13 +70,14 @@ public class ServiceFactory {
                         ParameterStoreParameters.FRAUD_RESULT_ITEM_TABLE_NAME);
         this.resultItemStorageService =
                 new ResultItemStorageService<>(
-                        resultItemTableName, FraudResultItem.class, clientFactoryService);
+                        resultItemTableName,
+                        FraudResultItem.class,
+                        clientProviderFactory.getDynamoDbEnhancedClient());
     }
 
-    @ExcludeFromGeneratedCoverageReport
     ServiceFactory(
             EventProbe eventProbe,
-            ClientFactoryService clientFactoryService,
+            ClientProviderFactory clientProviderFactory,
             ParameterStoreService parameterStoreService,
             SessionService sessionService,
             AuditService auditService,
@@ -73,7 +86,7 @@ public class ServiceFactory {
             ConfigurationService commonLibConfigurationService) {
         this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         this.eventProbe = eventProbe;
-        this.clientFactoryService = clientFactoryService;
+        this.clientProviderFactory = clientProviderFactory;
         this.parameterStoreService = parameterStoreService;
         this.sessionService = sessionService;
         this.auditService = auditService;
@@ -90,8 +103,8 @@ public class ServiceFactory {
         return eventProbe;
     }
 
-    public ClientFactoryService getClientFactoryService() {
-        return clientFactoryService;
+    public ClientProviderFactory getClientProviderFactory() {
+        return clientProviderFactory;
     }
 
     public ParameterStoreService getParameterStoreService() {

@@ -50,7 +50,8 @@ import static uk.gov.di.ipv.cri.common.library.error.ErrorResponse.SESSION_NOT_F
 public class IssueCredentialHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
-    // We need this first and static for it to be created as soon as possible during function init
+    // We need this first and static for it to be created as soon as possible during
+    // function init
     private static final long FUNCTION_INIT_START_TIME_MILLISECONDS = System.currentTimeMillis();
 
     private static final Logger LOGGER = LogManager.getLogger();
@@ -81,7 +82,7 @@ public class IssueCredentialHandler
                         serviceFactory
                                 .getCommonLibConfigurationService()
                                 .getCommonParameterValue("verifiableCredentialKmsSigningKeyId"),
-                        serviceFactory.getClientFactoryService().getKMSClient());
+                        serviceFactory.getClientProviderFactory().getKMSClient());
 
         // VerifiableCredentialService is internal to IssueCredentialHandler
         VerifiableCredentialService verifiableCredentialServiceNotAssignedYet =
@@ -129,7 +130,8 @@ public class IssueCredentialHandler
                     context.getFunctionName(),
                     context.getFunctionVersion());
 
-            // Recorded here as sending metrics during function init may fail depending on lambda
+            // Recorded here as sending metrics during function init may fail depending on
+            // lambda
             // config
             if (!functionInitMetricCaptured) {
                 eventProbe.counterMetric(

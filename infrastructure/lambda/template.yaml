@@ -70,11 +70,6 @@ Conditions:
   IsProdEnvironment: !Equals
     - !Ref Environment
     - production
-  # This is a special case fix to avoid setting this environment wide feature flag in dev.
-  # As it becomes owned by the first stack using it. Remove once the feature flag is removed and feature is permanent.
-  OverrideSettingOfEnvironmentWideFeatureFlag: !Equals
-    - !Ref Environment
-    - dev
   UsingCodeSigning:
     Fn::Not:
       - Fn::Equals:
@@ -198,22 +193,6 @@ Mappings:
       integration: "6"
       production: "6"
 
-  VcExpiryRemoved:
-    Environment:
-      dev: "true"
-      build: "true"
-      staging: "true"
-      integration: "true"
-      production: "true"
-
-  VcContainsUniqueIdMapping:
-    Environment:
-      dev: "true"
-      build: "true"
-      staging: "true"
-      integration: "true"
-      production: "true"
-
   # Permitted values: SECONDS,MINUTES,HOURS,DAYS,MONTHS,YEARS
   JwtTtlUnitMapping:
     Environment:
@@ -241,6 +220,23 @@ Mappings:
       staging: "false"
       integration: "false"
       production: "false"
+
+  FeatureFlagMapping:
+    dev:
+      VcExpiryRemoved: "true"
+      VcContainsUniqueIdMapping: "true"
+    build:
+      VcExpiryRemoved: "true"
+      VcContainsUniqueIdMapping: "true"
+    staging:
+      VcExpiryRemoved: "true"
+      VcContainsUniqueIdMapping: "true"
+    integration:
+      VcExpiryRemoved: "true"
+      VcContainsUniqueIdMapping: "true"
+    production:
+      VcExpiryRemoved: "true"
+      VcContainsUniqueIdMapping: "true"
 
 Resources:
 
@@ -548,6 +544,8 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-issuecredential"
           ENVIRONMENT: !Ref Environment
+          ENV_VAR_FEATURE_FLAG_VC_EXPIRY_REMOVED: !FindInMap [ FeatureFlagMapping, !Ref Environment, VcExpiryRemoved ]
+          ENV_VAR_FEATURE_FLAG_VC_CONTAINS_UNIQUE_ID: !FindInMap [ FeatureFlagMapping, !Ref Environment, VcContainsUniqueIdMapping ]
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
@@ -750,25 +748,6 @@ Resources:
 # Parameters                                                       #
 #                                                                  #
 ####################################################################
-
-  ParameterReleaseFlagsVcExpiryRemoved:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !If
-        - OverrideSettingOfEnvironmentWideFeatureFlag
-        - !Sub "/${AWS::StackName}/release-flags-vc-expiry-removed-not-used-in-dev"
-        - !Sub "/release-flags/vc-expiry-removed"
-      Value: !FindInMap [ VcExpiryRemoved, Environment, !Ref Environment ]
-      Type: String
-      Description: Expiry date release toggle
-
-  ReleaseFlagsVcContainsUniqueIdParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/${AWS::StackName}/release-flags/vc-contains-unique-id"
-      Value: !FindInMap [ VcContainsUniqueIdMapping, Environment, !Ref Environment ]
-      Type: String
-      Description: Verifiable Credential Contains UniqueId Mapping
 
   ParameterFraudItemTableName:
     Type: AWS::SSM::Parameter

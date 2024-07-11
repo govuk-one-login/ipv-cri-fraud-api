@@ -10,19 +10,20 @@ plugins {
 }
 
 dependencies {
-	implementation "uk.gov.account:cri-common-lib:${dependencyVersions.cri_common_lib_version}",
+	implementation platform("software.amazon.awssdk:bom:${dependencyVersions.aws_sdk_version}"),
+			"uk.gov.account:cri-common-lib:${dependencyVersions.cri_common_lib_version}",
 			"com.nimbusds:oauth2-oidc-sdk:${dependencyVersions.nimbusds_oauth_version}",
 			"software.amazon.awssdk:dynamodb:${dependencyVersions.aws_sdk_version}",
 			"software.amazon.awssdk:dynamodb-enhanced:${dependencyVersions.aws_sdk_version}",
 			"software.amazon.awssdk:kms:${dependencyVersions.aws_sdk_version}",
 			"software.amazon.awssdk:sqs:${dependencyVersions.aws_sdk_version}",
 			"software.amazon.awssdk:apache-client:${dependencyVersions.aws_sdk_version}",
-			"com.fasterxml.jackson.core:jackson-core:${dependencyVersions.jackson_version}",
+			"org.aspectj:aspectjrt:${dependencyVersions.aspectjrt_version}",
+			"com.fasterxml.jackson.core:jackson-core",
+			"com.fasterxml.jackson.core:jackson-databind",
+			"com.fasterxml.jackson.core:jackson-annotations",
 			"com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${dependencyVersions.jackson_version}",
-			"com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${dependencyVersions.jackson_version}",
-			"com.fasterxml.jackson.core:jackson-databind:${dependencyVersions.jackson_version}",
-			"com.fasterxml.jackson.core:jackson-annotations:${dependencyVersions.jackson_version}",
-			"org.aspectj:aspectjrt:${dependencyVersions.aspectjrt_version}"
+			"com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${dependencyVersions.jackson_version}"
 
 	aspect "software.amazon.lambda:powertools-logging:${dependencyVersions.aws_powertools_logging_version}",
 			"software.amazon.lambda:powertools-metrics:${dependencyVersions.aws_powertools_metrics_version}",
@@ -41,14 +42,14 @@ dependencies {
 			"org.apache.httpcomponents:httpclient:${dependencyVersions.httpcomponents_client_version}"
 
 	testFixturesImplementation "uk.gov.account:cri-common-lib:${dependencyVersions.cri_common_lib_version}",
-			"com.fasterxml.jackson.core:jackson-core:${dependencyVersions.jackson_version}",
-			"com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${dependencyVersions.jackson_version}",
-			"com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${dependencyVersions.jackson_version}",
-			"com.fasterxml.jackson.core:jackson-databind:${dependencyVersions.jackson_version}",
-			"com.fasterxml.jackson.core:jackson-annotations:${dependencyVersions.jackson_version}",
 			"org.apache.httpcomponents:httpcore:${dependencyVersions.httpcomponents_core_version}",
-			"org.apache.httpcomponents:httpclient:${dependencyVersions.httpcomponents_client_version}"
-	"org.aspectj:aspectjrt:${dependencyVersions.aspectjrt_version}"
+			"org.apache.httpcomponents:httpclient:${dependencyVersions.httpcomponents_client_version}",
+			"org.aspectj:aspectjrt:${dependencyVersions.aspectjrt_version}",
+			"com.fasterxml.jackson.core:jackson-core",
+			"com.fasterxml.jackson.core:jackson-databind",
+			"com.fasterxml.jackson.core:jackson-annotations",
+			"com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${dependencyVersions.jackson_version}",
+			"com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${dependencyVersions.jackson_version}"
 }
 
 tasks.named("jar") {
