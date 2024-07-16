@@ -65,7 +65,7 @@ dependencies {
 
 		// acceptance tests testImplementation
 		rest_assured_version               : "5.3.0",
-		cucumber_junit_version             : "7.13.0"
+		cucumber_junit_version             : "7.18.0"
 	]
 
 	implementation "uk.gov.account:cri-common-lib:${dependencyVersions.cri_common_lib_version}",
