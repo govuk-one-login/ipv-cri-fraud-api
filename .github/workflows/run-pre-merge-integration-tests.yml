@@ -143,7 +143,6 @@ jobs:
           coreStubUsername: ${{ secrets.CORE_STUB_USERNAME }}
           coreStubPassword: ${{ secrets.CORE_STUB_PASSWORD }}
           orchestratorStubUrl: ${{ secrets.ORCHESTRATOR_STUB_URL }}
-          CUCUMBER_PUBLISH_ENABLED: true
           BROWSER: chrome-headless
         run: |
           echo "🤞 now run integration tests..."
