@@ -48,7 +48,6 @@ jobs:
         env:
           BROWSER: chrome-headless
           ENVIRONMENT: ${{ secrets.TEST_ENVIRONMENT }}
-          CUCUMBER_PUBLISH_ENABLED: true
           coreStubUrl: ${{ secrets.CORE_STUB_URL }}
           coreStubUsername: ${{ secrets.CORE_STUB_USERNAME }}
           coreStubPassword: ${{ secrets.CORE_STUB_PASSWORD }}
