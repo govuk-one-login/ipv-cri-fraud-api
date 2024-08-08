@@ -33,6 +33,7 @@ import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
+import java.net.MalformedURLException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.text.ParseException;
@@ -53,8 +54,9 @@ class VerifiableCredentialServiceTest implements TestFixtures {
     @SystemStub private EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
     private static final int ADDRESSES_TO_GENERATE_IN_TEST = 5;
+    private final String UNIT_TEST_VC_KMS_KEY_ID = "UNIT_TEST_VC_KMS_KEY_ID";
 
-    private final String UNIT_TEST_VC_ISSUER = "UNIT_TEST_VC_ISSUER";
+    private final String UNIT_TEST_VC_ISSUER = "https://UNIT_TEST_VC_ISSUER";
     private final String UNIT_TEST_SUBJECT = "urn:fdc:12345678";
 
     private final String UNIT_TEST_MAX_JWT_TTL_UNIT = "SECONDS";
@@ -84,7 +86,8 @@ class VerifiableCredentialServiceTest implements TestFixtures {
     @ParameterizedTest
     @MethodSource("getSimulatedMaxJWTTTL")
     void testWithinExpiryTimeVC(long maxJWTTTL)
-            throws JOSEException, JsonProcessingException, ParseException {
+            throws JOSEException, JsonProcessingException, ParseException, MalformedURLException,
+                    NoSuchAlgorithmException {
         JsonNode claimsSet = setupTest(1, maxJWTTTL);
 
         long notBeforeTime = claimsSet.get("nbf").asLong();
@@ -95,7 +98,8 @@ class VerifiableCredentialServiceTest implements TestFixtures {
     @ParameterizedTest
     @MethodSource("getSimulatedMaxJWTTTL")
     void testExceedsExpiryTimeVC(long maxJWTTTL)
-            throws JOSEException, JsonProcessingException, ParseException {
+            throws JOSEException, JsonProcessingException, ParseException, MalformedURLException,
+                    NoSuchAlgorithmException {
         JsonNode claimsSet = setupTest(1, maxJWTTTL);
 
         long notBeforeTime = claimsSet.get("nbf").asLong();
@@ -106,7 +110,8 @@ class VerifiableCredentialServiceTest implements TestFixtures {
     @ParameterizedTest
     @MethodSource("getAddressCount")
     void testGenerateSignedVerifiableCredentialJWTWithAddressCount(int addressCount)
-            throws JOSEException, JsonProcessingException, ParseException {
+            throws JOSEException, JsonProcessingException, ParseException, MalformedURLException,
+                    NoSuchAlgorithmException {
 
         JsonNode claimsSet = setupTest(addressCount, 100L);
 
@@ -116,7 +121,8 @@ class VerifiableCredentialServiceTest implements TestFixtures {
     }
 
     private JsonNode setupTest(int addressCount, long maxExpiryTime)
-            throws JOSEException, JsonProcessingException, ParseException {
+            throws JOSEException, JsonProcessingException, ParseException, MalformedURLException,
+                    NoSuchAlgorithmException {
         FraudResultItem fraudResultItem =
                 new FraudResultItem(UUID.randomUUID(), List.of("A01"), 1, 1, 90);
 
@@ -126,6 +132,8 @@ class VerifiableCredentialServiceTest implements TestFixtures {
 
         when(mockCommonLibConfigurationService.getVerifiableCredentialIssuer())
                 .thenReturn(UNIT_TEST_VC_ISSUER);
+        when(mockCommonLibConfigurationService.getVerifiableCredentialKmsSigningKeyId())
+                .thenReturn(UNIT_TEST_VC_KMS_KEY_ID);
 
         when(mockCommonLibConfigurationService.getMaxJwtTtl()).thenReturn(maxExpiryTime);
 
