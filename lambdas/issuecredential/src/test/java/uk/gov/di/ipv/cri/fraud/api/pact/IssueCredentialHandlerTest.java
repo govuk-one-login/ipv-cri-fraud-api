@@ -145,6 +145,7 @@ class IssueCredentialHandlerTest {
             throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, JOSEException {
         environmentVariables.set(ENV_VAR_FEATURE_FLAG_VC_EXPIRY_REMOVED, true);
         environmentVariables.set(ENV_VAR_FEATURE_FLAG_VC_CONTAINS_UNIQUE_ID, true);
+        environmentVariables.set("INCLUDE_VC_KID", false);
 
         mockServiceFactoryBehaviour();
 

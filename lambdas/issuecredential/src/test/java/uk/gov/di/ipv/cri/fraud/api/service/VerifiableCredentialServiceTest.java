@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
@@ -16,7 +17,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.*;
@@ -33,6 +34,7 @@ import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
+import java.net.MalformedURLException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.text.ParseException;
@@ -51,13 +53,8 @@ class VerifiableCredentialServiceTest implements TestFixtures {
     private static final Logger LOGGER = LogManager.getLogger();
 
     @SystemStub private EnvironmentVariables environmentVariables = new EnvironmentVariables();
-
-    private static final int ADDRESSES_TO_GENERATE_IN_TEST = 5;
-
-    private final String UNIT_TEST_VC_ISSUER = "UNIT_TEST_VC_ISSUER";
-    private final String UNIT_TEST_SUBJECT = "urn:fdc:12345678";
-
-    private final String UNIT_TEST_MAX_JWT_TTL_UNIT = "SECONDS";
+    private static final String UNIT_TEST_VC_KEYID = "UNIT_TEST_VC_KEYID";
+    private static final String UNIT_TEST_VC_ISSUER = "https://review-f.account.gov.uk";
 
     // Returned via the ServiceFactory
     private final ObjectMapper realObjectMapper =
@@ -82,41 +79,44 @@ class VerifiableCredentialServiceTest implements TestFixtures {
     }
 
     @ParameterizedTest
-    @MethodSource("getSimulatedMaxJWTTTL")
-    void testWithinExpiryTimeVC(long maxJWTTTL)
-            throws JOSEException, JsonProcessingException, ParseException {
-        JsonNode claimsSet = setupTest(1, maxJWTTTL);
+    @CsvSource({
+        "3600, 1, true", // 1 hour, 1 address, IncludeKidInVc
+        "1814400, 1, true", // 3 weeks, 1 address, IncludeKidInVc
+        "15780000, 1, true", // 6 months, 1 address, IncludeKidInVc
+        "3600, 2, true", // 1 hour, 2 addresses, IncludeKidInVc
+        "1814400, 2, true", // 3 weeks, 2 addresses, IncludeKidInVc
+        "15780000, 2, true", // 6 months, 2 addresses, IncludeKidInVc
+        "3600, 3, true", // 1 hour, 3 addresses, IncludeKidInVc
+        "1814400, 3, true", // 3 weeks, 3 addresses, IncludeKidInVc
+        "15780000, 3, true", // 6 months, 3 addresses, IncludeKidInVc
+        "3600, 4, true", // 1 hour, 4 addresses, IncludeKidInVc
+        "1814400, 4, true", // 3 weeks, 4 addresses, IncludeKidInVc
+        "15780000, 4, true", // 6 months, 4 addresses, IncludeKidInVc
+        "3600, 5, true", // 1 hour, 5 addresses, IncludeKidInVc
+        "1814400, 5, true", // 3 weeks, 5 addresses, IncludeKidInVc
+        "15780000, 5, true", // 6 months, 5 addresses, IncludeKidInVc
+        "3600, 1, false", // 1 hour, 1 address
+        "1814400, 1, false", // 3 weeks, 1 address
+        "15780000, 1, false", // 6 months, 1 address
+        "3600, 2, false", // 1 hour, 2 addresses
+        "1814400, 2, false", // 3 weeks, 2 addresses
+        "15780000, 2, false", // 6 months, 2 addresses
+        "3600, 3, false", // 1 hour, 3 addresses
+        "1814400, 3, false", // 3 weeks, 3 addresses
+        "15780000, 3, false", // 6 months, 3 addresses
+        "3600, 4, false", // 1 hour, 4 addresses
+        "1814400, 4, false", // 3 weeks, 4 addresses
+        "15780000, 4, false", // 6 months, 4 addresses
+        "3600, 5, false", // 1 hour, 5 addresses
+        "1814400, 5, false", // 3 weeks, 5 addresses
+        "15780000, 5, false", // 6 months, 5 addresses
+    })
+    void verifiableCredentialServiceTest(
+            long maxExpiryTime, int addressCount, boolean includeKidInVC)
+            throws JOSEException, JsonProcessingException, ParseException, MalformedURLException,
+                    NoSuchAlgorithmException {
+        environmentVariables.set("INCLUDE_VC_KID", includeKidInVC);
 
-        long notBeforeTime = claimsSet.get("nbf").asLong();
-        final long expirationTime = claimsSet.get("exp").asLong();
-        assertEquals(expirationTime, notBeforeTime + maxJWTTTL);
-    }
-
-    @ParameterizedTest
-    @MethodSource("getSimulatedMaxJWTTTL")
-    void testExceedsExpiryTimeVC(long maxJWTTTL)
-            throws JOSEException, JsonProcessingException, ParseException {
-        JsonNode claimsSet = setupTest(1, maxJWTTTL);
-
-        long notBeforeTime = claimsSet.get("nbf").asLong();
-        final long expirationTime = claimsSet.get("exp").asLong();
-        assertTrue(expirationTime < notBeforeTime + maxJWTTTL + 10L);
-    }
-
-    @ParameterizedTest
-    @MethodSource("getAddressCount")
-    void testGenerateSignedVerifiableCredentialJWTWithAddressCount(int addressCount)
-            throws JOSEException, JsonProcessingException, ParseException {
-
-        JsonNode claimsSet = setupTest(addressCount, 100L);
-
-        long notBeforeTime = claimsSet.get("nbf").asLong();
-        final long expirationTime = claimsSet.get("exp").asLong();
-        assertEquals(expirationTime, notBeforeTime + 100L);
-    }
-
-    private JsonNode setupTest(int addressCount, long maxExpiryTime)
-            throws JOSEException, JsonProcessingException, ParseException {
         FraudResultItem fraudResultItem =
                 new FraudResultItem(UUID.randomUUID(), List.of("A01"), 1, 1, 90);
 
@@ -126,19 +126,38 @@ class VerifiableCredentialServiceTest implements TestFixtures {
 
         when(mockCommonLibConfigurationService.getVerifiableCredentialIssuer())
                 .thenReturn(UNIT_TEST_VC_ISSUER);
-
+        if (includeKidInVC) {
+            when(mockCommonLibConfigurationService.getCommonParameterValue(
+                            "verifiable-credential/issuer"))
+                    .thenReturn(UNIT_TEST_VC_ISSUER);
+            when(mockCommonLibConfigurationService.getCommonParameterValue(
+                            "verifiableCredentialKmsSigningKeyId"))
+                    .thenReturn(UNIT_TEST_VC_KEYID);
+        }
         when(mockCommonLibConfigurationService.getMaxJwtTtl()).thenReturn(maxExpiryTime);
 
+        final String UNIT_TEST_MAX_JWT_TTL_UNIT = "SECONDS";
         when(mockParameterStoreService.getParameterValue(
                         ParameterPrefix.STACK, ParameterStoreParameters.MAX_JWT_TTL_UNIT))
                 .thenReturn(UNIT_TEST_MAX_JWT_TTL_UNIT);
 
+        final String UNIT_TEST_SUBJECT = "urn:fdc:12345678";
         SignedJWT signedJWT =
                 verifiableCredentialService.generateSignedVerifiableCredentialJwt(
                         UNIT_TEST_SUBJECT, fraudResultItem, personIdentityDetailed);
 
         JWTClaimsSet generatedClaims = signedJWT.getJWTClaimsSet();
         assertTrue(signedJWT.verify(new ECDSAVerifier(ECKey.parse(TestFixtures.EC_PUBLIC_JWK_1))));
+
+        JWSHeader generatedJWSHeader = null;
+        if (includeKidInVC) {
+            generatedJWSHeader = signedJWT.getHeader();
+            String[] jwsHeaderParts = generatedJWSHeader.getKeyID().split(":");
+
+            assertEquals("did", jwsHeaderParts[0]);
+            assertEquals("web", jwsHeaderParts[1]);
+            assertEquals("review-f.account.gov.uk", jwsHeaderParts[2]);
+        }
 
         String jsonGeneratedClaims =
                 realObjectMapper
@@ -208,19 +227,12 @@ class VerifiableCredentialServiceTest implements TestFixtures {
         ECDSAVerifier ecVerifier = new ECDSAVerifier(ECKey.parse(TestFixtures.EC_PUBLIC_JWK_1));
         assertTrue(signedJWT.verify(ecVerifier));
 
-        return claimsSet;
-    }
+        long notBeforeTime = claimsSet.get("nbf").asLong();
+        final long expirationTime = claimsSet.get("exp").asLong();
 
-    private static long[] getSimulatedMaxJWTTTL() {
-        return new long[] {
-            3600L, // 1 hour
-            1814400L, // 3 weeks
-            15780000L // 6 months
-        };
-    }
-
-    private static int[] getAddressCount() {
-        return IntStream.range(1, ADDRESSES_TO_GENERATE_IN_TEST).toArray();
+        assertEquals(expirationTime, notBeforeTime + maxExpiryTime); // testsWithinExpiryTimeVC
+        assertTrue(
+                expirationTime < notBeforeTime + maxExpiryTime + 10L); // testsExceedsExpiryTimeVC
     }
 
     private void mockServiceFactoryBehaviour() {
