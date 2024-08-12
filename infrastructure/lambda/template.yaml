@@ -225,18 +225,23 @@ Mappings:
     dev:
       VcExpiryRemoved: "true"
       VcContainsUniqueIdMapping: "true"
+      IncludeKidInVc: "true"
     build:
       VcExpiryRemoved: "true"
       VcContainsUniqueIdMapping: "true"
+      IncludeKidInVc: "false"
     staging:
       VcExpiryRemoved: "true"
       VcContainsUniqueIdMapping: "true"
+      IncludeKidInVc: "false"
     integration:
       VcExpiryRemoved: "true"
       VcContainsUniqueIdMapping: "true"
+      IncludeKidInVc: "false"
     production:
       VcExpiryRemoved: "true"
       VcContainsUniqueIdMapping: "true"
+      IncludeKidInVc: "false"
 
 Resources:
 
@@ -546,6 +551,7 @@ Resources:
           ENVIRONMENT: !Ref Environment
           ENV_VAR_FEATURE_FLAG_VC_EXPIRY_REMOVED: !FindInMap [ FeatureFlagMapping, !Ref Environment, VcExpiryRemoved ]
           ENV_VAR_FEATURE_FLAG_VC_CONTAINS_UNIQUE_ID: !FindInMap [ FeatureFlagMapping, !Ref Environment, VcContainsUniqueIdMapping ]
+          INCLUDE_VC_KID: !FindInMap [ FeatureFlagMapping, !Ref Environment, IncludeKidInVc ]
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess

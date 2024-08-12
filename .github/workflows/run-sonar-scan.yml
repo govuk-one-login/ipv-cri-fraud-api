@@ -38,10 +38,10 @@ jobs:
         with:
           key: ${{ runner.os }}-unit-test-reports-${{ github.sha }}
           path: |
-            */build/jacoco/
-            */build/reports/
-            */lambdas/**/build/reports/
-            */lib*/build/reports/
+            build/jacoco/
+            build/reports/
+            lambdas/**/build/reports/
+            lib*/build/reports/
       - name: Run SonarCloud Analysis
         if: ${{ github.actor != 'dependabot[bot]' }}
         env:
