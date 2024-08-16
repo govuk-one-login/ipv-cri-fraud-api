@@ -58,17 +58,17 @@ jobs:
         with:
           name: unit-test-reports
           path: |
-            */build/jacoco/
-            */build/reports/
-            */lambdas/**/build/reports/
-            */lib*/build/reports/
+            build/jacoco/
+            build/reports/
+            lambdas/**/build/reports/
+            lib*/build/reports/
           retention-days: 5
       - name: Cache Unit Test Reports
         uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-unit-test-reports-${{ github.sha }}
           path: |
-            */build/jacoco/
-            */build/reports/
-            */lambdas/**/build/reports/
-            */lib*/build/reports/
+            build/jacoco/
+            build/reports/
+            lambdas/**/build/reports/
+            lib*/build/reports/
