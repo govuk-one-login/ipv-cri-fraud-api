@@ -43,7 +43,8 @@ public class FraudAPIPage {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final int LindaDuffThirdPartyRowNumber = 6;
 
-    private static String VC;
+    private static String vcHeader;
+    private static String vcBody;
 
     private final ConfigurationService configurationService =
             new ConfigurationService(System.getenv("ENVIRONMENT"));
@@ -223,13 +224,17 @@ public class FraudAPIPage {
         String requestFraudVCResponse = sendHttpRequest(request).body();
         LOGGER.info("requestFraudVCResponse = " + requestFraudVCResponse);
         SignedJWT signedJWT = SignedJWT.parse(requestFraudVCResponse);
-        VC = signedJWT.getJWTClaimsSet().toString();
+
+        vcHeader = signedJWT.getHeader().toString();
+        LOGGER.info("VC Header = {}", vcHeader);
+
+        vcBody = signedJWT.getJWTClaimsSet().toString();
+        LOGGER.info("VC Body = {}", vcBody);
     }
 
     public void ciAndIdentityFraudScoreInVC(String ci, Integer identityFraudScore)
             throws URISyntaxException, IOException, InterruptedException, ParseException {
-        LOGGER.info("fraudCRIVC = " + VC);
-        JsonNode jsonNode = objectMapper.readTree((VC));
+        JsonNode jsonNode = objectMapper.readTree((vcBody));
         JsonNode evidenceArray = jsonNode.get("vc").get("evidence");
         JsonNode firstItemInEvidenceArray = evidenceArray.get(0);
         LOGGER.info("firstItemInEvidenceArray = " + firstItemInEvidenceArray);
@@ -254,8 +259,7 @@ public class FraudAPIPage {
 
     public void activityHistoryScoreInVC(Integer activityHistoryScore)
             throws IOException, InterruptedException, ParseException {
-        LOGGER.info("fraudCRIVC = " + VC);
-        JsonNode jsonNode = objectMapper.readTree((VC));
+        JsonNode jsonNode = objectMapper.readTree((vcBody));
         JsonNode evidenceArray = jsonNode.get("vc").get("evidence");
         JsonNode firstItemInEvidenceArray = evidenceArray.get(0);
 
@@ -267,8 +271,7 @@ public class FraudAPIPage {
 
     public void evidenceChecksInVC(List<String> evidenceChecks, String... activityFrom)
             throws IOException, InterruptedException, ParseException {
-        LOGGER.info("fraudCRIVC = " + VC);
-        JsonNode jsonNode = objectMapper.readTree((VC));
+        JsonNode jsonNode = objectMapper.readTree((vcBody));
         JsonNode evidenceArray = jsonNode.get("vc").get("evidence");
         JsonNode firstItemInEvidenceArray = evidenceArray.get(0);
 
@@ -326,9 +329,7 @@ public class FraudAPIPage {
 
     public void checkVCPersonDetails(String expectedGivenName, String expectedFamilyName)
             throws IOException {
-        LOGGER.info("fraudCRIVC = " + VC);
-        JsonNode jsonNode = objectMapper.readTree((VC));
-
+        JsonNode jsonNode = objectMapper.readTree((vcBody));
         JsonNode vcNode = jsonNode.get("vc");
         JsonNode credentialSubjectNode = vcNode.get("credentialSubject");
         JsonNode namePartsNode = credentialSubjectNode.get("name").get(0).get("nameParts");
