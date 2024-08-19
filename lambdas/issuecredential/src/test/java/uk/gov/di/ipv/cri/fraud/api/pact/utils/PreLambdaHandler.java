@@ -24,7 +24,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -100,16 +99,15 @@ class PreLambdaHandler implements HttpHandler {
         return pathParams;
     }
 
-    public static Map<String, String> getQueryStringParams(URI url)
-            throws UnsupportedEncodingException {
+    public static Map<String, String> getQueryStringParams(URI url) {
         Map<String, String> query_pairs = new HashMap<>();
         String query = url.getQuery();
         String[] pairs = query.split("&");
         for (String pair : pairs) {
             int idx = pair.indexOf("=");
             query_pairs.put(
-                    URLDecoder.decode(pair.substring(0, idx), "UTF-8"),
-                    URLDecoder.decode(pair.substring(idx + 1), "UTF-8"));
+                    URLDecoder.decode(pair.substring(0, idx), StandardCharsets.UTF_8),
+                    URLDecoder.decode(pair.substring(idx + 1), StandardCharsets.UTF_8));
         }
         return query_pairs;
     }
@@ -218,6 +216,11 @@ class PreLambdaHandler implements HttpHandler {
         TreeMap<String, Object> test = new TreeMap<>();
         test.put("typ", jwt.getHeader().getType().getType());
         test.put("alg", jwt.getHeader().getAlgorithm().getName());
+
+        String keyID = ((JWSHeader) jwt.getHeader()).getKeyID();
+        if (keyID != null) {
+            test.put("kid", keyID);
+        }
 
         Base64URL jwtHeader = Base64URL.encode(new ObjectMapper().writeValueAsString(test));
         String[] serialize = signedJWT.serialize().split("\\.");
