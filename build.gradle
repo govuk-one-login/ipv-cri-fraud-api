@@ -49,7 +49,7 @@ ext {
 		// Jackson Addons/ needs to track the aws sdk version of jackson
 		jackson_version                    : "2.15.2",
 		// Code weaving (lombok+powertools)
-		aspectjrt_version                  : "1.9.21",
+		aspectjrt_version                  : "1.9.22.1",
 
 		// CRI Apache HTTP Client see https://hc.apache.org/httpcomponents-client-4.5.x/current/httpclient/dependencies.html
 		httpcomponents_core_version        : "4.4.16",
