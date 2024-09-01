@@ -18,6 +18,7 @@ import uk.gov.di.ipv.cri.common.library.annotations.ExcludeFromGeneratedCoverage
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventContext;
 import uk.gov.di.ipv.cri.common.library.domain.AuditEventType;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
+import uk.gov.di.ipv.cri.common.library.exception.SessionNotFoundException;
 import uk.gov.di.ipv.cri.common.library.persistence.item.SessionItem;
 import uk.gov.di.ipv.cri.common.library.service.AuditService;
 import uk.gov.di.ipv.cri.common.library.service.PersonIdentityService;
@@ -50,6 +51,8 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
+
+import static uk.gov.di.ipv.cri.common.library.error.ErrorResponse.SESSION_NOT_FOUND;
 
 public class FraudHandler
         implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
@@ -205,6 +208,11 @@ public class FraudHandler
 
             Map<String, String> headers = input.getHeaders();
             final String sessionId = headers.get("session_id");
+
+            if (sessionId == null) {
+                throw new SessionNotFoundException("Session ID not found");
+            }
+
             LOGGER.info("Extracting session from header ID {}", sessionId);
             SessionItem sessionItem = sessionService.validateSessionId(sessionId);
 
@@ -295,6 +303,16 @@ public class FraudHandler
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     e.getStatusCode(), // Status Code determined by throw location
                     commonExpressOAuthError);
+        } catch (SessionNotFoundException e) {
+            String customOAuth2ErrorDescription = SESSION_NOT_FOUND.getMessage();
+            LOGGER.error(customOAuth2ErrorDescription);
+            LOGGER.debug(e.getMessage(), e);
+            eventProbe.counterMetric(Definitions.LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR);
+            return ApiGatewayResponseGenerator.proxyJsonResponse(
+                    HttpStatusCode.FORBIDDEN,
+                    new CommonExpressOAuthError(
+                            OAuth2Error.ACCESS_DENIED, customOAuth2ErrorDescription));
+
         } catch (Exception e) {
             // This is where unexpected exceptions will reach (null pointers etc)
             // We should not log unknown exceptions, due to possibility of PII
@@ -304,9 +322,7 @@ public class FraudHandler
                     e.getClass());
 
             LOGGER.debug(e.getMessage(), e);
-
             eventProbe.counterMetric(Definitions.LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR);
-
             // Oauth compliant response
             return ApiGatewayResponseGenerator.proxyJsonResponse(
                     HttpStatusCode.INTERNAL_SERVER_ERROR,
