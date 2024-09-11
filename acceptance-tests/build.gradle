@@ -33,7 +33,7 @@ dependencies {
 
 		// CRI_LIB nimbus
 		nimbusds_oauth_version             : "11.2",
-		nimbusds_jwt_version               : "9.36",
+		nimbusds_jwt_version               : "9.41",
 
 		// CRI_LIB powertools
 		aws_powertools_logging_version     : "1.12.0",
