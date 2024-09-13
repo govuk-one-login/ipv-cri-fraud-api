@@ -33,7 +33,7 @@ ext {
 
 		// Nimbus Oauth
 		nimbusds_oauth_version             : "11.4",
-		nimbusds_jwt_version               : "9.36",
+		nimbusds_jwt_version               : "9.41.1",
 
 		// CRI_LIB powertools
 		aws_powertools_logging_version     : "${aws_powertools_version}",
