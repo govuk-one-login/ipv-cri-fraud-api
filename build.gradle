@@ -32,8 +32,8 @@ ext {
 		aws_lambda_events_version          : "3.11.6",
 
 		// Nimbus Oauth
-		nimbusds_oauth_version             : "11.4",
-		nimbusds_jwt_version               : "9.36",
+		nimbusds_oauth_version             : "11.19.1",
+		nimbusds_jwt_version               : "9.41.1",
 
 		// CRI_LIB powertools
 		aws_powertools_logging_version     : "${aws_powertools_version}",

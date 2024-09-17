@@ -32,8 +32,8 @@ dependencies {
 		aws_embedded_metrics_version       : "1.0.6",
 
 		// CRI_LIB nimbus
-		nimbusds_oauth_version             : "11.2",
-		nimbusds_jwt_version               : "9.36",
+		nimbusds_oauth_version             : "11.19.1",
+		nimbusds_jwt_version               : "9.41.1",
 
 		// CRI_LIB powertools
 		aws_powertools_logging_version     : "1.12.0",
