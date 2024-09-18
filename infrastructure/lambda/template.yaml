@@ -30,6 +30,10 @@ Parameters:
       - "integration"
       - "production"
     ConstraintDescription: must be dev, build, staging, integration or production
+  LambdaDeploymentPreference:
+    Description: "Specifies the configuration to enable gradual Lambda deployments"
+    Type: String
+    Default: AllAtOnce
   AuditEventNamePrefix:
     Description: "The audit event name prefix"
     Type: AWS::SSM::Parameter::Value<String>
@@ -150,6 +154,10 @@ Globals:
         COMMON_PARAMETER_NAME_PREFIX: !Ref CommonStackName
         ENVIRONMENT: !Ref Environment
         PARAMETER_PREFIX: !If [UseParameterPrefix, !Ref ParameterPrefix , !Ref AWS::StackName]
+    DeploymentPreference:
+      Enabled: true #set to false to deploy without using lambda canaries
+      Type: !Ref LambdaDeploymentPreference
+      Role: !GetAtt CodeDeployServiceRole.Arn
     ProvisionedConcurrencyConfig:
       !If
       - AddProvisionedConcurrency
@@ -447,6 +455,10 @@ Resources:
     Properties:
       CodeUri: ../../lambdas/fraudcheck
       Handler: uk.gov.di.ipv.cri.fraud.api.handler.FraudHandler::handleRequest
+      DeploymentPreference:
+        Alarms:
+          - !Ref IdentityCheckingFunctionCanaryErrors
+          - !Ref IdentityCheckingFunctionCanary5xxErrors
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-identitycheck"
@@ -554,6 +566,10 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: uk.gov.di.ipv.cri.fraud.api.handler.IssueCredentialHandler::handleRequest
+      DeploymentPreference:
+        Alarms:
+          - !Ref IssueCredentialFunctionCanaryErrors
+          - !Ref IssueCredentialFunctionCanary5xxErrors
       CodeUri: ../../lambdas/issuecredential
       Environment:
         Variables:
@@ -1128,6 +1144,54 @@ Resources:
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
 
+  IdentityCheckingFunctionCanaryErrors:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ActionsEnabled: false
+      AlarmActions:
+        - !ImportValue platform-alarm-warning-alert-topic
+      OKActions:
+        - !ImportValue platform-alarm-warning-alert-topic
+      AlarmDescription: !Sub "Errors returned from the IdentityCheckingFunction Lambda."
+      MetricName: Errors
+      Dimensions:
+        - Name: Resource
+          Value: !Sub "${AWS::StackName}-IdentityCheckingFunction:live"
+        - Name: FunctionName
+          Value: !Ref IdentityCheckingFunction
+        - Name: ExecutedVersion
+          Value: !GetAtt IdentityCheckingFunction.Version.Version
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Unit: Count
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  IdentityCheckingFunctionCanary5xxErrors:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ActionsEnabled: false
+      AlarmActions:
+        - !ImportValue platform-alarm-warning-alert-topic
+      OKActions:
+        - !ImportValue platform-alarm-warning-alert-topic
+      AlarmDescription: !Sub "IdentityCheckingFunction Lambda returning 5xx response."
+      Namespace: AWS/ApiGateway
+      MetricName: 5XXError
+      Dimensions:
+        - Name: ApiName
+          Value: !Sub "${AWS::StackName}-PrivateFraudApi"
+      Statistic: Sum
+      Unit: Count
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
   ####################################################################
   #                                                                  #
   # Alarm setup                                                      #
@@ -1168,6 +1232,78 @@ Resources:
                   Fn::Sub: arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:*
     Metadata:
       SamResourceId: AlarmPublishToTopicPolicyFraud
+
+  IssueCredentialFunctionCanaryErrors:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ActionsEnabled: false
+      AlarmActions:
+        - !ImportValue platform-alarm-warning-alert-topic
+      OKActions:
+        - !ImportValue platform-alarm-warning-alert-topic
+      AlarmDescription: !Sub "Errors returned from the IssueCredentialFunction Lambda."
+      MetricName: Errors
+      Dimensions:
+        - Name: Resource
+          Value: !Sub "${AWS::StackName}-IssueCredentialFunction:live"
+        - Name: FunctionName
+          Value: !Ref IssueCredentialFunction
+        - Name: ExecutedVersion
+          Value: !GetAtt IssueCredentialFunction.Version.Version
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Unit: Count
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  IssueCredentialFunctionCanary5xxErrors:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ActionsEnabled: false
+      AlarmActions:
+        - !ImportValue platform-alarm-warning-alert-topic
+      OKActions:
+        - !ImportValue platform-alarm-warning-alert-topic
+      AlarmDescription: !Sub "IssueCredential Lambda returning 5xx response."
+      Namespace: AWS/ApiGateway
+      MetricName: 5XXError
+      Dimensions:
+        - Name: ApiName
+          Value: !Sub "${AWS::StackName}-PrivateFraudApi"
+        - Name: Method
+          Value: POST
+        - Name: Stage
+          Value: !Ref Environment
+        - Name: Resource
+          Value: /credential/issue
+      Statistic: Sum
+      Unit: Count
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  # Code Deploy Service Role
+
+  CodeDeployServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - codedeploy.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambda
+      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
 
 ####################################################################
 #                                                                  #
