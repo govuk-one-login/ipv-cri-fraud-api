@@ -4,6 +4,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.common.contenttype.ContentType;
 import com.nimbusds.jose.JOSEException;
@@ -11,12 +12,14 @@ import com.nimbusds.jwt.JWTClaimNames;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.oauth2.sdk.OAuth2Error;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
@@ -36,6 +39,7 @@ import uk.gov.di.ipv.cri.fraud.api.domain.audit.VCISSFraudAuditExtension;
 import uk.gov.di.ipv.cri.fraud.api.service.VerifiableCredentialService;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 import uk.gov.di.ipv.cri.fraud.library.FraudPersonIdentityDetailedMapper;
+import uk.gov.di.ipv.cri.fraud.library.error.CommonExpressOAuthError;
 import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
 import uk.gov.di.ipv.cri.fraud.library.service.ResultItemStorageService;
 import uk.gov.di.ipv.cri.fraud.library.service.ServiceFactory;
@@ -45,12 +49,15 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.net.MalformedURLException;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
+import static uk.gov.di.ipv.cri.common.library.error.ErrorResponse.SESSION_NOT_FOUND;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_ISSUE_CREDENTIAL_COMPLETED_OK;
 
@@ -193,6 +200,42 @@ class IssueCredentialHandlerTest {
         assertEquals(
                 ErrorResponse.VERIFIABLE_CREDENTIAL_ERROR.getMessage(),
                 responseBody.get("message"));
+    }
+
+    @Test
+    void handleResponseShouldThrowExceptionWhenSessionIdMissing() throws JsonProcessingException {
+        APIGatewayProxyRequestEvent mockRequestEvent =
+                Mockito.mock(APIGatewayProxyRequestEvent.class);
+
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Authorization", "Bearer Token");
+
+        when(mockRequestEvent.getHeaders()).thenReturn(headers);
+
+        APIGatewayProxyResponseEvent responseEvent =
+                handler.handleRequest(mockRequestEvent, context);
+
+        JsonNode responseTreeRootNode = new ObjectMapper().readTree(responseEvent.getBody());
+        JsonNode oauthErrorNode = responseTreeRootNode.get("oauth_error");
+
+        CommonExpressOAuthError expectedObject =
+                new CommonExpressOAuthError(
+                        OAuth2Error.ACCESS_DENIED, SESSION_NOT_FOUND.getMessage());
+
+        assertNotNull(responseEvent);
+        assertNotNull(responseTreeRootNode);
+        assertNotNull(oauthErrorNode);
+        assertEquals(HttpStatusCode.FORBIDDEN, responseEvent.getStatusCode());
+
+        assertEquals(
+                "oauth_error",
+                responseTreeRootNode.fieldNames().next().toString()); // Root Node Name
+        assertEquals(
+                expectedObject.getError().get("error"),
+                oauthErrorNode.get("error").textValue()); // error
+        assertEquals(
+                expectedObject.getError().get("error_description"),
+                oauthErrorNode.get("error_description").textValue()); // error description
     }
 
     @Test

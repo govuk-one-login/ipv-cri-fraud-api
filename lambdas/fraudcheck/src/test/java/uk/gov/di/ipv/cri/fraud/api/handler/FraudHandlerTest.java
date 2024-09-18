@@ -4,6 +4,9 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.oauth2.sdk.OAuth2Error;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +28,7 @@ import uk.gov.di.ipv.cri.fraud.api.domain.IdentityVerificationResult;
 import uk.gov.di.ipv.cri.fraud.api.service.IdentityVerificationService;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
 import uk.gov.di.ipv.cri.fraud.library.config.ParameterStoreParameters;
+import uk.gov.di.ipv.cri.fraud.library.error.CommonExpressOAuthError;
 import uk.gov.di.ipv.cri.fraud.library.exception.OAuthErrorResponseException;
 import uk.gov.di.ipv.cri.fraud.library.persistence.item.FraudResultItem;
 import uk.gov.di.ipv.cri.fraud.library.service.ParameterStoreService;
@@ -36,13 +40,9 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.inOrder;
@@ -50,6 +50,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static uk.gov.di.ipv.cri.common.library.error.ErrorResponse.SESSION_NOT_FOUND;
 import static uk.gov.di.ipv.cri.fraud.library.error.ErrorResponse.ERROR_SENDING_FRAUD_CHECK_REQUEST;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_FRAUD_CHECK_FUNCTION_INIT_DURATION;
 import static uk.gov.di.ipv.cri.fraud.library.metrics.Definitions.LAMBDA_IDENTITY_CHECK_COMPLETED_ERROR;
@@ -330,6 +331,41 @@ class FraudHandlerTest {
         final String EXPECTED_ERROR =
                 "{\"oauth_error\":{\"error_description\":\"Unexpected server error\",\"error\":\"server_error\"}}";
         assertEquals(EXPECTED_ERROR, responseEvent.getBody());
+    }
+
+    @Test
+    void handleResponseShouldThrowExceptionWhenSessionIdMissing() throws JsonProcessingException {
+        APIGatewayProxyRequestEvent mockRequestEvent =
+                Mockito.mock(APIGatewayProxyRequestEvent.class);
+
+        Map<String, String> headers = new HashMap<>();
+
+        when(mockRequestEvent.getHeaders()).thenReturn(headers);
+
+        APIGatewayProxyResponseEvent responseEvent =
+                fraudHandler.handleRequest(mockRequestEvent, context);
+
+        JsonNode responseTreeRootNode = new ObjectMapper().readTree(responseEvent.getBody());
+        JsonNode oauthErrorNode = responseTreeRootNode.get("oauth_error");
+
+        CommonExpressOAuthError expectedObject =
+                new CommonExpressOAuthError(
+                        OAuth2Error.ACCESS_DENIED, SESSION_NOT_FOUND.getMessage());
+
+        assertNotNull(responseEvent);
+        assertNotNull(responseTreeRootNode);
+        assertNotNull(oauthErrorNode);
+        assertEquals(HttpStatusCode.FORBIDDEN, responseEvent.getStatusCode());
+
+        assertEquals(
+                "oauth_error",
+                responseTreeRootNode.fieldNames().next().toString()); // Root Node Name
+        assertEquals(
+                expectedObject.getError().get("error"),
+                oauthErrorNode.get("error").textValue()); // error
+        assertEquals(
+                expectedObject.getError().get("error_description"),
+                oauthErrorNode.get("error_description").textValue()); // error description
     }
 
     private FraudResultItem populateFraudResultItem(

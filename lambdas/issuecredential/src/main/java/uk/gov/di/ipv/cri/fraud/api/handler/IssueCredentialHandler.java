@@ -158,6 +158,11 @@ public class IssueCredentialHandler
             LOGGER.info("Validating authorization token...");
             var accessToken = validateInputHeaderBearerToken(input.getHeaders());
             var sessionItem = this.sessionService.getSessionByAccessToken(accessToken);
+
+            if (sessionItem == null || sessionItem.getSessionId() == null) {
+                throw new SessionNotFoundException("Session is not found");
+            }
+
             LOGGER.info("Extracted session from session store ID {}", sessionItem.getSessionId());
 
             LOGGER.info("Retrieving identity details and fraud results...");
@@ -192,7 +197,6 @@ public class IssueCredentialHandler
             return ApiGatewayResponseGenerator.proxyJwtResponse(
                     HttpStatusCode.OK, signedJWT.serialize());
         } catch (SessionNotFoundException e) {
-
             String customOAuth2ErrorDescription = SESSION_NOT_FOUND.getMessage();
             LOGGER.error(customOAuth2ErrorDescription);
             eventProbe.counterMetric(Definitions.LAMBDA_ISSUE_CREDENTIAL_COMPLETED_ERROR);
