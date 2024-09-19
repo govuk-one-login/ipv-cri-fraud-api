@@ -38,6 +38,12 @@ public class FraudAPIStepDefs extends FraudAPIPage {
         postRequestToFraudEndpoint();
     }
 
+    @When("user sends a POST request to Fraud endpoint with a invalid (.*)$")
+    public void user_sends_a_post_request_to_fraud_end_point_with_invalid_sessionId(
+            String invalidHeaderValue) throws IOException, InterruptedException {
+        postRequestToFraudEndpointWithInvalidSessionId(invalidHeaderValue);
+    }
+
     @When("user sends a second POST request to Fraud endpoint")
     public void user_sends_a_second_post_request_to_fraud_end_point()
             throws IOException, InterruptedException {
@@ -63,6 +69,12 @@ public class FraudAPIStepDefs extends FraudAPIPage {
     @Then("user requests Fraud CRI VC")
     public void user_requests_vc() throws IOException, InterruptedException, ParseException {
         requestFraudCRIVC();
+    }
+
+    @Then(
+            "user requests Fraud CRI VC from the Credential Issuer Endpoint with a invalid Bearer Token value")
+    public void user_requests_vc_with_invalid_auth_code() throws IOException, InterruptedException {
+        requestFraudCRIVCWithInvalidAuthCode();
     }
 
     @And("VC should contain ci (.*) and identityFraudScore (.*)$")

@@ -25,6 +25,7 @@ import java.text.ParseException;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -155,6 +156,36 @@ public class FraudAPIPage {
         return fraudCheckResponse;
     }
 
+    public String postRequestToFraudEndpointWithInvalidSessionId(String invalidHeaderValue)
+            throws IOException, InterruptedException {
+        String privateApiGatewayUrl = configurationService.getPrivateAPIEndpoint();
+        HttpRequest.Builder baseHttpRequest =
+                HttpRequest.newBuilder()
+                        .uri(URI.create(privateApiGatewayUrl + "/identity-check"))
+                        .setHeader("Accept", "application/json")
+                        .setHeader("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(""));
+
+        switch (invalidHeaderValue) {
+            case "mismatchSessionId" -> baseHttpRequest.setHeader(
+                    "session_id", UUID.randomUUID().toString());
+            case "malformedSessionId" -> baseHttpRequest.setHeader("session_id", "&%^$£$%");
+            case "missingSessionId" -> baseHttpRequest.setHeader("session_id", "");
+            default -> {
+                /*Do Nothing - No Header Provided*/
+            }
+        }
+
+        HttpRequest request = baseHttpRequest.build();
+        LOGGER.info("Fraud Request Headers = {}", request.headers());
+        String fraudCheckResponse = sendHttpRequest(request).body();
+        LOGGER.info("fraudCheckResponse = {}", fraudCheckResponse);
+        String expectedResponseForInvalidSessionId =
+                "{\"oauth_error\":{\"error_description\":\"Session not found\",\"error\":\"access_denied\"}}";
+        assertEquals(expectedResponseForInvalidSessionId, fraudCheckResponse);
+        return fraudCheckResponse;
+    }
+
     // Use this instead of the above to assert the response from the fraud check
     public String postRequestToFraudEndpointAndAPIReturnsResponseMatching(String expectedResponse)
             throws IOException, InterruptedException {
@@ -211,6 +242,25 @@ public class FraudAPIPage {
         Map<String, String> deserialisedResponse =
                 objectMapper.readValue(accessTokenPostCallResponse, new TypeReference<>() {});
         ACCESS_TOKEN = deserialisedResponse.get("access_token");
+    }
+
+    public void requestFraudCRIVCWithInvalidAuthCode() throws IOException, InterruptedException {
+        String publicApiGatewayUrl = configurationService.getPublicAPIEndpoint();
+        String randomAccessToken = UUID.randomUUID().toString();
+        HttpRequest request =
+                HttpRequest.newBuilder()
+                        .uri(URI.create(publicApiGatewayUrl + "/credential/issue"))
+                        .setHeader("Accept", "application/json")
+                        .setHeader("Content-Type", "application/json")
+                        .setHeader("Authorization", "Bearer " + randomAccessToken)
+                        .POST(HttpRequest.BodyPublishers.ofString(""))
+                        .build();
+        String requestFraudVCResponse = sendHttpRequest(request).body();
+        LOGGER.info("requestFraudVCResponse = {}", requestFraudVCResponse);
+
+        String expectedResponseForInvalidAuthCode =
+                "{\"oauth_error\":{\"error_description\":\"Session not found\",\"error\":\"access_denied\"}}";
+        assertEquals(expectedResponseForInvalidAuthCode, requestFraudVCResponse);
     }
 
     public void requestFraudCRIVC() throws IOException, InterruptedException, ParseException {

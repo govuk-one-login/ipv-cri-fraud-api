@@ -215,3 +215,26 @@ Feature: Fraud CRI API
     Examples:
       | identityFraudScore | activityHistoryScore | checks |
       | 1                  | 1                    | mortality_check,identity_theft_check,synthetic_identity_check,activity_history_check |
+
+  @pre-merge @dev
+  Scenario Outline: Un-Happy Path with with invalid sessionId on Fraud Licence Endpoint
+    Given user KENNETH DECERQUEIRA row number 197 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
+    And user sends a POST request to session endpoint
+    And user gets a session-id
+    When user sends a POST request to Fraud endpoint with a invalid <invalidHeaderValue>
+    Examples:
+      |invalidHeaderValue              |
+      | mismatchSessionId               |
+      | malformedSessionId             |
+      | missingSessionId               |
+      | noSessionHeader                |
+
+  @pre-merge @dev
+  Scenario: Un-Happy Path with with invalid authCode on Credential Issuer Endpoint
+    Given user KENNETH DECERQUEIRA row number 197 has the user identity in the form of a signed JWT string for CRI Id fraud-cri-dev
+    And user sends a POST request to session endpoint
+    And user gets a session-id
+    When user sends a POST request to Fraud endpoint
+    And user gets authorisation code
+    And user sends a POST request to Access Token endpoint fraud-cri-dev
+    Then user requests Fraud CRI VC from the Credential Issuer Endpoint with a invalid Bearer Token value
