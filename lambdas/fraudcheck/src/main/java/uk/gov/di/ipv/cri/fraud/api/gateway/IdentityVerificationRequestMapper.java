@@ -21,8 +21,12 @@ public class IdentityVerificationRequestMapper {
 
     private static final String MAIN_CONTACT = "MAINCONTACT_1";
 
+    private final boolean includeAddressInPepReq =
+            Boolean.parseBoolean(System.getenv("ENV_VAR_FEATURE_FLAG_INCLUDE_ADDRESS_IN_PEP_REQ"));
+
     public IdentityVerificationRequestMapper() {
         // No Args constructor
+        LOGGER.info("Include Address In Pep Request = {}", includeAddressInPepReq);
     }
 
     public IdentityVerificationRequest mapPersonIdentity(
@@ -40,14 +44,14 @@ public class IdentityVerificationRequestMapper {
                 DateTimeFormatter.ISO_DATE.format(personIdentity.getDateOfBirth()));
 
         Name contactPersonName = mapName(personIdentity);
-        List<Address> personAddresses = mapMultipleAddresses(personIdentity.getAddresses());
 
         Person contactPerson = new Person();
         contactPerson.setPersonIdentifier("MAINPERSON_1");
         contactPerson.setPersonDetails(contactPersonDetails);
         contactPerson.setNames(List.of(contactPersonName));
-
         contact.setPerson(contactPerson);
+
+        List<Address> personAddresses = mapMultipleAddresses(personIdentity.getAddresses());
         contact.setAddresses(personAddresses);
 
         Applicant applicant = createApplicant();
@@ -83,15 +87,17 @@ public class IdentityVerificationRequestMapper {
                 String.valueOf(personIdentity.getDateOfBirth().getYear()));
 
         Name contactPersonName = mapName(personIdentity);
-        List<Address> personAddresses = mapSingleAddress(personIdentity.getAddresses());
-
         Person contactPerson = new Person();
         contactPerson.setPersonIdentifier(null);
         contactPerson.setPersonDetails(contactPersonDetails);
         contactPerson.setNames(List.of(contactPersonName));
         contactPerson.setTypeOfPerson("APPLICANT");
         contact.setPerson(contactPerson);
-        contact.setAddresses(personAddresses);
+
+        if (includeAddressInPepReq) {
+            List<Address> personAddresses = mapSingleAddress(personIdentity.getAddresses());
+            contact.setAddresses(personAddresses);
+        }
 
         Applicant applicant = createPEPApplicant();
         Application application = new Application();

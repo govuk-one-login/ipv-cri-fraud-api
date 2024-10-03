@@ -2,14 +2,19 @@ package uk.gov.di.ipv.cri.fraud.api.gateway;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.di.ipv.cri.common.library.domain.personidentity.PersonIdentity;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Address;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.IdentityVerificationRequest;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.PEPRequest;
 import uk.gov.di.ipv.cri.fraud.api.gateway.dto.request.Person;
 import uk.gov.di.ipv.cri.fraud.api.util.TestDataCreator;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -22,22 +27,26 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType.CURRENT;
 import static uk.gov.di.ipv.cri.common.library.domain.personidentity.AddressType.PREVIOUS;
 
+@ExtendWith(MockitoExtension.class)
+@ExtendWith(SystemStubsExtension.class)
 class IdentityVerificationRequestMapperTest {
+
+    @SystemStub private EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
     private static final int ADDRESSES_TO_GENERATE_IN_TEST = 5;
 
     private static final String TENANT_ID = "tenant-id";
     private IdentityVerificationRequestMapper requestMapper;
-    private PersonIdentity personIdentity;
 
     @BeforeEach
     void setup() {
+        environmentVariables.set("ENV_VAR_FEATURE_FLAG_INCLUDE_ADDRESS_IN_PEP_REQ", true);
         requestMapper = new IdentityVerificationRequestMapper();
     }
 
     @Test
     void shouldConvertPersonIdentityToCrossCoreApiRequestForCurrentAddress() {
-        personIdentity = TestDataCreator.createTestPersonIdentity(CURRENT);
+        PersonIdentity personIdentity = TestDataCreator.createTestPersonIdentity(CURRENT);
         personIdentity.getAddresses().get(0).setSubBuildingName("Building One");
         personIdentity.getAddresses().get(0).setBuildingName("House Name");
         personIdentity.getAddresses().get(0).setBuildingNumber("44");
@@ -69,7 +78,7 @@ class IdentityVerificationRequestMapperTest {
 
     @Test
     void shouldConvertPersonIdentityToCrossCoreApiRequestForPreviousAddress() {
-        personIdentity = TestDataCreator.createTestPersonIdentity(PREVIOUS);
+        PersonIdentity personIdentity = TestDataCreator.createTestPersonIdentity(PREVIOUS);
 
         IdentityVerificationRequest result =
                 requestMapper.mapPersonIdentity(personIdentity, TENANT_ID);
@@ -97,7 +106,7 @@ class IdentityVerificationRequestMapperTest {
     @MethodSource("getAddressCount")
     void shouldConvertPersonIdentityToCrossCoreApiRequestWithAddressCount(int addressCount) {
 
-        personIdentity =
+        PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentityMultipleAddresses(
                         addressCount, 0, 0, false);
 
@@ -133,6 +142,9 @@ class IdentityVerificationRequestMapperTest {
 
     @Test
     void shouldThrowExceptionWhenPepPersonIdentityIsNull() {
+
+        PersonIdentity personIdentity = null;
+
         NullPointerException exception =
                 assertThrows(
                         NullPointerException.class,
@@ -142,7 +154,7 @@ class IdentityVerificationRequestMapperTest {
 
     @Test
     void shouldConvertPepPersonIdentityToCrossCoreApiRequestForCurrentAddress() {
-        personIdentity = TestDataCreator.createTestPersonIdentity(CURRENT);
+        PersonIdentity personIdentity = TestDataCreator.createTestPersonIdentity(CURRENT);
         personIdentity.getAddresses().get(0).setSubBuildingName("Building One");
         personIdentity.getAddresses().get(0).setBuildingName("House Name");
         personIdentity.getAddresses().get(0).setBuildingNumber("44");
@@ -181,7 +193,7 @@ class IdentityVerificationRequestMapperTest {
     void shouldConvertPepPersonIdentityToCrossCoreApiRequestFromMultipleAddressToSingleAddress(
             int addressCount) {
 
-        personIdentity =
+        PersonIdentity personIdentity =
                 TestDataCreator.createTestPersonIdentityMultipleAddresses(
                         addressCount, 0, 0, false);
 
@@ -225,7 +237,51 @@ class IdentityVerificationRequestMapperTest {
     }
 
     @Test
+    void
+            shouldConvertPepPersonIdentityToCrossCoreApiRequestWithZeroAddressWhenFeatureFlagIsFalse() {
+
+        // Local Mapper to avoid impacting previous behaviour of existing tests
+        environmentVariables.set("ENV_VAR_FEATURE_FLAG_INCLUDE_ADDRESS_IN_PEP_REQ", false);
+        IdentityVerificationRequestMapper testLocalRequestMapper =
+                new IdentityVerificationRequestMapper();
+
+        final int addressCount = 10;
+
+        PersonIdentity personIdentity =
+                TestDataCreator.createTestPersonIdentityMultipleAddresses(
+                        addressCount, 0, 0, false);
+
+        PEPRequest result = testLocalRequestMapper.mapPEPPersonIdentity(personIdentity, TENANT_ID);
+
+        assertNotNull(result);
+
+        Person person = result.getPayload().getContacts().get(0).getPerson();
+
+        assertEquals(
+                LocalDate.of(1976, 12, 26).toString(), person.getPersonDetails().getDateOfBirth());
+        assertEquals(personIdentity.getFirstName(), person.getNames().get(0).getFirstName());
+        assertEquals(personIdentity.getSurname(), person.getNames().get(0).getSurName());
+        assertEquals("Y", person.getPersonDetails().getPepsSanctionsFlag());
+        assertNotNull(person.getPersonDetails().getYearOfBirth());
+        assertEquals("APPLICANT", person.getTypeOfPerson());
+
+        assertEquals(
+                "MS_CON",
+                result.getPayload().getApplication().getProductDetails().getProductCode());
+
+        List<Address> pepAddresses = result.getPayload().getContacts().get(0).getAddresses();
+
+        int numberOfPEPaddresses = pepAddresses.size();
+
+        // Should be zero addresses
+        assertEquals(0, numberOfPEPaddresses);
+    }
+
+    @Test
     void shouldThrowExceptionWhenPersonIdentityIsNull() {
+
+        PersonIdentity personIdentity = null;
+
         NullPointerException exception =
                 assertThrows(
                         NullPointerException.class,
