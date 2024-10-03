@@ -10,13 +10,13 @@ repos:
     - id: detect-private-key
 
   - repo: https://github.com/awslabs/cfn-python-lint
-    rev: v1.2.5.a10 # The version of cfn-lint to use
+    rev: v1.15.2 # The version of cfn-lint to use
     hooks:
     - id: cfn-python-lint
       files: .template\.yaml$
 
   - repo: https://github.com/bridgecrewio/checkov.git
-    rev: '3.2.138'
+    rev: '3.2.256'
     hooks:
     - id: checkov
       verbose: true
