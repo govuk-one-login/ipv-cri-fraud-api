@@ -241,12 +241,12 @@ Mappings:
       VcExpiryRemoved: "true"
       VcContainsUniqueIdMapping: "true"
       IncludeKidInVc: "false"
-      IncludeAddressInPepReq: "true"
+      IncludeAddressInPepReq: "false"
     production:
       VcExpiryRemoved: "true"
       VcContainsUniqueIdMapping: "true"
       IncludeKidInVc: "false"
-      IncludeAddressInPepReq: "true"
+      IncludeAddressInPepReq: "false"
 
 Resources:
 
