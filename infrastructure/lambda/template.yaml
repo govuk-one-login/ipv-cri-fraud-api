@@ -226,22 +226,27 @@ Mappings:
       VcExpiryRemoved: "true"
       VcContainsUniqueIdMapping: "true"
       IncludeKidInVc: "true"
+      IncludeAddressInPepReq: "false"
     build:
       VcExpiryRemoved: "true"
       VcContainsUniqueIdMapping: "true"
       IncludeKidInVc: "false"
+      IncludeAddressInPepReq: "false"
     staging:
       VcExpiryRemoved: "true"
       VcContainsUniqueIdMapping: "true"
       IncludeKidInVc: "false"
+      IncludeAddressInPepReq: "false"
     integration:
       VcExpiryRemoved: "true"
       VcContainsUniqueIdMapping: "true"
       IncludeKidInVc: "false"
+      IncludeAddressInPepReq: "true"
     production:
       VcExpiryRemoved: "true"
       VcContainsUniqueIdMapping: "true"
       IncludeKidInVc: "false"
+      IncludeAddressInPepReq: "true"
 
 Resources:
 
@@ -443,6 +448,7 @@ Resources:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-identitycheck"
           ENVIRONMENT: !Ref Environment
           DEV_ENVIRONMENT_ONLY_ENHANCED_DEBUG: !FindInMap [ DevEnvironmentOnlyEnhancedDebugMappingEnvVar, Environment, !Ref Environment ]
+          ENV_VAR_FEATURE_FLAG_INCLUDE_ADDRESS_IN_PEP_REQ: !FindInMap [ FeatureFlagMapping, !Ref Environment, IncludeAddressInPepReq ]
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXrayWriteOnlyAccess
