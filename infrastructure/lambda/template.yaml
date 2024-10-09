@@ -58,6 +58,10 @@ Parameters:
     Description: "Mock TXMA SQS Queue"
     Type: String
     Default: "false"
+  LogGroupRetentionInDays:
+    Description: "Retention for all log groups"
+    Type: Number
+    Default: "30"
 
 Conditions:
   IsDeployedFromPipeline: !Equals
@@ -408,7 +412,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PublicFraudApi}-public-AccessLogs
-      RetentionInDays: 365
+      RetentionInDays: !Ref LogGroupRetentionInDays
 
   PublicFraudApiAccessLogGroupSubscriptionFilterCsls:
     Type: AWS::Logs::SubscriptionFilter
@@ -422,7 +426,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${PrivateFraudApi}-private-AccessLogs
-      RetentionInDays: 365
+      RetentionInDays: !Ref LogGroupRetentionInDays
 
   PrivateFraudApiAccessLogGroupSubscriptionFilterCsls:
     Type: AWS::Logs::SubscriptionFilter
@@ -523,7 +527,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${IdentityCheckingFunction}"
-      RetentionInDays: 30
+      RetentionInDays: !Ref LogGroupRetentionInDays
 
   IdentityCheckingFunctionLogGroupSubscriptionFilterCsls:
     Type: AWS::Logs::SubscriptionFilter
@@ -605,7 +609,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${IssueCredentialFunction}"
-      RetentionInDays: 30
+      RetentionInDays: !Ref LogGroupRetentionInDays
 
   IssueCredentialFunctionLogGroupSubscriptionFilterCsls:
     Type: AWS::Logs::SubscriptionFilter
