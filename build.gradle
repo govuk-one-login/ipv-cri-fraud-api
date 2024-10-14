@@ -45,7 +45,7 @@ ext {
 		// ---------------------------------------------------------
 
 		// AWS  aws-lambda-java-libs see https://github.com/aws/aws-lambda-java-libs
-		aws_lambda_core_version            : "1.2.1",
+		aws_lambda_core_version            : "1.2.3",
 		// Jackson Addons/ needs to track the aws sdk version of jackson
 		jackson_version                    : "2.15.2",
 		// Code weaving (lombok+powertools)
