@@ -83,6 +83,7 @@ Conditions:
       - Fn::Equals:
           - !Ref CodeSigningConfigArn
           - "none"
+  UseCanaryDeploymentAlarms: !Not [ !Equals [ !Ref LambdaDeploymentPreference, AllAtOnce ]]
   AddProvisionedConcurrency: !Not
     - !Equals
       - !FindInMap [ProvisionedConcurrency, Environment, !Ref 'Environment']
@@ -456,9 +457,10 @@ Resources:
       CodeUri: ../../lambdas/fraudcheck
       Handler: uk.gov.di.ipv.cri.fraud.api.handler.FraudHandler::handleRequest
       DeploymentPreference:
-        Alarms:
-          - !Ref IdentityCheckingFunctionCanaryErrors
-          - !Ref IdentityCheckingFunctionCanary5xxErrors
+        Alarms: !If
+          - UseCanaryDeploymentAlarms
+          - [!Ref IdentityCheckingFunctionCanaryErrors]
+          - [!Ref IdentityCheckingFunctionCanary5xxErrors]
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: !Sub "${CriIdentifier}-identitycheck"
@@ -567,9 +569,10 @@ Resources:
     Properties:
       Handler: uk.gov.di.ipv.cri.fraud.api.handler.IssueCredentialHandler::handleRequest
       DeploymentPreference:
-        Alarms:
-          - !Ref IssueCredentialFunctionCanaryErrors
-          - !Ref IssueCredentialFunctionCanary5xxErrors
+        Alarms: !If
+        - UseCanaryDeploymentAlarms
+        - [!Ref IssueCredentialFunctionCanaryErrors]
+        - [!Ref IssueCredentialFunctionCanary5xxErrors]
       CodeUri: ../../lambdas/issuecredential
       Environment:
         Variables:
