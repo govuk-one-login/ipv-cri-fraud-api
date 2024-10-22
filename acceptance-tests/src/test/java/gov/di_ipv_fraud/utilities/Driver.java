@@ -92,19 +92,14 @@ public class Driver {
             }
         }
 
-        try {
-            // Avoid increasing this too much as Driver.get() is called many times,
-            // A correct fix is to check the document state where needed.
-            Thread.sleep(50);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
         return driverPool.get();
     }
 
     public static void closeDriver() {
-        driverPool.get().quit();
-        driverPool.remove();
+        if (driverPool.get() != null) {
+            driverPool.get().close();
+            driverPool.get().quit();
+            driverPool.remove();
+        }
     }
 }
