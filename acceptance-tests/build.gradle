@@ -83,7 +83,7 @@ dependencies {
 			"org.mockito:mockito-junit-jupiter:${dependencyVersions.mockito_version}",
 			"org.mockito:mockito-inline:${dependencyVersions.mockito_version}",
 			"org.hamcrest:hamcrest:${dependencyVersions.hamcrest_version}",
-			"org.json:json:20230618",
+			"org.json:json:20240303",
 			"org.aspectj:aspectjrt:${dependencyVersions.aspectjrt_version}"
 
 	implementation "io.cucumber:cucumber-java:${dependencyVersions.cucumber_version}",
