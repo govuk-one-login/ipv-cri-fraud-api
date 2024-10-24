@@ -27,7 +27,7 @@ dependencies {
 		cri_common_lib_version             : "3.0.1",
 
 		// CRI_LIB aws
-		aws_sdk_version                    : "2.28.7",
+		aws_sdk_version                    : "2.28.29",
 		aws_lambda_events_version          : "3.11.0",
 		aws_embedded_metrics_version       : "1.0.6",
 
